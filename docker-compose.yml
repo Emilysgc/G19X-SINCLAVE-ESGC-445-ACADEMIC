@@ -1,0 +1,101 @@
+# Arranque:  cp .env.example .env  (completar)  →  docker compose up -d --build  →  http://localhost
+# Servicios: postgres · redis · keycloak (+ su base) · backend · frontend   |   opcional: ollama (perfil "ollama")
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: hr_automation
+      POSTGRES_USER: hr_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_pass_2026}
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    # Solo hacia TU computadora (127.0.0.1), para que Power BI Desktop se conecte. Si el puerto 5432 ya lo usa otro programa, cambia POSTGRES_HOST_PORT en .env
+    ports: ["127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hr_user -d hr_automation"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redis_data:/data]
+    healthcheck: { test: ["CMD", "redis-cli", "ping"], interval: 5s, timeout: 3s, retries: 10 }
+    restart: unless-stopped
+
+  # ── Inicio de sesión corporativo (Keycloak, OpenID Connect) ──
+  keycloak_db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak_db_pass_2026}
+    volumes: [keycloak_db_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    # start-dev: válido para desarrollo, demo y pruebas. Para producción real usa `start` con HTTPS (ver README, sección «Producción»).
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin1234}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak_db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak_db_pass_2026}
+      # URL con la que el NAVEGADOR abre Keycloak. Debe coincidir con OIDC_ISSUER (el emisor firmado en los tokens).
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"   # el backend lo consulta por la red interna (http://keycloak:8080)
+      KC_HTTP_ENABLED: "true"
+    volumes:
+      - ./docker/keycloak/realm-rrhh.json:/opt/keycloak/data/import/realm-rrhh.json:ro
+    ports: ["8080:8080"]
+    depends_on:
+      keycloak_db: { condition: service_healthy }
+    restart: unless-stopped
+
+  backend:
+    build: { context: ., dockerfile: docker/Dockerfile.backend }
+    env_file: .env
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+asyncpg://hr_user:${POSTGRES_PASSWORD}@postgres:5432/hr_automation
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      OIDC_ISSUER: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}/realms/rrhh
+      OIDC_JWKS_URL: http://keycloak:8080/realms/rrhh/protocol/openid-connect/certs
+    volumes: [uploads_data:/app/uploads]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      keycloak: { condition: service_started }
+    restart: unless-stopped
+
+  frontend:
+    build: { context: ., dockerfile: docker/Dockerfile.frontend }
+    ports: ["${HTTP_PORT:-80}:80"]
+    depends_on: [backend]
+    restart: unless-stopped
+
+  # ── IA local de respaldo (sin internet). Se activa con:  docker compose --profile ollama up -d ──
+  # Luego descarga el modelo una vez:  docker compose exec ollama ollama pull llama3.1:8b
+  # Con GPU NVIDIA añade en este servicio:  deploy: { resources: { reservations: { devices: [{ capabilities: [gpu] }] } } }
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    volumes: [ollama_data:/root/.ollama]
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  keycloak_db_data:
+  uploads_data:
+  ollama_data:

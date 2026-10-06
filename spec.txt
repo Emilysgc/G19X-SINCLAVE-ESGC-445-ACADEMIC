@@ -1,0 +1,88 @@
+Proyecto de Desarrollo de un Sistema de Automatización de Solicitudes 
+Internas de Personal 
+DATOS DE LA EMPRESA Y ASESORÍA  
+Nombre de la Empresa: PluriOne S.A. de C.V. 
+Nombre Comercial: Develop Talent & Technology 
+Dirección: Puebla 46, Colonia Roma Norte, Alcaldía Cuauhtémoc, C.P. 06700, Ciudad de 
+México. 
+RFC: PLU060407HC9 
+Representante Legal: Xochicuahuitl Gleason Juárez 
+Sector: Privado | Tipo: Mediana | Giro: Servicios de Consultoría, Desarrollo de Software y 
+Capacitación TI. 
+Contacto: 55 1900 3503 | contacto@develop.com.mx 
+Horario: Lunes a Viernes de 09:00 a 18:00 horas. 
+RESPONSABLES DEL PROYECTO  
+Responsable de Programas de Estadías: Juan Méndez Herrera 
+Asesor Empresarial / Externo: Juan Méndez Herrera 
+Líder de Proyecto / Evaluaciones: Edgar Loheffelmman 
+1. Título del Proyecto 
+Proyecto de Desarrollo de un Sistema de Automatización de Solicitudes Internas de 
+Personal 
+2. Tecnologías / Herramientas / Metodologías Aplicables  
+Python, FastAPI, React.js, Azure OpenAI Service, PostgreSQL, Redis, Docker, GitHub Actions, 
+Microsoft Entra ID, Power BI y Scrum. 
+3. Delimitación del Proyecto  
+La solución automatizará la gestión de solicitudes internas relacionadas con Recursos 
+Humanos, como vacaciones, permisos, constancias, cambios de información, incidencias y 
+aprobaciones. Incorporará flujos de trabajo, reglas de negocio, notificaciones y agentes 
+inteligentes para agilizar la atención y reducir tiempos operativos. 
+4. Objetivos 
+Objetivo General: 
+Desarrollar un sistema inteligente para automatizar las solicitudes internas de personal. 
+ 
+Objetivos Específicos: 
+• Analizar los procesos actuales. 
+• Diseñar la arquitectura tecnológica. 
+• Implementar flujos automatizados y agentes inteligentes. 
+• Validar la operación. 
+• Documentar la solución y el plan de soporte. 
+5. Justificación 
+Impacto en la Industria: Optimiza la atención de solicitudes internas mediante 
+automatización. 
+ 
+Valor para PluriOne: Fortalece el portafolio HRTech con soluciones de workflow inteligente. 
+ 
+Desarrollo del Alumno: Desarrolla competencias en automatización de procesos, 
+arquitectura empresarial e inteligencia artificial. 
+6. Cronograma de Actividades 
+1. Detección de necesidades y áreas de innovación. 
+2. Desarrollo de propuesta y negociación de la solución. 
+3. Diseño de arquitectura de software e Inteligencia Artificial. 
+4. Planificación operativa (plan de trabajo). 
+5. Desarrollo de la solución (Backend, Frontend, IA e Integraciones). 
+6. Pruebas de calidad (QA y validación funcional). 
+7. Documentación técnica y de usuario. 
+8. Diseño del esquema de mantenimiento y soporte multinivel. 
+9. Capacitación a usuarios y entrega final. 
+10. Evaluación post-implementación y cierre técnico. 
+7. Descripción Detallada de Actividades  
+1. Detección de necesidades 
+Analizar tipos de solicitudes, flujos y tiempos de atención. 
+Entregable: Documento de requerimientos. 
+2. Propuesta 
+Definir flujos de aprobación y reglas de negocio. 
+Entregable: Propuesta técnica. 
+3. Arquitectura 
+Diseñar componentes, APIs e integraciones. 
+Entregable: Documento de arquitectura. 
+4. Planificación 
+Preparar backlog y cronograma. 
+Entregable: Plan del proyecto. 
+5. Desarrollo 
+Implementar formularios, workflows, notificaciones y panel administrativo. 
+Entregable: Sistema funcional. 
+6. Pruebas 
+Ejecutar pruebas funcionales y de integración. 
+Entregable: Reporte QA. 
+7. Documentación 
+Elaborar manuales técnicos y de usuario. 
+Entregable: Manual técnico. 
+8. Mantenimiento 
+Diseñar plan de soporte y monitoreo. 
+Entregable: Plan de mantenimiento. 
+9. Capacitación 
+Capacitar administradores y usuarios. 
+Entregable: Acta de capacitación. 
+10. Cierre 
+Evaluar resultados y documentar lecciones aprendidas. 
+Entregable: Informe final. 

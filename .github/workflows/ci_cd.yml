@@ -1,0 +1,160 @@
+name: CI/CD — Sistema Inteligente de Solicitudes Internas
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND: ${{ github.repository }}/backend
+  IMAGE_FRONTEND: ${{ github.repository }}/frontend
+
+jobs:
+  # ────────────────────────────────────────────────────────────
+  # Job 1: Pruebas del Backend (Python 3.11 + FastAPI + Pytest)
+  # ────────────────────────────────────────────────────────────
+  test-backend:
+    name: 🐍 Backend (Python 3.11, FastAPI & Tests)
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Instalar dependencias backend
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Ejecutar pruebas unitarias e integración con Pytest
+        working-directory: backend
+        env:
+          ENVIRONMENT: testing
+          SECRET_KEY: test-secret-key-for-automated-tests-only-0123456789
+          AUTH_MODE: both
+          REDIS_URL: ""
+        run: |
+          python -m pytest tests/ -v \
+            --cov=app \
+            --cov-report=xml \
+            --cov-report=term \
+            --tb=short
+
+      - name: Subir reporte de cobertura
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: backend/coverage.xml
+          fail_ci_if_error: false
+
+  # ────────────────────────────────────────────────────────────
+  # Job 2: Pruebas y Compilación del Frontend (React.js + Vite)
+  # ────────────────────────────────────────────────────────────
+  test-frontend:
+    name:  Frontend (React.js & Vite Build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias frontend
+        working-directory: frontend
+        run: npm ci || npm install
+
+      - name: Compilar build de producción con Vite
+        working-directory: frontend
+        run: npm run build
+
+      - name: Verificar artefactos de distribución (dist)
+        run: |
+          test -f frontend/dist/index.html && echo "SPA Build verificado correctamente" || exit 1
+
+  # ────────────────────────────────────────────────────────────
+  # Job 3: Validación Docker Compose & Vistas SQL Power BI
+  # ────────────────────────────────────────────────────────────
+  validate-infra-powerbi:
+    name:  Docker Compose & Power BI Views
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Validar sintaxis Docker Compose
+        env:
+          POSTGRES_PASSWORD: test-postgres-pass
+          KEYCLOAK_ADMIN_PASSWORD: test-keycloak-admin-pass
+          KEYCLOAK_DB_PASSWORD: test-keycloak-db-pass
+        run: |
+          docker compose config --quiet && echo " docker-compose.yml es válido"
+
+      - name: Validar script de vistas analíticas Power BI
+        run: |
+          test -f backend/sql/powerbi_views.sql && grep -q "vw_solicitudes" backend/sql/powerbi_views.sql && echo " Vistas SQL para Power BI validadas"
+
+      - name: Validar archivo de realm Keycloak
+        run: |
+          test -f docker/keycloak/realm-rrhh.json && grep -q "rrhh" docker/keycloak/realm-rrhh.json && echo " Realm Keycloak preconfigurado verificado"
+
+  # ────────────────────────────────────────────────────────────
+  # Job 4: Build de Contenedores Docker (Backend & Frontend)
+  # ────────────────────────────────────────────────────────────
+  docker-build:
+    name:  Build Imágenes Docker
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend, validate-infra-powerbi]
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Backend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.backend
+          push: false
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_BACKEND }}:latest
+
+      - name: Build Frontend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.frontend
+          push: false
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_FRONTEND }}:latest

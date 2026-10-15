@@ -7,19 +7,19 @@ El sistema inicia en estado limpio (sin usuarios precreados ni datos de prueba),
 
 | Tecnología | Uso en el proyecto | Estado |
 |---|---|:---:|
-| **Python + FastAPI** | API asíncrona, reglas de negocio, flujos multinivel y agentes (`backend/`) | ✅ Listo |
-| **React.js** (Vite + SPA) | Interfaz web corporativa con inicio de sesión Keycloak OIDC (`frontend/`) | ✅ Listo |
-| **PostgreSQL 16** | Base de datos relacional y modelo analítico para Power BI | ✅ Listo |
-| **Redis 7** | Límite de intentos de acceso (rate limiting), invalidación de tokens y caché | ✅ Listo |
-| **Keycloak 26** (OIDC) | Servidor de identidad y acceso unificado (SSO) con realm `rrhh` preconfigurado | ✅ Listo |
-| **IA: Groq + Ollama** | Revisión inteligente de solicitudes y asistente de chat de RRHH con fallback a reglas | ✅ Listo |
-| **Power BI** | Vistas SQL analíticas (`vw_*` y `dim_*`) y rol `powerbi_reader` | ✅ Listo |
-| **Docker & Compose** | Orquestación completa de los servicios | ✅ Listo |
-| **GitHub Actions** | Pipeline CI/CD automatizado (`.github/workflows/ci_cd.yml`) | ✅ Listo |
+| **Python + FastAPI** | API asíncrona, reglas de negocio, flujos multinivel y agentes (`backend/`) |  Listo |
+| **React.js** (Vite + SPA) | Interfaz web corporativa con inicio de sesión Keycloak OIDC (`frontend/`) | Listo |
+| **PostgreSQL 16** | Base de datos relacional y modelo analítico para Power BI |  Listo |
+| **Redis 7** | Límite de intentos de acceso (rate limiting), invalidación de tokens y caché |  Listo |
+| **Keycloak 26** (OIDC) | Servidor de identidad y acceso unificado (SSO) con realm `rrhh` preconfigurado |  Listo |
+| **IA: Groq + Ollama** | Revisión inteligente de solicitudes y asistente de chat de RRHH con fallback a reglas |  Listo |
+| **Power BI** | Vistas SQL analíticas (`vw_*` y `dim_*`) y rol `powerbi_reader` |  Listo |
+| **Docker & Compose** | Orquestación completa de los servicios |  Listo |
+| **GitHub Actions** | Pipeline CI/CD automatizado (`.github/workflows/ci_cd.yml`) |  Listo |
 
 ---
 
-## 🚀 Puesta en Marcha con Docker Compose
+##  Puesta en Marcha con Docker Compose
 
 ### 1. Variables de entorno
 Copia la plantilla y define tus contraseñas seguras:
@@ -43,13 +43,13 @@ docker compose up -d --build
 Espera aproximadamente 1 minuto a que Keycloak importe el realm e inicialice.
 
 Direcciones de acceso:
-- 🌐 **Sistema Web (Frontend):** [http://localhost](http://localhost)
-- 🔐 **Consola de Keycloak:** [http://localhost:8080](http://localhost:8080)
-- 📚 **Documentación API (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Sistema Web (Frontend):** [http://localhost](http://localhost)
+- **Consola de Keycloak:** [http://localhost:8080](http://localhost:8080)
+- **Documentación API (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
-## 🔐 Guía Paso a Paso: Gestión de Usuarios en Keycloak
+##  Guía Paso a Paso: Gestión de Usuarios en Keycloak
 
 El contenedor de Keycloak ya incluye preconfigurado el realm **`rrhh`** y el cliente OpenID Connect **`rrhh-frontend`** con flujo PKCE.
 
@@ -88,13 +88,13 @@ En la esquina superior izquierda de la consola, haz clic en el selector de realm
 
 ### Paso 6: Iniciar sesión en el sistema
 1. Abre [http://localhost](http://localhost).
-2. Haz clic en el botón principal **🔐 Iniciar sesión con Keycloak**.
+2. Haz clic en el botón principal ** Iniciar sesión con Keycloak**.
 3. Ingresa las credenciales del usuario creado en Keycloak.
 4. El sistema autenticará el token OpenID Connect mediante PKCE, creará automáticamente el perfil del empleado en la base de datos si es nuevo, y le otorgará acceso con sus permisos correspondientes.
 
 ---
 
-## 📊 Conexión con Power BI
+##  Conexión con Power BI
 
 El sistema crea automáticamente las vistas analíticas (`vw_solicitudes`, `vw_aprobaciones`, `vw_ausencias`, `dim_empleados`, `dim_departamentos`, etc.) y el usuario `powerbi_reader`:
 
@@ -105,7 +105,7 @@ El sistema crea automáticamente las vistas analíticas (`vw_solicitudes`, `vw_a
 
 ---
 
-## 🧪 Pruebas Automatizadas (Pytest)
+##  Pruebas Automatizadas (Pytest)
 
 Para ejecutar la suite completa de pruebas unitarias y de integración:
 ```powershell
@@ -115,7 +115,7 @@ python -m pytest backend\tests -v
 
 ---
 
-## 🔄 Integración Continua (CI/CD)
+## Integración Continua (CI/CD)
 
 El repositorio incluye el pipeline [`.github/workflows/ci_cd.yml`](.github/workflows/ci_cd.yml) para validar automáticamente en GitHub:
 - Ejecución de pruebas del backend con Pytest y reporte de cobertura.

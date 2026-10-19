@@ -80,10 +80,15 @@ class PayrollIncidentData(BaseModel):
     period: Optional[str] = Field(default=None, max_length=80)
 
 
+class MedicalLeaveData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    has_medical_certificate: Optional[bool] = None
+
+
 _REQUEST_DATA_SCHEMAS: dict[RequestType, type[BaseModel]] = {
     RequestType.VACATION: EmptyRequestData,
     RequestType.PERSONAL_LEAVE: EmptyRequestData,
-    RequestType.MEDICAL_LEAVE: EmptyRequestData,
+    RequestType.MEDICAL_LEAVE: MedicalLeaveData,
     RequestType.MATERNITY_PATERNITY: MaternityPaternityData,
     RequestType.CERTIFICATE_EMPLOYMENT: CertificateData,
     RequestType.CERTIFICATE_SALARY: CertificateData,

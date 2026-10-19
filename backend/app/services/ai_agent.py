@@ -240,7 +240,7 @@ class HRAgent:
         return {"error": "herramienta desconocida"}
 
     async def _chat_llm(self, db: AsyncSession, user: User, messages: list[dict], preferred_provider: Optional[str] = None) -> ChatResult:
-        rejection_msg = "Solo puedo ayudarte con temas de RRHH, trámites y políticas internas de PluriOne S.A. de C.V."
+        rejection_msg = "Solo puedo ayudarte con temas de RRHH: saldos, solicitudes y políticas."
         if self.settings.CHAT_SCOPE_FILTER and messages:
             last_text = messages[-1].get("content", "")
             if not await self._in_scope(last_text, preferred_provider):
@@ -266,12 +266,17 @@ Cualquier tema ajeno a PluriOne S.A. de C.V. y RRHH (chistes, programación gene
 Si la pregunta está fuera de alcance, responde ÚNICAMENTE:
 «{rejection_msg}»
 
-### REGLAS DE RESPUESTA Y ENFOQUE EN SOLUCIONES
-- Cuando el colaborador exponga una situación (ej. "quiero salir temprano", "tengo un familiar en el hospital", "me siento mal/enfermé", "tengo una reunión religiosa", "tuve un incidente nocturno de guardia", "tengo un error en mi nómina"), **dale soluciones concretas de PluriOne S.A. de C.V.**:
-  1. Indica las alternativas que tiene según la política de PluriOne S.A. de C.V. (ej. Opción 1: Pase de salida < 4 h reponiendo horas en la semana con su líder sin descontar saldo; Opción 2: Registrar 'Permiso personal' en 'Nueva solicitud', indicando cuántos días de saldo tiene disponibles actualmente; Opción 3: 'Permiso médico' si es por salud propia, el cual no descuenta saldo).
-  2. Explica exactamente qué botón o trámite usar en el sistema ('Nueva solicitud' → tipo de trámite).
-- Si pide ver las políticas o una política específica, preséntalas de forma ordenada y clara mencionando las reglas de PluriOne S.A. de C.V.
-- Nunca inventes cifras ni apruebes solicitudes por tu cuenta; recuerda siempre responder en español.
+### REGLAS
+- Si la pregunta es sencilla, responde en UNA sola línea.
+- Datos y políticas salen SOLO de las herramientas o del contexto oficial.
+- Cuando el colaborador exponga una situación (ej. "quiero salir temprano", "tengo un familiar en el hospital", "me siento mal/enfermé", "tengo una reunión religiosa", "tuve un incidente nocturno de guardia", "tengo un error en mi nómina"), dale soluciones concretas de PluriOne S.A. de C.V.:
+  1. Indica las alternativas según las políticas de PluriOne S.A. de C.V. (ej. reposición de horas con el líder, permiso personal o permiso médico).
+  2. Explica qué trámite usar en el sistema ('Nueva solicitud' → tipo de trámite).
+- Nunca inventes cifras ni apruebes solicitudes por tu cuenta; responde siempre en español.
+
+### EJEMPLOS
+- "¿Cuántos días de vacaciones tengo?": Consulta tu herramienta y responde brevemente con el saldo disponible.
+- "¿Puedo salir temprano hoy?": En PluriOne S.A. de C.V., puedes acordar reposición de horas (<4h) con tu líder o solicitar permiso personal en 'Nueva solicitud'.
 
 ### FECHA ACTUAL
 Fecha actual: {fecha_actual}."""
@@ -280,7 +285,7 @@ Fecha actual: {fecha_actual}."""
         for _ in range(4):
             resp = await self._create(
                 preferred_provider=preferred_provider,
-                messages=convo, tools=self.TOOLS, temperature=0.1, max_tokens=450
+                messages=convo, tools=self.TOOLS, temperature=0.1, max_tokens=250
             )
             msg = resp.choices[0].message
             if not msg.tool_calls:

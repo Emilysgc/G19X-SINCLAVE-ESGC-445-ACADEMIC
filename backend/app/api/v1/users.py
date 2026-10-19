@@ -141,8 +141,10 @@ async def _create_user(db: AsyncSession, body: UserCreateIn) -> User:
 
 @router.post("", status_code=201, summary="Crear usuario")
 async def create_user(body: UserCreateIn, request: HttpRequest, actor: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    if actor.role != UserRole.SYSTEM_ADMIN:
-        raise HTTPException(403, "Solo el administrador del sistema (con acceso total) puede registrar nuevos usuarios.")
+    if actor.role not in (UserRole.HR_ADMIN, UserRole.SYSTEM_ADMIN):
+        raise HTTPException(403, "No tienes permisos para registrar usuarios.")
+    if body.role in (UserRole.HR_ADMIN, UserRole.SYSTEM_ADMIN) and actor.role != UserRole.SYSTEM_ADMIN:
+        raise HTTPException(403, "Solo el administrador del sistema puede crear o asignar roles de administración (HR_ADMIN o SYSTEM_ADMIN).")
     # Crear el usuario en Keycloak primero (si hay contraseña o siempre para OIDC)
     kc = get_keycloak_service()
     try:
@@ -317,29 +319,57 @@ async def update_my_profile(body: ProfileUpdateIn, request: HttpRequest, actor: 
     return user_public(u, full=True)
 
 
+_IMAGE_EXT_MAP = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+}
+
+
 @router.post("/me/avatar", summary="Subir imagen de perfil")
 async def upload_avatar(file: UploadFile = File(...), actor: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    if file.content_type not in ("image/jpeg", "image/png", "image/webp", "image/gif"):
-        raise HTTPException(400, "Formato no válido. Usa JPG, PNG, WEBP o GIF.")
-    
+    import os
+    import uuid
+    from pathlib import Path
+
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in _IMAGE_EXT_MAP:
+        raise HTTPException(400, "Formato no permitido. Usa JPG, PNG, WEBP o GIF.")
+
     content = await file.read(2_097_153)
     if len(content) > 2_097_152:
         raise HTTPException(413, "La imagen no debe pesar más de 2 MB.")
-    
-    import os
-    import uuid
-    ext = os.path.splitext(file.filename or "")[1].lower() or ".jpg"
-    filename = f"avatar_{actor.id}_{uuid.uuid4().hex[:8]}{ext}"
+
+    # Validar firma del archivo (número mágico) contra contenido real
+    valid = False
+    if ext in (".jpg", ".jpeg") and content.startswith(b"\xff\xd8\xff"):
+        valid = True
+        ext = ".jpg"
+    elif ext == ".png" and (content.startswith(b"\x89PNG\r\n\x1a\n") or content.startswith(b"\x89PNG")):
+        valid = True
+    elif ext == ".webp" and content.startswith(b"RIFF") and len(content) >= 12 and content[8:12] == b"WEBP":
+        valid = True
+    elif ext == ".gif" and (content.startswith(b"GIF87a") or content.startswith(b"GIF89a")):
+        valid = True
+
+    if not valid:
+        raise HTTPException(400, "El contenido del archivo no coincide con su extensión o está corrupto.")
+
     settings = get_settings()
-    upload_path = os.path.join(settings.UPLOAD_DIR, filename)
+    avatars_dir = os.path.join(settings.UPLOAD_DIR, "avatars")
+    os.makedirs(avatars_dir, exist_ok=True)
+    filename = f"avatar_{actor.id}_{uuid.uuid4().hex[:8]}{ext}"
+    upload_path = os.path.join(avatars_dir, filename)
     with open(upload_path, "wb") as f:
         f.write(content)
-    
+
     u = await db.get(User, actor.id)
     if not u:
         raise HTTPException(404, "Usuario no encontrado")
-    
-    avatar_url = f"/uploads/{filename}"
+
+    avatar_url = f"/uploads/avatars/{filename}"
     u.avatar_url = avatar_url
     await db.flush()
     return {"avatar_url": avatar_url, "user": user_public(u, full=True)}

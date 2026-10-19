@@ -60,46 +60,25 @@ from sqlalchemy.orm.attributes import flag_modified
 
 
 def _chain(rtype: RequestType, days: Optional[float], sup: Optional[User]) -> list[dict]:
-    # Configuración de cadena de aprobación multivariada
     sup_step = {"label": "Supervisor", "approver_id": sup.id, "approver_role": None} if sup else None
     hr_step = {"label": "Recursos Humanos", "approver_id": None, "approver_role": UserRole.HR_ADMIN.value}
 
-    # Vacaciones
+    # Vacaciones: vacaciones largas (>= VACATION_HR_APPROVAL_DAYS) requieren supervisor y RRHH
     if rtype == RequestType.VACATION:
-        # Si la solicitud es menor a 5 días, solo el jefe aprueba
-        if days is not None and days < 5:
-            return [sup_step] if sup_step else [hr_step]
-        # 5 días o más requiere aprobación del jefe y de RRHH
-        chain = []
-        if sup_step:
-            chain.append(sup_step)
-        chain.append(hr_step)
-        return chain
+        s = get_settings()
+        if days and days >= s.VACATION_HR_APPROVAL_DAYS:
+            return [sup_step, hr_step] if sup_step else [hr_step]
+        return [sup_step] if sup_step else [hr_step]
 
-    # Maternidad/Paternidad siempre necesita supervisor y RRHH
+    # Maternidad/Paternidad: supervisor y RRHH
     if rtype == RequestType.MATERNITY_PATERNITY:
         return [x for x in (sup_step, hr_step) if x]
 
-    # Permiso personal y otros tipos simples
+    # Permiso personal y otros tipos con supervisor
     if rtype in (RequestType.PERSONAL_LEAVE, RequestType.OTHER):
         return [sup_step] if sup_step else [hr_step]
 
-    # Cambio de cuenta bancaria: exige doble validación de RRHH con dos aprobadores distintos
-    if rtype == RequestType.BANK_ACCOUNT_CHANGE:
-        return [
-            {"label": "Recursos Humanos (1ª validación)", "approver_id": None, "approver_role": UserRole.HR_ADMIN.value},
-            {"label": "Recursos Humanos (2ª validación)", "approver_id": None, "approver_role": UserRole.HR_ADMIN.value},
-        ]
-
-    # Incidencia de nómina: requiere RRHH y supervisor
-    if rtype == RequestType.PAYROLL_INCIDENT:
-        steps = []
-        if sup_step:
-            steps.append(sup_step)
-        steps.append(hr_step)
-        return steps
-
-    # Por defecto (médico, domicilio, constancia de sueldo, etc.) – solo RRHH
+    # Por defecto (médico, cuenta bancaria, domicilio, incidencias): aprobación de RRHH
     return [hr_step]
 
 
@@ -200,12 +179,12 @@ async def create_request(db: AsyncSession, user: User, rtype: RequestType, title
     db.add(req)
     await db.flush()
 
-    if rtype == RequestType.CERTIFICATE_EMPLOYMENT and not (cfg and cfg.requires_approval):
+    if rtype in (RequestType.CERTIFICATE_EMPLOYMENT, RequestType.CERTIFICATE_SALARY) and not (cfg and cfg.requires_approval):
         await _freeze_document(db, req, user)
         await _finish(db, req, RequestStatus.COMPLETED, auto=True)
         await notify(db, user.id, NotificationType.REQUEST_COMPLETED, "Constancia lista",
                      f"Tu {req.title.lower()} ({req.folio}) ya está disponible para descargar.", req.id)
-    elif validation.auto_approve and rtype != RequestType.CERTIFICATE_SALARY:
+    elif validation.auto_approve:
         final = await _apply_effects(db, req)
         await _finish(db, req, final, auto=True)
         await notify(db, user.id, NotificationType.REQUEST_APPROVED, "Solicitud aprobada automáticamente",

@@ -48,6 +48,8 @@ class Settings(BaseSettings):
     OIDC_JWKS_URL: Optional[str] = None  # opcional: URL interna de las llaves (dentro de Docker: http://keycloak:8080/realms/rrhh/protocol/openid-connect/certs)
     OIDC_ALLOWED_DOMAINS: str = ""  # csv, vacío = cualquier usuario del realm
     OIDC_PROVIDER_NAME: str = "Keycloak"
+    KEYCLOAK_ADMIN: str = "admin"
+    KEYCLOAK_ADMIN_PASSWORD: str = "admin1234"
 
     # IA: cadena de proveedores compatibles con la API de OpenAI. Orden: Groq (nube) → Ollama (local, sin internet) → motor de reglas
     GROQ_API_KEY: Optional[str] = None

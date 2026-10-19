@@ -22,7 +22,7 @@ REQUEST_TYPES = [
     (RequestType.MEDICAL_LEAVE, "Permiso médico", "Incapacidad o cita médica", True, 0, 24),
     (RequestType.MATERNITY_PATERNITY, "Maternidad / paternidad", "Licencia por nacimiento o adopción", True, 0, 72),
     (RequestType.CERTIFICATE_EMPLOYMENT, "Constancia laboral", "Se genera al instante", False, 0, 1),
-    (RequestType.CERTIFICATE_SALARY, "Constancia de sueldo", "Requiere visto bueno de RRHH", True, 0, 24),
+    (RequestType.CERTIFICATE_SALARY, "Constancia de sueldo", "Se genera al instante", False, 0, 1),
     (RequestType.ADDRESS_CHANGE, "Cambio de domicilio", "Actualización de datos de contacto", True, 0, 48),
     (RequestType.BANK_ACCOUNT_CHANGE, "Cambio de cuenta bancaria", "Cuenta para depósito de nómina (doble validación)", True, 0, 48),
     (RequestType.PAYROLL_INCIDENT, "Incidencia de nómina", "Aclaraciones y correcciones de pago", True, 0, 24),
@@ -195,10 +195,6 @@ async def ensure_defaults(db: AsyncSession) -> None:
     for t, name, desc, appr, auto, sla in REQUEST_TYPES:
         if t not in existing_cfgs:
             db.add(RequestTypeConfig(type=t, display_name=name, description=desc, requires_approval=appr, auto_approve_days=auto, sla_hours=sla))
-        elif t == RequestType.CERTIFICATE_SALARY and not existing_cfgs[t].requires_approval:
-            existing_cfgs[t].requires_approval = True
-            existing_cfgs[t].sla_hours = max(existing_cfgs[t].sla_hours, 24)
-            existing_cfgs[t].description = desc
 
     existing_policies = {p.title: p for p in (await db.execute(select(HRPolicy))).scalars()}
     for title, cat, content, tags in POLICIES:

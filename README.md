@@ -47,7 +47,7 @@ Copia la plantilla de variables de entorno lista para evaluación:
   cp .env.example .env
   ```
 
->  **Nota sobre credenciales:** El archivo `.env.example` ya incluye contraseñas seguras y configuraciones por defecto para levantar todos los contenedores de inmediato sin requerir ediciones manuales.
+> ⚠️ **Nota sobre credenciales de demostración:** El archivo `.env.example` incluye contraseñas y claves preconfiguradas con fines exclusivamente académicos y de prueba en entornos locales (`localhost`). Para un entorno productivo real, es indispensable sustituir todas las credenciales y secretos (`SECRET_KEY`, `POSTGRES_PASSWORD`, `KEYCLOAK_ADMIN_PASSWORD`, etc.) por valores de alta seguridad y resguardarlos en un gestor de secretos.
 > *(Opcional)*: Si deseas activar el asistente de IA con Groq en la nube, puedes agregar tu `GROQ_API_KEY` en el archivo `.env`. Si no la configuras, el sistema funcionará automáticamente con el motor de reglas y soporte para Ollama local.
 
 ---
@@ -151,13 +151,42 @@ El sistema genera automáticamente el esquema analítico para reportes de Busine
 
 ## Pruebas Automatizadas (Pytest)
 
-Para ejecutar la suite completa de pruebas unitarias y de integración directamente en el contenedor backend:
+Para ejecutar la suite completa de 49 pruebas unitarias y de integración:
 
 ```bash
 docker compose exec backend pytest tests/ -v
 ```
 
-> **Resultado:** **43 de 43 pruebas aprobadas (100% PASSED)** cubriendo autenticación OIDC, reglas de negocio, flujos de aprobación y comportamiento de agentes IA.
+> **Resultado:** **49 de 49 pruebas aprobadas (100% PASSED)** cubriendo:
+> - **Pruebas unitarias (`test_units.py` - 3 pruebas):** Cálculo de días hábiles LFT, tabla de antigüedad y validación matemática de CLABE (estándar Banxico módulo-10).
+> - **API y reglas de negocio (`test_api.py` - 30 pruebas):** Autenticación, creación de solicitudes, prevención de empalmes, permisos con auto-aprobación, aprobación multinivel de vacaciones, cifrado de datos sensibles, descargas seguras y vistas analíticas.
+> - **Integraciones y resiliencia (`test_integrations.py` - 11 pruebas):** Keycloak OIDC, linking de usuarios SSO, alternancia automática de proveedores de IA y degradación elegante al motor de reglas.
+> - **Comportamiento del Agente de IA (`test_ai_agent_behavior.py` - 5 pruebas):** Inyección de fecha Ciudad de México, system prompt estructurado con alcance/reglas/ejemplos, filtro de solicitudes fuera de alcance y parámetros de inferencia.
+
+---
+
+## Decisiones de Arquitectura y Tecnologías
+
+### 1. ¿Por qué Keycloak en lugar de Microsoft Entra ID (Azure AD)?
+- **Costo y accesibilidad:** Microsoft Entra ID es una solución propietaria de pago que requiere una suscripción corporativa activa a Microsoft Azure y licencias por usuario.
+- **Soberanía y ejecución local:** Keycloak es un servidor de identidad Open Source maduro, estándar en la industria y compatible al 100% con OIDC (OpenID Connect) y OAuth 2.0. Permite empaquetar todo el entorno en Docker Compose con persistencia en PostgreSQL, funcionando tanto en local sin internet como en la nube, sin ningún costo recurrente.
+
+### 2. ¿Por qué Groq y Ollama en lugar de Azure OpenAI Service?
+- **Costo cero y reproducibilidad:** Azure OpenAI Service exige una tarjeta bancaria corporativa, contrato empresarial y facturación por token consumido, limitando la reproducibilidad del proyecto para fines de evaluación.
+- **Estrategia híbrida de IA:**
+  - **Groq (Nube):** Ofrece un *free tier* con inferencia ultra-rápida (LPU) ejecutando modelos de código abierto como Llama 3.3 y Qwen 2.5 mediante una API estándar compatible con OpenAI.
+  - **Ollama (Local):** Permite ejecutar modelos locales (ej. `llama3.1:8b`) directamente en el servidor sin costo y garantizando privacidad total y funcionamiento offline.
+  - **Motor de Reglas Determinista (Fallback):** Si no hay conexión o se agotan las cuotas de IA, el sistema conmuta automáticamente al motor de reglas en Python para evaluar las políticas laborales sin interrumpir el servicio.
+
+---
+
+## Uso de Inteligencia Artificial en el Desarrollo del Proyecto
+
+Durante el ciclo de desarrollo de esta solución se utilizó Inteligencia Artificial Generativa bajo la metodología de **programación en pareja asistida por IA (Pair Programming con agentes autónomos)**:
+1. **Modelado y Arquitectura:** Asistencia en el diseño del modelo entidad-relación relacional en SQLAlchemy, esquemas estrictos de validación con Pydantic (`extra="forbid"`) y diseño de máquinas de estado para los flujos de aprobación.
+2. **Políticas Laborales Corporativas:** Generación, adaptación y calibración de las 21 políticas laborales oficiales de **PluriOne S.A. de C.V.**, fundamentadas en la Ley Federal del Trabajo de México (LFT).
+3. **Generación y Cobertura de Pruebas:** Redacción colaborativa de los 49 casos de prueba con Pytest, incluyendo la validación algorítmica de CLABE interbancaria, escenarios de escalamiento de SLA y mitigación de vectores de ataque como inyección de scripts (XSS).
+4. **Auditoría de Seguridad:** Detección y corrección de riesgos de seguridad, tales como el aislamiento estricto del almacenamiento de adjuntos, validación binaria de firmas de archivos (números mágicos) para avatares y cifrado simétrico Fernet para datos financieros.
 
 ---
 

@@ -19,8 +19,14 @@ class KeycloakService:
         self.realm = "rrhh"
         self._token: Optional[str] = None
 
+    @property
+    def is_enabled(self) -> bool:
+        return bool(self.settings.OIDC_ISSUER and self.base_url and self.settings.ENVIRONMENT != "testing")
+
     async def _get_token(self) -> str:
         """Obtiene un token de administrador de Keycloak."""
+        if not self.is_enabled:
+            return "mock_token"
         if self._token:
             return self._token
         async with httpx.AsyncClient(timeout=10) as client:
@@ -44,20 +50,8 @@ class KeycloakService:
         role: str,
         password: Optional[str] = None,
     ) -> dict:
-        """Crea un usuario en Keycloak con su rol asignado.
-
-        Args:
-            email: Correo del usuario (usado como username)
-            full_name: Nombre completo
-            role: Rol del realm (EMPLOYEE, MANAGER, HR_ADMIN, SYSTEM_ADMIN)
-            password: Contraseña (si es None, el usuario debe usar otro método)
-
-        Returns:
-            dict con el id del usuario creado en Keycloak
-
-        Raises:
-            HTTPException: si Keycloak devuelve un error
-        """
+        if not self.is_enabled:
+            return {"id": "mock_kc_id", "email": email, "role": role}
         token = await self._get_token()
         headers = {
             "Authorization": f"Bearer {token}",
@@ -119,6 +113,8 @@ class KeycloakService:
 
     async def reset_password(self, email: str, new_password: str) -> bool:
         """Actualiza la contraseña del usuario en Keycloak."""
+        if not self.is_enabled:
+            return True
         token = await self._get_token()
         headers = {
             "Authorization": f"Bearer {token}",
@@ -143,6 +139,8 @@ class KeycloakService:
 
     async def update_user(self, email: str, full_name: Optional[str] = None, new_email: Optional[str] = None) -> bool:
         """Actualiza datos del usuario en Keycloak."""
+        if not self.is_enabled:
+            return True
         token = await self._get_token()
         headers = {
             "Authorization": f"Bearer {token}",
@@ -177,6 +175,8 @@ class KeycloakService:
 
     async def send_password_reset(self, email: str, redirect_uri: Optional[str] = None) -> dict:
         """Envía enlace de restablecimiento de contraseña por Keycloak (execute-actions-email) o marca UPDATE_PASSWORD."""
+        if not self.is_enabled:
+            return {"email_sent": False, "reset_url": "http://localhost:8080/realms/rrhh/login-actions/reset-credentials"}
         self._token = None
         token = await self._get_token()
         headers = {

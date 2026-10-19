@@ -83,8 +83,9 @@ async def health():
 
 
 app.include_router(api_router, prefix="/api/v1")
-os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+_avatars_dir = os.path.join(settings.UPLOAD_DIR, "avatars")
+os.makedirs(_avatars_dir, exist_ok=True)
+app.mount("/uploads/avatars", StaticFiles(directory=_avatars_dir), name="avatars")
 
 
 # ── Interfaz web (React compilada). En Docker la sirve nginx; sin Docker la sirve el propio backend. ──

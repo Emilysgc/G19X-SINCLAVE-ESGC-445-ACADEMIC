@@ -25,6 +25,7 @@ class RequestType(str, enum.Enum):
 
 
 class RequestStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
     PENDING_APPROVAL = "PENDING_APPROVAL"
     IN_REVIEW = "IN_REVIEW"
     APPROVED = "APPROVED"
@@ -89,7 +90,7 @@ class Request(Base):
     end_date: Mapped[Optional[date]] = mapped_column(Date)
     days_requested: Mapped[Optional[float]] = mapped_column(Float)
     request_data: Mapped[Optional[Any]] = mapped_column(JSON, default=dict)
-    attached_files: Mapped[Optional[Any]] = mapped_column(JSON, default=list)
+    attached_files: Mapped[Optional[Any]] = mapped_column(JSON, default=list)  # límite 3 archivos, 5 MB cada uno
 
     ai_validation_score: Mapped[Optional[float]] = mapped_column(Float)
     ai_validation_notes: Mapped[Optional[str]] = mapped_column(String(2000))

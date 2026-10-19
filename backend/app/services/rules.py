@@ -117,8 +117,8 @@ async def evaluate_rules(db: AsyncSession, user: User, rtype: RequestType, start
             if r.days > user.personal_leave_balance:
                 r.errors.append(f"Saldo de permisos insuficiente: solicitas {r.days:g} y tienes {user.personal_leave_balance:g} días.")
         elif rtype == RequestType.MEDICAL_LEAVE:
-            if r.days > s.MEDICAL_CERT_REQUIRED_DAYS and not data.get("has_medical_certificate"):
-                r.warnings.append(f"Más de {s.MEDICAL_CERT_REQUIRED_DAYS} días requieren comprobante médico (no se declaró uno).")
+            if r.days > s.MEDICAL_CERT_REQUIRED_DAYS:
+                r.warnings.append(f"Más de {s.MEDICAL_CERT_REQUIRED_DAYS} días requieren comprobante médico adjunto.")
                 r.recommendations.append("Adjunte el comprobante médico desde el detalle de la solicitud.")
 
     elif rtype == RequestType.CERTIFICATE_EMPLOYMENT:

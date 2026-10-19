@@ -175,6 +175,51 @@ class KeycloakService:
                 return resp.status_code == 204
             return True
 
+    async def send_password_reset(self, email: str, redirect_uri: Optional[str] = None) -> dict:
+        """Envía enlace de restablecimiento de contraseña por Keycloak (execute-actions-email) o marca UPDATE_PASSWORD."""
+        self._token = None
+        token = await self._get_token()
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+        public_issuer = self.settings.OIDC_PUBLIC_ISSUER or f"http://localhost:8080/realms/{self.realm}"
+        client_id = self.settings.OIDC_CLIENT_ID or "rrhh-frontend"
+        reset_url = f"{public_issuer}/login-actions/reset-credentials?client_id={client_id}"
+
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                f"{self.base_url}/admin/realms/{self.realm}/users?username={email}",
+                headers=headers,
+            )
+            resp.raise_for_status()
+            users = resp.json()
+            if not users:
+                raise HTTPException(404, f"El usuario {email} no existe en Keycloak.")
+            user_id = users[0]["id"]
+
+            params = {"client_id": client_id}
+            if redirect_uri:
+                params["redirect_uri"] = redirect_uri
+            email_resp = await client.put(
+                f"{self.base_url}/admin/realms/{self.realm}/users/{user_id}/execute-actions-email",
+                headers=headers,
+                params=params,
+                json=["UPDATE_PASSWORD"],
+            )
+            email_sent = email_resp.status_code == 204
+
+            # Asegurar acción requerida UPDATE_PASSWORD en Keycloak
+            existing_actions = list(users[0].get("requiredActions") or [])
+            if "UPDATE_PASSWORD" not in existing_actions:
+                existing_actions.append("UPDATE_PASSWORD")
+            await client.put(
+                f"{self.base_url}/admin/realms/{self.realm}/users/{user_id}",
+                headers=headers,
+                json={"requiredActions": existing_actions},
+            )
+            return {"email_sent": email_sent, "reset_url": reset_url}
+
 
 _singleton: Optional[KeycloakService] = None
 

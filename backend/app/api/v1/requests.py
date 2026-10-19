@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request as HttpRequest, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import flag_modified
@@ -31,7 +31,10 @@ def _scope(q, actor: User):
         return q
     if actor.role == UserRole.MANAGER:
         team = select(User.id).where(User.direct_supervisor_id == actor.id)
-        return q.where(or_(Request.requester_id == actor.id, Request.requester_id.in_(team)))
+        return q.where(or_(
+            Request.requester_id == actor.id,
+            and_(Request.requester_id.in_(team), Request.type != RequestType.CERTIFICATE_SALARY),
+        ))
     return q.where(Request.requester_id == actor.id)
 
 
@@ -42,6 +45,8 @@ async def _load_visible(db: AsyncSession, request_id: int, actor: User) -> Reque
                                 selectinload(Request.workflow).selectinload(ApprovalWorkflow.steps).selectinload(ApprovalStep.acted_by))
         .where(Request.id == request_id))).scalar_one_or_none()
     if not req:
+        raise HTTPException(404, "Solicitud no encontrada")
+    if req.type == RequestType.CERTIFICATE_SALARY and req.requester_id != actor.id and actor.role not in HR_ROLES:
         raise HTTPException(404, "Solicitud no encontrada")
     allowed = (req.requester_id == actor.id or actor.role in HR_ROLES
                or (actor.role == UserRole.MANAGER and req.requester.direct_supervisor_id == actor.id)
@@ -108,8 +113,10 @@ async def cancel_request(request_id: int, request: HttpRequest, actor: User = De
 
 async def _doc_owner(db: AsyncSession, request_id: int, actor: User) -> tuple[Request, User, Optional[str]]:
     req = await _load_visible(db, request_id, actor)
+    if req.requester_id != actor.id and actor.role not in HR_ROLES:
+        raise HTTPException(403, "Solo el solicitante y RRHH pueden descargar o visualizar las constancias.")
     if not req.generated_document_html:
-        raise HTTPException(404, "Esta solicitud no tiene documento generado.")
+        raise HTTPException(404, "Esta solicitud aún no tiene documento generado (requiere aprobación de RRHH).")
     owner = req.requester
     dept = await db.get(Department, owner.department_id) if owner.department_id else None
     return req, owner, dept.name if dept else None
@@ -117,8 +124,8 @@ async def _doc_owner(db: AsyncSession, request_id: int, actor: User) -> tuple[Re
 
 @router.get("/{request_id}/document", summary="Constancia en HTML")
 async def document_html(request_id: int, actor: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    req, owner, dept = await _doc_owner(db, request_id, actor)
-    return HTMLResponse(documents.render_html(req, owner, dept), headers={"Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'"})
+    req, _, _ = await _doc_owner(db, request_id, actor)
+    return HTMLResponse(req.generated_document_html, headers={"Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'"})
 
 
 @router.get("/{request_id}/document.pdf", summary="Constancia en PDF")
@@ -142,8 +149,8 @@ async def add_attachment(request_id: int, file: UploadFile = File(...), actor: U
         raise HTTPException(413, f"El archivo excede {s.MAX_UPLOAD_SIZE_MB} MB.")
     if not content.startswith(_SIGNATURES[ext]):
         raise HTTPException(400, "El contenido del archivo no coincide con su extensión.")
-    if len(req.attached_files or []) >= 5:
-        raise HTTPException(400, "Máximo 5 archivos por solicitud.")
+    if len(req.attached_files or []) >= 3:
+        raise HTTPException(400, "Máximo 3 archivos por solicitud.")
     att_id = uuid.uuid4().hex
     folder = Path(s.UPLOAD_DIR) / req.folio
     folder.mkdir(parents=True, exist_ok=True)
@@ -157,6 +164,8 @@ async def add_attachment(request_id: int, file: UploadFile = File(...), actor: U
 @router.get("/{request_id}/attachments/{att_id}", summary="Descargar adjunto")
 async def get_attachment(request_id: int, att_id: str, actor: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     req = await _load_visible(db, request_id, actor)
+    if req.type == RequestType.MEDICAL_LEAVE and req.requester_id != actor.id and actor.role not in HR_ROLES:
+        raise HTTPException(403, "Solo el solicitante y RRHH pueden descargar los comprobantes médicos.")
     att = next((a for a in (req.attached_files or []) if a["id"] == att_id), None)
     if not att:
         raise HTTPException(404, "Archivo no encontrado")

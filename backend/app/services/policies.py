@@ -11,7 +11,7 @@ from app.models import HRPolicy
 def _tokens(text: str) -> set[str]:
     text = unicodedata.normalize("NFKD", text.lower())
     text = "".join(c for c in text if not unicodedata.combining(c))
-    return {w for w in re.findall(r"[a-z0-9]+", text) if len(w) > 3}
+    return {w for w in re.findall(r"[a-z0-9]+", text) if len(w) >= 3}
 
 
 async def active_policies(db: AsyncSession) -> list[HRPolicy]:

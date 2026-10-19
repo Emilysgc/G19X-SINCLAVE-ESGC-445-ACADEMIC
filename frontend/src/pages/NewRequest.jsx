@@ -48,7 +48,7 @@ export default function NewRequest() {
         <div className="f1"><Field label="Hasta"><input type="date" required min={f.start_date || undefined} value={f.end_date} onChange={set('end_date')} /></Field></div>
       </div>}
       {type === 'MATERNITY_PATERNITY' && <Field label="Tipo de licencia"><select value={f.data.kind} onChange={setData('kind')}><option value="maternity">Maternidad (84 días naturales)</option><option value="paternity">Paternidad (5 días laborables)</option></select></Field>}
-      {type === 'MEDICAL_LEAVE' && <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input style={{ width: 'auto' }} type="checkbox" checked={!!f.data.has_medical_certificate} onChange={setData('has_medical_certificate')} />Cuento con comprobante médico (podrás adjuntarlo después de enviar)</label>}
+      {type === 'MEDICAL_LEAVE' && <Alert kind="info">Podrás adjuntar tu comprobante o receta médica (PDF, PNG o JPG) en el detalle de la solicitud una vez enviada. Solo RRHH tendrá acceso al documento y motivo médico.</Alert>}
       {['CERTIFICATE_EMPLOYMENT', 'CERTIFICATE_SALARY'].includes(type) && <div className="row">
         <div className="f1"><Field label="Dirigida a"><input maxLength={120} placeholder="A quien corresponda" value={f.data.addressed_to || ''} onChange={setData('addressed_to')} /></Field></div>
         <div className="f1"><Field label="Motivo"><input maxLength={120} placeholder="Trámite bancario, visa…" value={f.data.purpose || ''} onChange={setData('purpose')} /></Field></div></div>}

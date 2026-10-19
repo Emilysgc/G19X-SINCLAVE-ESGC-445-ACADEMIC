@@ -163,43 +163,49 @@ export default function Settings() {
 
         {/* Cambiar contraseña */}
         <div className="card" style={{ marginBottom: 20 }}>
-          <h2 style={{ marginBottom: 16 }}>Cambiar contraseña</h2>
-          <p className="muted" style={{ fontSize: 13, marginTop: -8, marginBottom: 16 }}>
-            Si deseas conservar tu contraseña actual, deja estos campos en blanco.
-          </p>
-          {user?.auth_provider === 'local' && (
-            <Field label="Contraseña actual">
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                autoComplete="current-password"
-                placeholder="Ingresa tu contraseña actual"
-              />
-            </Field>
+          <h2 style={{ marginBottom: 16 }}>Seguridad y contraseña</h2>
+          {user?.auth_provider === 'local' ? (
+            <>
+              <p className="muted" style={{ fontSize: 13, marginTop: -8, marginBottom: 16 }}>
+                Si deseas conservar tu contraseña actual, deja estos campos en blanco.
+              </p>
+              <Field label="Contraseña actual">
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  autoComplete="current-password"
+                  placeholder="Ingresa tu contraseña actual"
+                />
+              </Field>
+              <div className="grid g2" style={{ marginTop: 14 }}>
+                <Field label="Nueva contraseña" hint="Mínimo 10 caracteres">
+                  <input
+                    type="password"
+                    minLength={10}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    autoComplete="new-password"
+                    placeholder="Al menos 10 caracteres"
+                  />
+                </Field>
+                <Field label="Confirmar nueva contraseña">
+                  <input
+                    type="password"
+                    minLength={10}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    autoComplete="new-password"
+                    placeholder="Repite la nueva contraseña"
+                  />
+                </Field>
+              </div>
+            </>
+          ) : (
+            <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+              Tu cuenta utiliza inicio de sesión corporativo (SSO con Keycloak). La gestión de credenciales se realiza directamente desde el proveedor de identidad institucional; por seguridad no se permite crear contraseñas locales.
+            </p>
           )}
-          <div className="grid g2" style={{ marginTop: 14 }}>
-            <Field label="Nueva contraseña" hint="Mínimo 10 caracteres">
-              <input
-                type="password"
-                minLength={10}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                autoComplete="new-password"
-                placeholder="Al menos 10 caracteres"
-              />
-            </Field>
-            <Field label="Confirmar nueva contraseña">
-              <input
-                type="password"
-                minLength={10}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                autoComplete="new-password"
-                placeholder="Repite la nueva contraseña"
-              />
-            </Field>
-          </div>
         </div>
 
         <div className="row" style={{ justifyContent: 'flex-end', marginTop: 12 }}>

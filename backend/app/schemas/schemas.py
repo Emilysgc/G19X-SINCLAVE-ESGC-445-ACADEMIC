@@ -28,13 +28,86 @@ class PasswordChangeIn(BaseModel):
     new_password: str = Field(min_length=10, max_length=128)
 
 
+from typing import Any, Literal, Optional
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, ValidationError, field_validator, model_validator
+
+
+class EmptyRequestData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class MaternityPaternityData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["maternity", "paternity"] = "maternity"
+
+
+class CertificateData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    addressed_to: Optional[str] = Field(default=None, max_length=120)
+    purpose: Optional[str] = Field(default=None, max_length=120)
+
+
+class AddressChangeData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    new_address: str = Field(default="", max_length=300)
+    phone: Optional[str] = Field(default=None, max_length=15)
+
+    @field_validator("phone")
+    @classmethod
+    def _validate_phone(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v != "":
+            if len(v) > 15 or not all(c.isdigit() or c == "+" for c in v):
+                raise ValueError("Teléfono inválido (máx. 15 dígitos)")
+        return v
+
+
+class BankAccountChangeData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    bank_name: str = Field(default="", max_length=80)
+    clabe: str = Field(default="", max_length=18)
+
+    @field_validator("clabe")
+    @classmethod
+    def _validate_clabe(cls, v: str) -> str:
+        if v and (not v.isdigit() or len(v) != 18):
+            raise ValueError("CLABE debe ser numérica de 18 dígitos")
+        return v
+
+
+class PayrollIncidentData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    period: Optional[str] = Field(default=None, max_length=80)
+
+
+_REQUEST_DATA_SCHEMAS: dict[RequestType, type[BaseModel]] = {
+    RequestType.VACATION: EmptyRequestData,
+    RequestType.PERSONAL_LEAVE: EmptyRequestData,
+    RequestType.MEDICAL_LEAVE: EmptyRequestData,
+    RequestType.MATERNITY_PATERNITY: MaternityPaternityData,
+    RequestType.CERTIFICATE_EMPLOYMENT: CertificateData,
+    RequestType.CERTIFICATE_SALARY: CertificateData,
+    RequestType.ADDRESS_CHANGE: AddressChangeData,
+    RequestType.BANK_ACCOUNT_CHANGE: BankAccountChangeData,
+    RequestType.PAYROLL_INCIDENT: PayrollIncidentData,
+    RequestType.OTHER: EmptyRequestData,
+}
+
+
 class RequestIn(BaseModel):
     type: RequestType
     title: Optional[str] = Field(default=None, max_length=200)
     description: Optional[str] = Field(default=None, max_length=2000)
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+    is_emergency: bool = Field(default=False, description="Marca de solicitud urgente (SLA 4h)")
     request_data: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_data_by_type(self) -> "RequestIn":
+        schema_cls = _REQUEST_DATA_SCHEMAS.get(self.type, EmptyRequestData)
+        parsed = schema_cls.model_validate(self.request_data or {})
+        self.request_data = parsed.model_dump(exclude_none=True)
+        return self
 
 
 class ApprovalIn(BaseModel):

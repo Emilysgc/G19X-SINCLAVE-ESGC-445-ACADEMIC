@@ -56,20 +56,51 @@ async def _supervisor(db: AsyncSession, user: User) -> Optional[User]:
     return sup if sup and sup.is_active else None
 
 
+from sqlalchemy.orm.attributes import flag_modified
+
+
 def _chain(rtype: RequestType, days: Optional[float], sup: Optional[User]) -> list[dict]:
-    s = get_settings()
+    # Configuración de cadena de aprobación multivariada
     sup_step = {"label": "Supervisor", "approver_id": sup.id, "approver_role": None} if sup else None
     hr_step = {"label": "Recursos Humanos", "approver_id": None, "approver_role": UserRole.HR_ADMIN.value}
+
+    # Vacaciones
     if rtype == RequestType.VACATION:
-        chain = [sup_step or hr_step]
-        if days is not None and days >= s.VACATION_HR_APPROVAL_DAYS and sup_step:
-            chain.append(hr_step)
+        # Si la solicitud es menor a 5 días, solo el jefe aprueba
+        if days is not None and days < 5:
+            return [sup_step] if sup_step else [hr_step]
+        # 5 días o más requiere aprobación del jefe y de RRHH
+        chain = []
+        if sup_step:
+            chain.append(sup_step)
+        chain.append(hr_step)
         return chain
+
+    # Maternidad/Paternidad siempre necesita supervisor y RRHH
     if rtype == RequestType.MATERNITY_PATERNITY:
         return [x for x in (sup_step, hr_step) if x]
+
+    # Permiso personal y otros tipos simples
     if rtype in (RequestType.PERSONAL_LEAVE, RequestType.OTHER):
-        return [sup_step or hr_step]
-    return [hr_step]  # médico, domicilio, cuenta bancaria, nómina
+        return [sup_step] if sup_step else [hr_step]
+
+    # Cambio de cuenta bancaria: exige doble validación de RRHH con dos aprobadores distintos
+    if rtype == RequestType.BANK_ACCOUNT_CHANGE:
+        return [
+            {"label": "Recursos Humanos (1ª validación)", "approver_id": None, "approver_role": UserRole.HR_ADMIN.value},
+            {"label": "Recursos Humanos (2ª validación)", "approver_id": None, "approver_role": UserRole.HR_ADMIN.value},
+        ]
+
+    # Incidencia de nómina: requiere RRHH y supervisor
+    if rtype == RequestType.PAYROLL_INCIDENT:
+        steps = []
+        if sup_step:
+            steps.append(sup_step)
+        steps.append(hr_step)
+        return steps
+
+    # Por defecto (médico, domicilio, constancia de sueldo, etc.) – solo RRHH
+    return [hr_step]
 
 
 def _sanitize_data(rtype: RequestType, data: dict) -> dict:
@@ -84,15 +115,29 @@ def _sanitize_data(rtype: RequestType, data: dict) -> dict:
 async def _activate_step(db: AsyncSession, req: Request, step: ApprovalStep, cfg: Optional[RequestTypeConfig]) -> None:
     step.due_at = _now() + timedelta(hours=cfg.sla_hours if cfg else 48)
     who = req.requester.full_name if req.requester else "un empleado"
+    prior_actors = {
+        s.acted_by_id for s in (req.workflow.steps if req.workflow else [])
+        if s.step_index < step.step_index and s.acted_by_id is not None
+    }
     targets: list[int] = []
     if step.approver_id:
         targets = [step.approver_id]
     elif step.approver_role:
         q = select(User.id).where(User.role == UserRole(step.approver_role), User.is_active.is_(True), User.id != req.requester_id)
-        targets = list((await db.execute(q)).scalars())
+        targets = [uid for uid in (await db.execute(q)).scalars() if uid not in prior_actors]
     for uid in targets:
         await notify(db, uid, NotificationType.APPROVAL_PENDING, "Solicitud pendiente de tu aprobación",
                      f"{who} envió la solicitud {req.folio} ({req.title}).", req.id)
+
+
+async def _freeze_document(db: AsyncSession, req: Request, requester: User) -> None:
+    dept = await db.get(Department, requester.department_id) if requester.department_id else None
+    dept_name = dept.name if dept else None
+    data = dict(req.request_data or {})
+    data["_doc_snapshot"] = documents.build_doc_snapshot(requester, dept_name)
+    req.request_data = data
+    flag_modified(req, "request_data")
+    req.generated_document_html = documents.render_html(req, requester, dept_name)
 
 
 async def _apply_effects(db: AsyncSession, req: Request) -> RequestStatus:
@@ -106,6 +151,8 @@ async def _apply_effects(db: AsyncSession, req: Request) -> RequestStatus:
         requester.address = str(d.get("new_address", ""))[:300] or requester.address
         if d.get("phone"):
             requester.phone = str(d["phone"])[:30]
+    elif req.type in (RequestType.CERTIFICATE_SALARY, RequestType.CERTIFICATE_EMPLOYMENT):
+        await _freeze_document(db, req, requester)
     return RequestStatus.APPROVED if req.type in LEAVE_FINAL else RequestStatus.COMPLETED
 
 
@@ -153,13 +200,12 @@ async def create_request(db: AsyncSession, user: User, rtype: RequestType, title
     db.add(req)
     await db.flush()
 
-    if rtype in (RequestType.CERTIFICATE_EMPLOYMENT, RequestType.CERTIFICATE_SALARY):
-        dept = await db.get(Department, user.department_id) if user.department_id else None
-        req.generated_document_html = documents.render_html(req, user, dept.name if dept else None)
+    if rtype == RequestType.CERTIFICATE_EMPLOYMENT and not (cfg and cfg.requires_approval):
+        await _freeze_document(db, req, user)
         await _finish(db, req, RequestStatus.COMPLETED, auto=True)
         await notify(db, user.id, NotificationType.REQUEST_COMPLETED, "Constancia lista",
                      f"Tu {req.title.lower()} ({req.folio}) ya está disponible para descargar.", req.id)
-    elif validation.auto_approve:
+    elif validation.auto_approve and rtype != RequestType.CERTIFICATE_SALARY:
         final = await _apply_effects(db, req)
         await _finish(db, req, final, auto=True)
         await notify(db, user.id, NotificationType.REQUEST_APPROVED, "Solicitud aprobada automáticamente",
@@ -183,7 +229,7 @@ async def create_request(db: AsyncSession, user: User, rtype: RequestType, title
         await _activate_step(db, req, steps[0], cfg)
         if rtype == RequestType.MEDICAL_LEAVE and sup:
             await notify(db, sup.id, NotificationType.SYSTEM, "Ausencia médica registrada",
-                         f"{user.full_name} registró un permiso médico ({req.folio}).", req.id)
+                         f"{user.full_name} registró un permiso médico ({req.folio}: ausente del {req.start_date} al {req.end_date}).", req.id)
         await notify(db, user.id, NotificationType.REQUEST_SUBMITTED, "Solicitud enviada",
                      f"{req.folio} fue enviada y está pendiente de aprobación.", req.id)
 
@@ -207,12 +253,50 @@ async def _finish(db: AsyncSession, req: Request, status: RequestStatus, auto: b
         req.workflow.completed_at = req.completed_at
 
 
+def _already_approved_prior_step(step: ApprovalStep, actor: User, req: Request) -> bool:
+    if not req.workflow:
+        return False
+    return any(
+        s.step_index < step.step_index and s.status == StepStatus.APPROVED and s.acted_by_id == actor.id
+        for s in req.workflow.steps
+    )
+
+
 def _can_act(step: ApprovalStep, actor: User, req: Request) -> bool:
     if actor.id == req.requester_id:
         return False  # nadie aprueba su propia solicitud
+    if _already_approved_prior_step(step, actor, req):
+        return False  # doble validación exige un segundo aprobador distinto
     if step.approver_id is not None:
-        return step.approver_id == actor.id or actor.role == UserRole.SYSTEM_ADMIN
+        current_sup_id = req.requester.direct_supervisor_id if (step.label == "Supervisor" and req.requester) else None
+        return actor.id in (step.approver_id, current_sup_id) or actor.role == UserRole.SYSTEM_ADMIN
     return actor.role.value == step.approver_role or actor.role == UserRole.SYSTEM_ADMIN
+
+
+async def reassign_supervisor_steps(db: AsyncSession, employee_id: int, new_supervisor_id: Optional[int]) -> int:
+    """Actualiza el aprobador de pasos 'Supervisor' pendientes cuando cambia el jefe del empleado."""
+    q = (
+        select(ApprovalStep)
+        .join(ApprovalWorkflow, ApprovalStep.workflow_id == ApprovalWorkflow.id)
+        .join(Request, ApprovalWorkflow.request_id == Request.id)
+        .where(
+            Request.requester_id == employee_id,
+            Request.status.in_(ACTIVE_STATUSES),
+            ApprovalStep.status == StepStatus.PENDING,
+            ApprovalStep.label == "Supervisor",
+        )
+    )
+    updated = 0
+    for step in (await db.execute(q)).scalars():
+        if new_supervisor_id and new_supervisor_id != employee_id:
+            step.approver_id = new_supervisor_id
+            step.approver_role = None
+        else:
+            step.approver_id = None
+            step.approver_role = UserRole.HR_ADMIN.value
+            step.label = "Recursos Humanos"
+        updated += 1
+    return updated
 
 
 def current_step(req: Request) -> Optional[ApprovalStep]:
@@ -226,6 +310,8 @@ async def approve(db: AsyncSession, request_id: int, actor: User, comments: Opti
     step = current_step(req)
     if not step:
         raise HTTPException(400, f"La solicitud está en estado {req.status.value} y no admite acciones.")
+    if _already_approved_prior_step(step, actor, req):
+        raise HTTPException(403, "Esta solicitud requiere doble validación: un segundo aprobador distinto debe autorizar este paso.")
     if not _can_act(step, actor, req):
         raise HTTPException(403, "No eres aprobador del paso actual de esta solicitud.")
 

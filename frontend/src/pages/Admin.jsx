@@ -22,9 +22,19 @@ function Users() {
   const save = async (e) => {
     e.preventDefault(); setErr([])
     try {
-      if (edit.id) { const { email, id, employee_id, auth_provider, last_login, ...rest } = edit; await api.patch(`/users/${id}`, clean({ ...rest, new_password: rest.password, password: undefined })) }
+      if (edit.id) { const { email, id, employee_id, auth_provider, last_login, password, ...rest } = edit; await api.patch(`/users/${id}`, clean(rest)) }
       else await api.post('/users', clean(edit))
       setEdit(null); load()
+    } catch (x) { setErr(errorList(x)) }
+  }
+  const sendKeycloakReset = async (u) => {
+    setErr([]); setMsg('')
+    try {
+      const r = await api.post(`/users/${u.id}/reset-password`)
+      setMsg(r.email_sent
+        ? `Se envió el correo de restablecimiento de Keycloak a ${u.email}.`
+        : `Se activó el cambio obligatorio de contraseña en Keycloak para ${u.email}. Enlace de acceso: ${r.reset_url}`)
+      setEdit(null)
     } catch (x) { setErr(errorList(x)) }
   }
   const importCsv = async (e) => { const f = e.target.files[0]; if (!f) return; try { const r = await api.upload('/users/import', f); setMsg(`${r.created} usuario(s) creado(s). ${r.errors.length ? 'Errores: ' + r.errors.map((x) => `fila ${x.row}: ${x.error}`).join(' | ') : ''}`); load() } catch (x) { setMsg(x.message) } e.target.value = '' }
@@ -42,22 +52,32 @@ function Users() {
     <p className="muted" style={{ fontSize: 12 }}>Columnas del CSV: email, full_name, role, department_code, job_title, hire_date (AAAA-MM-DD), supervisor_email, salary, password (vacío = solo Keycloak).</p>
     {rows.length === 0 ? <Empty>No hay empleados todavía. Crea el primero o importa un CSV.</Empty> :
       <table><thead><tr><th>No.</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Vacaciones</th><th>Estado</th><th /></tr></thead><tbody>
-        {rows.map((u) => <tr key={u.id}><td>{u.employee_id}</td><td>{u.full_name}<div className="muted" style={{ fontSize: 12 }}>{u.job_title}</div></td><td>{u.email}</td><td>{ROLE[u.role]}</td><td>{u.vacation_balance}</td><td>{u.status === 'ACTIVE' ? 'Activo' : u.status === 'SUSPENDED' ? 'Suspendido' : 'Inactivo'}</td>
-          <td><button className="btn sm" onClick={() => { setErr([]); setEdit({ ...u, password: '', department_id: u.department_id ?? '', direct_supervisor_id: u.direct_supervisor_id ?? '', hire_date: u.hire_date ?? '', salary: '' }) }}>Editar</button></td></tr>)}
+        {rows.map((u) => {
+          const canEditRow = u.id !== me.id && (me.role === 'SYSTEM_ADMIN' || !['SYSTEM_ADMIN', 'HR_ADMIN'].includes(u.role))
+          return (<tr key={u.id}><td>{u.employee_id}</td><td>{u.full_name}<div className="muted" style={{ fontSize: 12 }}>{u.job_title}</div></td><td>{u.email}</td><td>{ROLE[u.role]}</td><td>{u.vacation_balance}</td><td>{u.status === 'ACTIVE' ? 'Activo' : u.status === 'SUSPENDED' ? 'Suspendido' : 'Inactivo'}</td>
+            <td>{canEditRow ? <button className="btn sm" onClick={() => { setErr([]); setEdit({ ...u, password: '', department_id: u.department_id ?? '', direct_supervisor_id: u.direct_supervisor_id ?? '', hire_date: u.hire_date ?? '', salary: '' }) }}>Editar</button> : <span className="muted" style={{ fontSize: 12 }}>{u.id === me.id ? 'Tu cuenta' : 'Protegido'}</span>}</td></tr>)
+        })}
       </tbody></table>}
     {edit && <Modal title={edit.id ? 'Editar empleado' : 'Nuevo empleado'} onClose={() => setEdit(null)}><form onSubmit={save}>
       {err.length > 0 && <Alert kind="err" items={err} />}
       <Field label="Nombre completo"><input required minLength={3} value={edit.full_name} onChange={set('full_name')} /></Field>
       <Field label="Correo"><input required type="email" disabled={!!edit.id} value={edit.email} onChange={set('email')} /></Field>
-      <div className="row"><div className="f1"><Field label="Rol"><select value={edit.role} onChange={set('role')}>{Object.entries(ROLE).filter(([k]) => k !== 'SYSTEM_ADMIN' || me.role === 'SYSTEM_ADMIN').map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Field></div>
+      <div className="row"><div className="f1"><Field label="Rol"><select value={edit.role} onChange={set('role')}>{Object.entries(ROLE).filter(([k]) => !['SYSTEM_ADMIN', 'HR_ADMIN'].includes(k) || me.role === 'SYSTEM_ADMIN').map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Field></div>
         <div className="f1"><Field label="Departamento"><select value={edit.department_id} onChange={set('department_id')}><option value="">—</option>{depts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></Field></div></div>
-      <div className="row"><div className="f1"><Field label="Supervisor directo"><select value={edit.direct_supervisor_id} onChange={set('direct_supervisor_id')}><option value="">— (aprueba RRHH)</option>{dir.filter((d) => d.id !== edit.id).map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}</select></Field></div>
+      <div className="row"><div className="f1"><Field label="Supervisor directo"><select value={edit.direct_supervisor_id} onChange={set('direct_supervisor_id')}><option value="">— (aprueba RRHH)</option>{dir.filter((d) => d.id !== edit.id).map((d) => <option key={d.id} value={d.id}>{d.full_name} ({ROLE[d.role] || d.role})</option>)}</select></Field></div>
         <div className="f1"><Field label="Puesto"><input value={edit.job_title || ''} onChange={set('job_title')} /></Field></div></div>
       <div className="row"><div className="f1"><Field label="Fecha de ingreso" hint="Define el saldo de vacaciones (LFT)."><input type="date" value={edit.hire_date} onChange={set('hire_date')} /></Field></div>
-        <div className="f1"><Field label="Sueldo mensual bruto" hint={edit.id ? 'Vacío = no cambiar' : 'Para las constancias de sueldo'}><input type="number" min="0" step="0.01" value={edit.salary} onChange={set('salary')} /></Field></div></div>
+        <div className="f1"><Field label="Sueldo mensual bruto" hint={edit.id ? 'Vacío = no cambiar (se audita)' : 'Para las constancias de sueldo'}><input type="number" min="0" step="0.01" value={edit.salary} onChange={set('salary')} /></Field></div></div>
       {edit.id && <div className="row"><div className="f1"><Field label="Saldo vacaciones (ajuste manual)"><input type="number" min="0" step="0.5" value={edit.vacation_balance ?? ''} onChange={set('vacation_balance')} /></Field></div>
         <div className="f1"><Field label="Estado"><select value={edit.status} onChange={set('status')}><option value="ACTIVE">Activo</option><option value="INACTIVE">Inactivo</option><option value="SUSPENDED">Suspendido</option></select></Field></div></div>}
-      <Field label={edit.id ? 'Nueva contraseña (opcional)' : 'Contraseña inicial'} hint="Mínimo 10 caracteres. Déjala vacía si el empleado entrará solo con Keycloak (inicio de sesión corporativo)."><input type="password" minLength={10} autoComplete="new-password" value={edit.password} onChange={set('password')} /></Field>
+      {!edit.id ? (
+        <Field label="Contraseña inicial" hint="Mínimo 10 caracteres. Déjala vacía si el empleado entrará solo con Keycloak (inicio de sesión corporativo)."><input type="password" minLength={10} autoComplete="new-password" value={edit.password} onChange={set('password')} /></Field>
+      ) : (
+        <div className="row between" style={{ marginTop: 10, padding: '10px 12px', background: 'var(--bg-soft, rgba(128,128,128,0.08))', borderRadius: 8 }}>
+          <span className="muted" style={{ fontSize: 12 }}>Por seguridad no se asignan contraseñas manuales. Envía un enlace de restablecimiento vía Keycloak.</span>
+          <button type="button" className="btn sm" onClick={() => sendKeycloakReset(edit)}>Restablecer por Keycloak</button>
+        </div>
+      )}
       <div className="row" style={{ marginTop: 14 }}><button className="btn primary">Guardar</button></div></form></Modal>}
   </>)
 }

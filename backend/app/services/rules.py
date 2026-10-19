@@ -136,9 +136,10 @@ async def evaluate_rules(db: AsyncSession, user: User, rtype: RequestType, start
     elif rtype == RequestType.BANK_ACCOUNT_CHANGE:
         if not (data.get("bank_name") or "").strip():
             r.errors.append("Indica el nombre del banco.")
-        if not clabe_is_valid(str(data.get("clabe", ""))):
-            r.errors.append("La CLABE no es válida (18 dígitos con dígito verificador correcto).")
-        r.warnings.append("Cambio de cuenta de nómina: RRHH debe validar la titularidad.")
+        clabe_val = str(data.get("clabe", "")).strip()
+        if not clabe_is_valid(clabe_val):
+            r.errors.append(f"La CLABE debe tener exactamente 18 dígitos numéricos (ingresaste {len(clabe_val)}).")
+        r.warnings.append("Cambio de cuenta de nómina: requiere doble validación de RRHH.")
     elif rtype in (RequestType.PAYROLL_INCIDENT, RequestType.OTHER):
         if len((description or "").strip()) < 15:
             r.errors.append("Describe el caso con al menos 15 caracteres.")

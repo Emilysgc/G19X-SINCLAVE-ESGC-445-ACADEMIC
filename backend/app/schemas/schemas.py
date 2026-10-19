@@ -64,14 +64,15 @@ class AddressChangeData(BaseModel):
 class BankAccountChangeData(BaseModel):
     model_config = ConfigDict(extra="forbid")
     bank_name: str = Field(default="", max_length=80)
-    clabe: str = Field(default="", max_length=18)
+    clabe: str = Field(default="", max_length=24)
 
     @field_validator("clabe")
     @classmethod
     def _validate_clabe(cls, v: str) -> str:
-        if v and (not v.isdigit() or len(v) != 18):
-            raise ValueError("CLABE debe ser numérica de 18 dígitos")
-        return v
+        clean = (v or "").strip().replace(" ", "").replace("-", "")
+        if clean and not clean.isdigit():
+            raise ValueError("La CLABE solo debe contener números (18 dígitos).")
+        return clean
 
 
 class PayrollIncidentData(BaseModel):

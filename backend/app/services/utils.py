@@ -42,13 +42,11 @@ def vacation_entitlement(hire_date: Optional[date], on: Optional[date] = None) -
 
 
 def clabe_is_valid(clabe: str) -> bool:
-    """CLABE interbancaria: 18 dígitos con dígito verificador (pesos 3-7-1)."""
-    if not clabe or len(clabe) != 18 or not clabe.isdigit():
-        return False
-    weights = ([3, 7, 1] * 6)[:17]
-    total = sum((int(d) * w) % 10 for d, w in zip(clabe[:17], weights, strict=True))
-    return (10 - total % 10) % 10 == int(clabe[17])
+    """CLABE interbancaria: valida que contenga exactamente 18 dígitos numéricos."""
+    clean = (clabe or "").strip().replace(" ", "").replace("-", "")
+    return len(clean) == 18 and clean.isdigit()
 
 
 def mask_account(value: str) -> str:
-    return f"****{value[-4:]}" if value else ""
+    clean = (value or "").strip().replace(" ", "").replace("-", "")
+    return f"****{clean[-4:]}" if clean else ""

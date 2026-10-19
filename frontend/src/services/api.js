@@ -7,7 +7,13 @@ export const setToken = (t) => (t ? sessionStorage.setItem('hr_token', t) : sess
 
 export class ApiError extends Error {
   constructor(status, body) {
-    super(typeof body?.detail === 'string' ? body.detail : 'Error de solicitud')
+    let msg = 'Error de solicitud'
+    if (typeof body?.detail === 'string') {
+      msg = body.detail
+    } else if (Array.isArray(body?.detail) && body.detail.length > 0) {
+      msg = body.detail.map((d) => (d.msg || '').replace(/^Value error,\s*/i, '')).join(' · ')
+    }
+    super(msg)
     this.status = status
     this.body = body
   }

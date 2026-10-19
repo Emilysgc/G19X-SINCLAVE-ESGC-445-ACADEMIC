@@ -55,8 +55,8 @@ export default function NewRequest() {
       {type === 'ADDRESS_CHANGE' && <><Field label="Nuevo domicilio completo"><textarea required value={f.data.new_address || ''} onChange={setData('new_address')} placeholder="Calle, número, colonia, ciudad, C.P." /></Field>
         <Field label="Teléfono (opcional)"><input value={f.data.phone || ''} onChange={setData('phone')} /></Field></>}
       {type === 'BANK_ACCOUNT_CHANGE' && <div className="row">
-        <div className="f1"><Field label="Banco"><input required value={f.data.bank_name || ''} onChange={setData('bank_name')} /></Field></div>
-        <div className="f1"><Field label="CLABE (18 dígitos)"><input required inputMode="numeric" maxLength={18} value={f.data.clabe || ''} onChange={setData('clabe')} /></Field></div></div>}
+        <div className="f1"><Field label="Banco"><input required placeholder="Ej. BBVA, Banorte, Santander" value={f.data.bank_name || ''} onChange={setData('bank_name')} /></Field></div>
+        <div className="f1"><Field label={`CLABE (18 dígitos — ${(f.data.clabe || '').length}/18)`}><input required inputMode="numeric" maxLength={18} placeholder="18 dígitos numéricos" value={f.data.clabe || ''} onChange={(e) => setF({ ...f, data: { ...f.data, clabe: e.target.value.replace(/\D/g, '').slice(0, 18) } })} /></Field></div></div>}
       {type === 'PAYROLL_INCIDENT' && <Field label="Periodo de nómina afectado"><input required placeholder="Ej. 1ª quincena de marzo 2026" value={f.data.period || ''} onChange={setData('period')} /></Field>}
       {!['CERTIFICATE_EMPLOYMENT', 'CERTIFICATE_SALARY'].includes(type) && <Field label={['PAYROLL_INCIDENT', 'OTHER'].includes(type) ? 'Describe el caso' : 'Comentarios (opcional)'}><textarea maxLength={2000} required={['PAYROLL_INCIDENT', 'OTHER'].includes(type)} value={f.description} onChange={set('description')} /></Field>}
 

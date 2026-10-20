@@ -360,3 +360,47 @@ async def test_powerbi_views_are_queryable(api):
         assert (await conn.execute(text("SELECT COUNT(*) FROM vw_ausencias"))).scalar() > 0
 
 
+
+
+async def test_password_recovery_flow_and_attempt_limits(api):
+    # 1. Solicitar código de recuperación para emp1
+    req = await api.c.post(f"{V}/auth/forgot-password", json={"email": "emp1@pruebas-rh.com"})
+    assert req.status_code == 200
+    data = req.json()
+    assert "email" in data and data["email"] == "emp1@pruebas-rh.com"
+    assert data["max_attempts"] == 3
+    assert data["expires_in_minutes"] == 10
+    assert "dev_code" in data
+    real_code = data["dev_code"]
+    assert len(real_code) == 6
+
+    # 2. Intento 1 con código erróneo: debe restar un intento (quedan 2)
+    bad1 = await api.c.post(f"{V}/auth/reset-password-code", json={"email": "emp1@pruebas-rh.com", "code": "000000", "new_password": "NewSecretPass123!"})
+    assert bad1.status_code == 400
+    assert "2 intentos" in bad1.json()["detail"]
+
+    # 3. Intento 2 con código erróneo: debe restar otro intento (queda 1)
+    bad2 = await api.c.post(f"{V}/auth/reset-password-code", json={"email": "emp1@pruebas-rh.com", "code": "000000", "new_password": "NewSecretPass123!"})
+    assert bad2.status_code == 400
+    assert "1 intento" in bad2.json()["detail"]
+
+    # 4. Intento 3 con código erróneo: agota los 3 intentos y bloquea el código (HTTP 429)
+    bad3 = await api.c.post(f"{V}/auth/reset-password-code", json={"email": "emp1@pruebas-rh.com", "code": "000000", "new_password": "NewSecretPass123!"})
+    assert bad3.status_code == 429
+
+    # 5. Intentar usar el código real después de agotar los intentos: debe estar cancelado / expirado
+    late = await api.c.post(f"{V}/auth/reset-password-code", json={"email": "emp1@pruebas-rh.com", "code": real_code, "new_password": "NewSecretPass123!"})
+    assert late.status_code in (400, 429)
+
+    # 6. Generar un nuevo código exitosamente y restablecer la contraseña
+    req2 = await api.c.post(f"{V}/auth/forgot-password", json={"email": "emp1@pruebas-rh.com"})
+    assert req2.status_code == 200
+    new_code = req2.json()["dev_code"]
+
+    ok = await api.c.post(f"{V}/auth/reset-password-code", json={"email": "emp1@pruebas-rh.com", "code": new_code, "new_password": "NewSecretPass123!"})
+    assert ok.status_code == 200
+
+    # 7. Iniciar sesión con la nueva contraseña
+    login = await api.c.post(f"{V}/auth/login", json={"email": "emp1@pruebas-rh.com", "password": "NewSecretPass123!"})
+    assert login.status_code == 200
+    assert "access_token" in login.json()

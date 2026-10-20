@@ -1,4 +1,3 @@
-"""Autenticación: asistente de primer uso, login local, Keycloak (OpenID Connect) y sesión."""
 import hmac
 import secrets
 from datetime import datetime, timezone
@@ -16,8 +15,10 @@ from app.core.database import get_db
 from app.core.oidc import claims_to_identity, validate_oidc_token
 from app.core.security import create_access_token, decode_access_token, hash_password, verify_password
 from app.models import AuditAction, Department, User, UserRole, UserStatus
-from app.schemas.schemas import OidcLoginIn, LoginIn, PasswordChangeIn, SetupIn
+from app.schemas.schemas import ForgotPasswordIn, LoginIn, OidcLoginIn, PasswordChangeIn, ResetPasswordCodeIn, SetupIn
 from app.services.audit import audit
+from app.services.keycloak import get_keycloak_service
+from app.services.notifications import send_recovery_code_email
 from app.services.utils import vacation_entitlement, years_of_service
 
 router = APIRouter()
@@ -146,3 +147,118 @@ async def change_password(body: PasswordChangeIn, user: User = Depends(get_curre
     user.hashed_password = hash_password(body.new_password)
     audit(db, user.id, "User", user.id, AuditAction.UPDATE, "Cambio de contraseña")
     return {"message": "Contraseña actualizada"}
+
+
+@router.post("/forgot-password", summary="Envía código de 6 dígitos para recuperación de contraseña")
+async def forgot_password(body: ForgotPasswordIn, request: HttpRequest, db: AsyncSession = Depends(get_db)):
+    ip = client_ip(request)
+    await rate_limit(f"forgot-pwd-ip:{ip}", 10, 300)
+    raw_ident = body.email.strip().lower()
+    
+    # Buscar usuario por correo o por employee_id / username
+    user = (await db.execute(
+        select(User).where((func.lower(User.email) == raw_ident) | (func.lower(User.employee_id) == raw_ident))
+    )).scalar_one_or_none()
+
+    if not user:
+        return {
+            "message": "Si la cuenta está registrada, recibirás un correo con el código de recuperación.",
+            "email": raw_ident,
+            "expires_in_minutes": 10,
+            "max_attempts": 3,
+        }
+
+    # Generar código numérico seguro de 6 dígitos
+    code = f"{secrets.randbelow(900000) + 100000}"
+    cache_data = {
+        "code": code,
+        "attempts": 0,
+        "max_attempts": 3,
+        "user_id": str(user.id),
+        "email": user.email.lower(),
+    }
+    
+    # Guardar en cache con expiración de 10 minutos (600s)
+    await cache.set_json(f"pwd_reset:{user.email.lower()}", cache_data, ttl=600)
+    if raw_ident != user.email.lower():
+        await cache.set_json(f"pwd_reset:{raw_ident}", cache_data, ttl=600)
+
+    # Enviar correo electrónico
+    email_sent = send_recovery_code_email(
+        to=user.email,
+        code=code,
+        minutes=10,
+        max_attempts=3
+    )
+
+    audit(db, user.id, "Auth", user.id, AuditAction.UPDATE, f"Código de recuperación de contraseña solicitado para {user.email}", ip=ip)
+    await db.commit()
+
+    resp = {
+        "message": f"Código de recuperación de 6 dígitos enviado a {user.email}.",
+        "email": user.email,
+        "expires_in_minutes": 10,
+        "max_attempts": 3,
+        "email_sent": email_sent,
+    }
+    if not email_sent:
+        resp["dev_code"] = code
+        resp["message"] += " (Simulación de servidor: código generado)."
+    return resp
+
+
+@router.post("/reset-password-code", summary="Valida código de recuperación y actualiza la contraseña")
+async def reset_password_code(body: ResetPasswordCodeIn, request: HttpRequest, db: AsyncSession = Depends(get_db)):
+    ip = client_ip(request)
+    await rate_limit(f"reset-pwd-ip:{ip}", 15, 300)
+    raw_ident = body.email.strip().lower()
+    cache_key = f"pwd_reset:{raw_ident}"
+    
+    data = await cache.get_json(cache_key)
+    if not data:
+        raise HTTPException(400, "El código ha expirado o no es válido. Por favor solicita uno nuevo.")
+
+    attempts = data.get("attempts", 0) + 1
+    max_attempts = data.get("max_attempts", 3)
+    user_email = data.get("email", raw_ident).lower()
+
+    if attempts > max_attempts:
+        await cache.delete(cache_key)
+        await cache.delete(f"pwd_reset:{user_email}")
+        raise HTTPException(429, "Has superado el límite de 3 intentos permitidos. Por seguridad, el código ha sido cancelado. Solicita uno nuevo.")
+
+    # Verificar si el código coincide
+    if not hmac.compare_digest(str(data.get("code", "")).strip(), body.code.strip()):
+        data["attempts"] = attempts
+        remaining = max_attempts - attempts
+        if remaining <= 0:
+            await cache.delete(cache_key)
+            await cache.delete(f"pwd_reset:{user_email}")
+            raise HTTPException(429, "Código incorrecto. Has agotado tus 3 intentos permitidos. Solicita un nuevo código.")
+        
+        await cache.set_json(cache_key, data, ttl=600)
+        await cache.set_json(f"pwd_reset:{user_email}", data, ttl=600)
+        attempts_label = f"{remaining} intento" if remaining == 1 else f"{remaining} intentos"
+        raise HTTPException(400, f"Código incorrecto. Te quedan {attempts_label}.")
+
+    # Código válido: buscar usuario y actualizar contraseña
+    user_id = data.get("user_id")
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(404, "Usuario no encontrado.")
+
+    user.hashed_password = hash_password(body.new_password)
+    
+    try:
+        kc = get_keycloak_service()
+        await kc.reset_password(user.email, body.new_password)
+    except Exception:
+        pass
+
+    await cache.delete(cache_key)
+    await cache.delete(f"pwd_reset:{user_email}")
+
+    audit(db, user.id, "Auth", user.id, AuditAction.UPDATE, f"Contraseña restablecida exitosamente con código para {user.email}", ip=ip)
+    await db.commit()
+
+    return {"message": "¡Tu contraseña ha sido restablecida exitosamente! Ya puedes iniciar sesión con tu nueva contraseña."}

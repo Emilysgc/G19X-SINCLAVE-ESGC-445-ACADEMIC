@@ -121,12 +121,18 @@ class KeycloakService:
             "Content-Type": "application/json",
         }
         async with httpx.AsyncClient(timeout=10) as client:
+            # Buscar primero por correo y luego por nombre de usuario
             resp = await client.get(
-                f"{self.base_url}/admin/realms/{self.realm}/users?username={email}",
+                f"{self.base_url}/admin/realms/{self.realm}/users?email={email}",
                 headers=headers,
             )
-            resp.raise_for_status()
-            users = resp.json()
+            users = resp.json() if resp.status_code == 200 else []
+            if not users:
+                resp = await client.get(
+                    f"{self.base_url}/admin/realms/{self.realm}/users?username={email}",
+                    headers=headers,
+                )
+                users = resp.json() if resp.status_code == 200 else []
             if not users:
                 return False
             user_id = users[0]["id"]
@@ -134,6 +140,13 @@ class KeycloakService:
                 f"{self.base_url}/admin/realms/{self.realm}/users/{user_id}/reset-password",
                 headers=headers,
                 json={"type": "password", "value": new_password, "temporary": False},
+            )
+            # Limpiar la acci?n requerida UPDATE_PASSWORD para que el usuario pueda entrar directamente
+            existing_actions = [a for a in (users[0].get("requiredActions") or []) if a != "UPDATE_PASSWORD"]
+            await client.put(
+                f"{self.base_url}/admin/realms/{self.realm}/users/{user_id}",
+                headers=headers,
+                json={"requiredActions": existing_actions},
             )
             return resp.status_code == 204
 

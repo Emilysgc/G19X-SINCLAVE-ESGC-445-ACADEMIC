@@ -58,3 +58,77 @@ async def unread_count(db: AsyncSession, user_id: int) -> int:
 
 async def mark_all_read(db: AsyncSession, user_id: int) -> None:
     await db.execute(update(Notification).where(Notification.user_id == user_id, Notification.is_read.is_(False)).values(is_read=True))
+
+
+def send_recovery_code_email(to: str, code: str, minutes: int = 10, max_attempts: int = 3) -> bool:
+    """Env?a el c?digo OTP de restablecimiento de contrase?a por correo SMTP."""
+    s = get_settings()
+    subject = f"C?digo de verificaci?n para restablecer contrase?a: {code}"
+    text_content = (
+        f"Hola,\n\n"
+        f"Recibimos una solicitud para restablecer tu contrase?a en {s.COMPANY_NAME}.\n\n"
+        f"Tu c?digo de verificaci?n de 6 d?gitos es: {code}\n\n"
+        f"Por seguridad, este c?digo expira en {minutes} minutos y cuenta con un l?mite estricto de {max_attempts} intentos.\n\n"
+        f"Si no solicitaste este cambio, ignora este correo. Tu cuenta sigue protegida.\n\n"
+        f"Atentamente,\nEquipo de TI y Recursos Humanos ? {s.COMPANY_NAME}"
+    )
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b;">
+  <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <div style="background: linear-gradient(135deg, #7c3aed, #0d9488); padding: 24px; text-align: center; color: #ffffff;">
+      <h2 style="margin: 0; font-size: 20px; font-weight: 700;">{s.COMPANY_NAME}</h2>
+      <p style="margin: 4px 0 0; font-size: 13px; opacity: 0.9;">Sistema Inteligente de Solicitudes Internas</p>
+    </div>
+    <div style="padding: 28px 24px;">
+      <p style="font-size: 15px; margin: 0 0 16px;">Hola,</p>
+      <p style="font-size: 14px; line-height: 1.5; color: #475569; margin: 0 0 20px;">
+        Recibimos una solicitud para restablecer la contrase?a de acceso a tu cuenta corporativa. Utiliza el siguiente c?digo de verificaci?n:
+      </p>
+      <div style="background: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 10px; padding: 18px; text-align: center; margin: 20px 0;">
+        <span style="font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #0f172a;">{code}</span>
+      </div>
+      <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 14px; border-radius: 4px; font-size: 12px; color: #92400e; margin: 20px 0;">
+        ?? <b>Tiempo l?mite:</b> V?lido por <b>{minutes} minutos</b>.<br>
+        ?? <b>Seguridad:</b> Cuentas con un m?ximo de <b>{max_attempts} intentos</b>. Tras superarlos, el c?digo se invalidar? autom?ticamente.
+      </div>
+      <p style="font-size: 13px; color: #64748b; line-height: 1.5; margin: 24px 0 0;">
+        Si no realizaste esta solicitud, puedes ignorar este mensaje de forma segura. Nadie puede acceder a tu cuenta sin este c?digo.
+      </p>
+    </div>
+    <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px; text-align: center; font-size: 12px; color: #94a3b8;">
+      ? {s.COMPANY_NAME} ? Todos los derechos reservados.
+    </div>
+  </div>
+</body>
+</html>"""
+
+    if not s.SMTP_HOST:
+        logger.info("[SIMULACI?N CORREO] C?digo para %s: %s (v?lido %d min)", to, code, minutes)
+        return False
+
+    try:
+        msg = EmailMessage()
+        msg["From"] = s.SMTP_FROM
+        msg["To"] = to
+        msg["Subject"] = f"[{s.COMPANY_NAME}] {subject}"
+        msg.set_content(text_content)
+        msg.add_alternative(html_content, subtype="html")
+
+        if s.SMTP_PORT == 465:
+            with smtplib.SMTP_SSL(s.SMTP_HOST, s.SMTP_PORT, timeout=15) as smtp:
+                if s.SMTP_USER:
+                    smtp.login(s.SMTP_USER, s.SMTP_PASSWORD or "")
+                smtp.send_message(msg)
+        else:
+            with smtplib.SMTP(s.SMTP_HOST, s.SMTP_PORT, timeout=15) as smtp:
+                smtp.starttls()
+                if s.SMTP_USER:
+                    smtp.login(s.SMTP_USER, s.SMTP_PASSWORD or "")
+                smtp.send_message(msg)
+        logger.info("Correo de recuperaci?n enviado con ?xito a %s", to)
+        return True
+    except Exception as exc:
+        logger.error("Error al enviar correo SMTP a %s: %s", to, exc)
+        return False

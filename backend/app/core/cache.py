@@ -73,6 +73,12 @@ class Cache:
             for k in [k for k in self._mem if k.startswith(prefix)]:
                 self._mem.pop(k, None)
 
+    async def delete(self, key: str) -> None:
+        if self._redis is not None:
+            await self._redis.delete(key)
+        else:
+            self._mem.pop(key, None)
+
     async def set_flag(self, key: str, ttl: int) -> None:
         await self.set_json(key, 1, ttl)
 

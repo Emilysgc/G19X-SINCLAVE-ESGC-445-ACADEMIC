@@ -49,6 +49,20 @@ export default function Login() {
               >
                 🔐 Iniciar sesión con {config.oidc.provider_name || 'Keycloak'}
               </button>
+              <div style={{ marginTop: 16, textAlign: 'center' }}>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    const issuer = config?.oidc?.issuer || 'http://localhost:8080/realms/rrhh'
+                    const clientId = config?.oidc?.client_id || 'rrhh-frontend'
+                    window.location.href = `${issuer}/login-actions/reset-credentials?client_id=${clientId}`
+                  }}
+                  style={{ color: 'var(--brand)', fontSize: 13, textDecoration: 'none', fontWeight: 500 }}
+                >
+                  ¿Olvidaste tu contraseña? Restablécela aquí
+                </a>
+              </div>
             </div>
           )}
         </div>

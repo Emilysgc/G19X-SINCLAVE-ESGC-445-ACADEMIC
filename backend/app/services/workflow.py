@@ -339,8 +339,8 @@ async def reject(db: AsyncSession, request_id: int, actor: User, comments: str, 
 async def cancel(db: AsyncSession, request_id: int, actor: User, ip: Optional[str] = None) -> Request:
     req = await _load(db, request_id, lock=True)
     is_owner = req.requester_id == actor.id
-    if not is_owner and actor.role not in (UserRole.HR_ADMIN, UserRole.SYSTEM_ADMIN):
-        raise HTTPException(403, "No puedes cancelar esta solicitud.")
+    if not is_owner and actor.role != UserRole.HR_ADMIN:
+        raise HTTPException(403, "Solo el solicitante o Recursos Humanos pueden cancelar esta solicitud.")
     restore = req.status == RequestStatus.APPROVED and req.type in BALANCE_TYPES and req.start_date and req.start_date > date.today()
     if req.status not in ACTIVE_STATUSES and not restore:
         raise HTTPException(400, f"No se puede cancelar una solicitud en estado {req.status.value}.")

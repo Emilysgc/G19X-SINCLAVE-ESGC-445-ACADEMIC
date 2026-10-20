@@ -18,7 +18,7 @@ from app.core.security import create_access_token, decode_access_token, hash_pas
 from app.models import AuditAction, Department, User, UserRole, UserStatus
 from app.schemas.schemas import OidcLoginIn, LoginIn, PasswordChangeIn, SetupIn
 from app.services.audit import audit
-from app.services.utils import vacation_entitlement
+from app.services.utils import vacation_entitlement, years_of_service
 
 router = APIRouter()
 _DUMMY_HASH = hash_password("dummy-password-for-timing")
@@ -123,7 +123,11 @@ async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(
     dept = await db.get(Department, user.department_id) if user.department_id else None
     sup = await db.get(User, user.direct_supervisor_id) if user.direct_supervisor_id else None
     return {**user_public(user, full=True), "department": dept.name if dept else None, "supervisor": sup.full_name if sup else None,
-            "vacation_entitlement": vacation_entitlement(user.hire_date)}
+            "vacation_entitlement": vacation_entitlement(user.hire_date),
+            "years_of_service": years_of_service(user.hire_date),
+            "daily_wage": round((user.salary or 0) / 30.0, 2),
+            "vacation_premium_estimated": round(((user.salary or 0) / 30.0) * vacation_entitlement(user.hire_date) * 0.25, 2),
+            "continuous_days_requirement": 12}
 
 
 @router.post("/logout", summary="Cierra la sesión (revoca el token)")

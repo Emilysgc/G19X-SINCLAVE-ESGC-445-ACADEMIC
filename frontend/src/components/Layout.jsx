@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../services/auth.jsx'
 import { api } from '../services/api'
 import { ROLE, fmtDateTime } from '../services/labels'
-import { Icon, initials, UserAvatar } from './ui.jsx'
+import { Icon, initials, UserAvatar, Modal } from './ui.jsx'
 import Chat from './Chat.jsx'
 
 const TITLES = [
@@ -25,6 +25,7 @@ export default function Layout() {
   const [open, setOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [confirmLogout, setConfirmLogout] = useState(false)
   const closeChat = useCallback(() => setChatOpen(false), [])
 
   const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'light')
@@ -168,6 +169,29 @@ export default function Layout() {
           <Outlet context={{ reloadNotes: load, globalSearch: searchQuery }} />
         </div>
       </div>
+
+            {confirmLogout && (
+        <Modal title="Confirmar cierre de sesi?n" onClose={() => setConfirmLogout(false)}>
+          <p style={{ marginTop: 8, marginBottom: 20 }}>
+            ?Est?s seguro de que deseas cerrar tu sesi?n en <b>PluriOne S.A. de C.V.</b>?
+          </p>
+          <div className="row end" style={{ gap: 10 }}>
+            <button className="btn" type="button" onClick={() => setConfirmLogout(false)}>
+              Cancelar
+            </button>
+            <button
+              className="btn danger"
+              type="button"
+              onClick={() => {
+                setConfirmLogout(false)
+                logout()
+              }}
+            >
+              Cerrar sesi?n
+            </button>
+          </div>
+        </Modal>
+      )}
 
       <Chat open={chatOpen} onClose={closeChat} />
     </div>

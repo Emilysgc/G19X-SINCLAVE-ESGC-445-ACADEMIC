@@ -54,9 +54,42 @@ export default function NewRequest() {
         <div className="f1"><Field label="Motivo"><input maxLength={120} placeholder="Trámite bancario, visa…" value={f.data.purpose || ''} onChange={setData('purpose')} /></Field></div></div>}
       {type === 'ADDRESS_CHANGE' && <><Field label="Nuevo domicilio completo"><textarea required value={f.data.new_address || ''} onChange={setData('new_address')} placeholder="Calle, número, colonia, ciudad, C.P." /></Field>
         <Field label="Teléfono (opcional)"><input value={f.data.phone || ''} onChange={setData('phone')} /></Field></>}
-      {type === 'BANK_ACCOUNT_CHANGE' && <div className="row">
-        <div className="f1"><Field label="Banco"><input required placeholder="Ej. BBVA, Banorte, Santander" value={f.data.bank_name || ''} onChange={setData('bank_name')} /></Field></div>
-        <div className="f1"><Field label={`CLABE (18 dígitos — ${(f.data.clabe || '').length}/18)`}><input required inputMode="numeric" maxLength={18} placeholder="18 dígitos numéricos" value={f.data.clabe || ''} onChange={(e) => setF({ ...f, data: { ...f.data, clabe: e.target.value.replace(/\D/g, '').slice(0, 18) } })} /></Field></div></div>}
+      {type === 'BANK_ACCOUNT_CHANGE' && <>
+        <div className="row">
+          <div className="f1"><Field label="Banco"><input required placeholder="Ej. BBVA México, Banorte, Santander" value={f.data.bank_name || ''} onChange={setData('bank_name')} /></Field></div>
+          <div className="f1"><Field label={`CLABE (18 dígitos ? ${(f.data.clabe || '').length}/18)`}><input required inputMode="numeric" maxLength={18} placeholder="18 dígitos num?ricos" value={f.data.clabe || ''} onChange={(e) => setF({ ...f, data: { ...f.data, clabe: e.target.value.replace(/\D/g, '').slice(0, 18) } })} /></Field></div>
+        </div>
+        <div style={{ marginTop: -8, marginBottom: 12, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, fontSize: 12 }}>
+          <span className="muted">Ejemplo para evaluación:</span>
+          <button
+            type="button"
+            className="btn sm"
+            style={{ padding: '2px 8px', fontSize: 11 }}
+            onClick={() => setF({ ...f, data: { ...f.data, bank_name: f.data.bank_name || 'BBVA México', clabe: '012180001234567899' } })}
+          >
+            Usar CLABE válida (012180001234567899)
+          </button>
+          {(f.data.clabe || '').length >= 17 && (() => {
+            const clean = (f.data.clabe || '').replace(/\D/g, '').slice(0, 17)
+            const w = [3, 7, 1, 3, 7, 1, 3, 7, 1, 3, 7, 1, 3, 7, 1, 3, 7]
+            const s = clean.split('').reduce((acc, d, i) => acc + ((parseInt(d, 10) * w[i]) % 10), 0)
+            const valid18 = clean + String((10 - (s % 10)) % 10)
+            if (valid18 !== f.data.clabe) {
+              return (
+                <button
+                  type="button"
+                  className="btn sm primary"
+                  style={{ padding: '2px 8px', fontSize: 11 }}
+                  onClick={() => setF({ ...f, data: { ...f.data, clabe: valid18 } })}
+                >
+                  Corregir dígito verificador a: {valid18}
+                </button>
+              )
+            }
+            return null
+          })()}
+        </div>
+      </>}
       {type === 'PAYROLL_INCIDENT' && <Field label="Periodo de nómina afectado"><input required placeholder="Ej. 1ª quincena de marzo 2026" value={f.data.period || ''} onChange={setData('period')} /></Field>}
       {!['CERTIFICATE_EMPLOYMENT', 'CERTIFICATE_SALARY'].includes(type) && <Field label={['PAYROLL_INCIDENT', 'OTHER'].includes(type) ? 'Describe el caso' : 'Comentarios (opcional)'}><textarea maxLength={2000} required={['PAYROLL_INCIDENT', 'OTHER'].includes(type)} value={f.description} onChange={set('description')} /></Field>}
 

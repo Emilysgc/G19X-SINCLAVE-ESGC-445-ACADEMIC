@@ -196,15 +196,9 @@ async def ensure_defaults(db: AsyncSession) -> None:
         if t not in existing_cfgs:
             db.add(RequestTypeConfig(type=t, display_name=name, description=desc, requires_approval=appr, auto_approve_days=auto, sla_hours=sla))
 
-    existing_policies = {p.title: p for p in (await db.execute(select(HRPolicy))).scalars()}
+    existing_policy_titles = {p.title for p in (await db.execute(select(HRPolicy))).scalars()}
     for title, cat, content, tags in POLICIES:
-        if title in existing_policies:
-            p = existing_policies[title]
-            p.category = cat
-            p.content = content
-            p.tags = tags
-            p.is_active = True
-        else:
+        if title not in existing_policy_titles:
             db.add(HRPolicy(title=title, category=cat, content=content, tags=tags, is_active=True))
     await db.flush()
 

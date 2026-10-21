@@ -44,3 +44,5 @@ def require_roles(*roles: UserRole):
 
 
 require_hr = require_roles(*HR_ROLES)
+require_only_hr = require_roles(UserRole.HR_ADMIN)
+require_system_admin = require_roles(UserRole.SYSTEM_ADMIN)

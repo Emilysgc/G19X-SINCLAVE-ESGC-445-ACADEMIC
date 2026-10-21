@@ -306,6 +306,9 @@ async def test_admin_can_tune_request_type_and_policies(api):
     req = (await api.request("emp2", "PERSONAL_LEAVE", s, s, "x")).json()
     assert req["status"] == "PENDING_APPROVAL"  # sin auto-aprobación ahora pasa por el supervisor
     await api.patch("hr", f"{V}/admin/request-types/PERSONAL_LEAVE", json={"auto_approve_days": 1})
+    # Solo HR_ADMIN gestiona políticas y tipos de trámite; SYSTEM_ADMIN se restringe
+    assert (await api.post("admin", f"{V}/admin/policies", json={"title": "X", "category": "Jornada", "content": "Bloqueado para admin"})).status_code == 403
+    assert (await api.patch("admin", f"{V}/admin/request-types/PERSONAL_LEAVE", json={"auto_approve_days": 1})).status_code == 403
     p = await api.post("hr", f"{V}/admin/policies", json={"title": "Home office", "category": "Jornada", "content": "El trabajo remoto se permite dos días por semana.", "tags": "remoto,teletrabajo"})
     assert p.status_code == 201
     chat = (await api.post("emp1", f"{V}/ai/chat", json={"messages": [{"role": "user", "content": "¿Cuántos días de teletrabajo remoto tengo?"}]})).json()

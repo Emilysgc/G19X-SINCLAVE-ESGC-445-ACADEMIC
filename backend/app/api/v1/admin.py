@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, require_hr
+from app.api.deps import get_current_user, require_hr, require_only_hr
 from app.core.cache import cache, rate_limit
 from app.core.config import get_settings
 from app.core.database import get_db
@@ -31,7 +31,7 @@ async def list_policies(_: User = Depends(get_current_user), db: AsyncSession = 
 
 
 @router.post("/policies", status_code=201, summary="Crear política")
-async def create_policy(body: PolicyIn, actor: User = Depends(require_hr), db: AsyncSession = Depends(get_db)):
+async def create_policy(body: PolicyIn, actor: User = Depends(require_only_hr), db: AsyncSession = Depends(get_db)):
     p = HRPolicy(**body.model_dump(), updated_by_id=actor.id)
     db.add(p)
     await db.flush()
@@ -40,7 +40,7 @@ async def create_policy(body: PolicyIn, actor: User = Depends(require_hr), db: A
 
 
 @router.put("/policies/{policy_id}", summary="Actualizar política")
-async def update_policy(policy_id: int, body: PolicyIn, actor: User = Depends(require_hr), db: AsyncSession = Depends(get_db)):
+async def update_policy(policy_id: int, body: PolicyIn, actor: User = Depends(require_only_hr), db: AsyncSession = Depends(get_db)):
     p = await db.get(HRPolicy, policy_id)
     if not p:
         raise HTTPException(404, "Política no encontrada")
@@ -52,7 +52,7 @@ async def update_policy(policy_id: int, body: PolicyIn, actor: User = Depends(re
 
 
 @router.delete("/policies/{policy_id}", summary="Eliminar política")
-async def delete_policy(policy_id: int, actor: User = Depends(require_hr), db: AsyncSession = Depends(get_db)):
+async def delete_policy(policy_id: int, actor: User = Depends(require_only_hr), db: AsyncSession = Depends(get_db)):
     p = await db.get(HRPolicy, policy_id)
     if not p:
         raise HTTPException(404, "Política no encontrada")
@@ -70,7 +70,7 @@ async def list_type_configs(_: User = Depends(require_hr), db: AsyncSession = De
 
 
 @router.patch("/request-types/{rtype}", summary="Ajustar SLA, auto-aprobación o habilitación")
-async def update_type_config(rtype: RequestType, body: RequestTypeConfigIn, actor: User = Depends(require_hr), db: AsyncSession = Depends(get_db)):
+async def update_type_config(rtype: RequestType, body: RequestTypeConfigIn, actor: User = Depends(require_only_hr), db: AsyncSession = Depends(get_db)):
     c = (await db.execute(select(RequestTypeConfig).where(RequestTypeConfig.type == rtype))).scalar_one_or_none()
     if not c:
         raise HTTPException(404, "Tipo no encontrado")

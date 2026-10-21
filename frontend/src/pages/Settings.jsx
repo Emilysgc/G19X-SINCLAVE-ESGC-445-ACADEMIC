@@ -161,6 +161,51 @@ export default function Settings() {
           </div>
         </div>
 
+        {/* Vacaciones y Antigüedad (LFT) */}
+        <div className="card" style={{ marginBottom: 20 }}>
+          <h2 style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>🌴</span> Mis Vacaciones y Antigüedad Laboral (LFT)
+          </h2>
+          <p className="muted" style={{ fontSize: 13, marginTop: -4, marginBottom: 16 }}>
+            Información calculada automáticamente conforme a tu fecha de ingreso y la Ley Federal del Trabajo de México.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 16 }}>
+            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <div className="muted" style={{ fontSize: 11 }}>Fecha de ingreso</div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>{user?.hire_date || 'Pendiente de registrar'}</div>
+            </div>
+            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <div className="muted" style={{ fontSize: 11 }}>Antigüedad acumulada</div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#2563eb' }}>
+                {user?.years_of_service ?? 0} {user?.years_of_service === 1 ? 'año' : 'años'}
+              </div>
+            </div>
+            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <div className="muted" style={{ fontSize: 11 }}>Días correspondientes por ley</div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#16a34a' }}>
+                {user?.vacation_entitlement ?? 0} días al año
+              </div>
+            </div>
+            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <div className="muted" style={{ fontSize: 11 }}>Saldo actual disponible</div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#ea580c' }}>
+                {user?.vacation_balance ?? 0} días restantes
+              </div>
+            </div>
+            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <div className="muted" style={{ fontSize: 11 }}>Días disfrutados este ciclo</div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>
+                {Math.max(0, (user?.vacation_entitlement ?? 0) - (user?.vacation_balance ?? 0))} días
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 12, fontSize: 12.5, color: '#1e3a8a', lineHeight: 1.5 }}>
+            🏖️ <b>Art. 78 LFT:</b> Los trabajadores deben disfrutar de al menos 12 días continuos de vacaciones. Además, tienes derecho a una <b>prima vacacional del 25%</b> sobre tu salario diario durante tus vacaciones.
+          </div>
+        </div>
+
         {/* Cambiar contraseña */}
         <div className="card" style={{ marginBottom: 20 }}>
           <h2 style={{ marginBottom: 16 }}>Seguridad y contraseña</h2>

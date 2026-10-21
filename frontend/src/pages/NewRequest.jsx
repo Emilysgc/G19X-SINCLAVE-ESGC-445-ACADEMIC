@@ -10,7 +10,7 @@ const today = () => new Date().toISOString().slice(0, 10)
 
 export default function NewRequest() {
   const nav = useNavigate()
-  const { refreshUser } = useAuth()
+  const { refreshUser, user } = useAuth()
   const [types, setTypes] = useState(null)
   const [type, setType] = useState(null)
   const [f, setF] = useState({ start_date: '', end_date: '', description: '', data: {} })
@@ -43,6 +43,21 @@ export default function NewRequest() {
     <div className="types" style={{ marginBottom: 18 }}>{types.map((t) => <button key={t.type} type="button" className={`type ${type === t.type ? 'on' : ''}`} onClick={() => pick(t.type)}><b>{t.name}</b><div className="muted" style={{ fontSize: 12 }}>{t.description}</div><div className="muted" style={{ fontSize: 11, marginTop: 6 }}>{t.requires_approval ? `Respuesta en ≤ ${t.sla_hours} h` : 'Se genera al instante'}</div></button>)}</div>
     {type && <form className="card" onSubmit={submit}>
       <h2>{TYPE[type]}</h2>
+      {type === 'VACATION' && (
+        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '12px 14px', marginBottom: 14 }}>
+          <div style={{ fontWeight: 700, fontSize: 13.5, color: '#166534', marginBottom: 4 }}>
+            🌴 Tu información de vacaciones (Ley Federal del Trabajo)
+          </div>
+          <div style={{ fontSize: 12.5, color: '#15803d', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <span>Saldo disponible actual: <b>{user?.vacation_balance ?? 0} días</b></span>
+            <span>Días por ley al año: <b>{user?.vacation_entitlement ?? 0} días</b></span>
+            <span>Antigüedad acumulada: <b>{user?.years_of_service ?? 0} {user?.years_of_service === 1 ? 'año' : 'años'}</b></span>
+          </div>
+          <div style={{ fontSize: 11.5, color: '#14532d', marginTop: 6 }}>
+            💡 <b>Regla LFT (Vacaciones Dignas):</b> La ley exige disfrutar de al menos 12 días continuos de descanso. Cuentas además con derecho a una prima vacacional mínima del 25% sobre tu salario diario.
+          </div>
+        </div>
+      )}
       {DATED.includes(type) && <div className="row">
         <div className="f1"><Field label="Desde"><input type="date" required min={type === 'MEDICAL_LEAVE' ? undefined : today()} value={f.start_date} onChange={set('start_date')} /></Field></div>
         <div className="f1"><Field label="Hasta"><input type="date" required min={f.start_date || undefined} value={f.end_date} onChange={set('end_date')} /></Field></div>

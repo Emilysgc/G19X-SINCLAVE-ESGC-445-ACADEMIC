@@ -170,15 +170,19 @@ export default function Dashboard() {
         {/* Card 3: Saldos Disponibles */}
         <div className="atlas-card atlas-card-kpi-beige">
           <div className="atlas-card-header-row">
-            <span className="atlas-card-title"><span className="live-dot" /> Saldos Disponibles</span>
+            <span className="atlas-card-title"><span className="live-dot" /> Mis Vacaciones y Saldos</span>
           </div>
           <div className="atlas-truck-content">
             <div className="atlas-kpi-header-num">
               <span className="atlas-truck-big-val">{user.vacation_balance ?? 0}</span>
-              <span className="atlas-trend-badge up">días vacaciones</span>
+              <span className="atlas-trend-badge up">días disponibles</span>
             </div>
-            <div style={{ fontSize: 12, color: '#78716c', marginBottom: 12 }}>
-              {user.personal_leave_balance ?? 0} días permiso con goce
+            <div style={{ fontSize: 12, color: '#44403c', marginTop: 4, marginBottom: 10, lineHeight: 1.4 }}>
+              <b>{user.vacation_entitlement ?? 0} días por ley</b> ({user.years_of_service ?? 0} {user.years_of_service === 1 ? 'año' : 'años'} de antigüedad)
+              <br />
+              <span style={{ color: '#78716c' }}>
+                {user.personal_leave_balance ?? 0} días permiso personal
+              </span>
             </div>
             <button className="atlas-btn-track" onClick={() => nav('/requests/new')}>
               Nueva Solicitud
@@ -186,10 +190,10 @@ export default function Dashboard() {
             <button
               type="button"
               className="btn sm"
-              style={{ marginTop: 8, width: '100%', fontSize: 11, background: '#fff', border: '1px solid #cbd5e1' }}
+              style={{ marginTop: 8, width: '100%', fontSize: 11.5, background: '#fff', border: '1px solid #cbd5e1', color: '#0f172a', fontWeight: 600 }}
               onClick={() => setShowVacationModal(true)}
             >
-              ?? Ver c?lculo LFT y Prima Vacacional
+              🌴 Ver días por antigüedad y LFT
             </button>
             <div className="atlas-truck-graphic" aria-hidden="true">
               <svg width="100" height="50" viewBox="0 0 100 50" fill="none">
@@ -352,87 +356,118 @@ export default function Dashboard() {
         )}
       </div>
       {showVacationModal && (
-        <Modal title="Desglose de Vacaciones y Prestaciones (LFT)" onClose={() => setShowVacationModal(false)}>
-          <div style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: 4 }}>
-            <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, marginBottom: 16, border: '1px solid #e2e8f0' }}>
-              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 8, color: '#0f172a' }}>
-                Expediente Vacacional de {user.full_name}
+        <Modal title="Días de Vacaciones y Antigüedad Laboral (LFT)" onClose={() => setShowVacationModal(false)}>
+          <div style={{ maxHeight: '72vh', overflowY: 'auto', paddingRight: 4 }}>
+            {/* Tarjeta de resumen del empleado */}
+            <div style={{ background: '#f8fafc', padding: 16, borderRadius: 10, marginBottom: 16, border: '1px solid #e2e8f0' }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a', marginBottom: 10 }}>
+                👤 Expediente del Colaborador: {user.full_name}
               </div>
-              <div className="row" style={{ gap: 16, flexWrap: 'wrap', fontSize: 13 }}>
-                <div><b>Fecha de ingreso:</b> {user.hire_date || 'Pendiente de registrar por RRHH'}</div>
-                <div><b>Antig?edad calculada:</b> {user.years_of_service ?? 0} a?o(s) de servicio</div>
-                <div><b>D?as por ley al a?o:</b> <span className="status-badge approved" style={{ fontSize: 12 }}>{user.vacation_entitlement ?? 0} d?as</span></div>
-                <div><b>D?as disponibles actuales:</b> <span className="status-badge pending" style={{ fontSize: 12 }}>{user.vacation_balance ?? 0} d?as</span></div>
-                <div><b>D?as disfrutados este ciclo:</b> {Math.max(0, (user.vacation_entitlement ?? 0) - (user.vacation_balance ?? 0))} d?a(s)</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, fontSize: 13 }}>
+                <div style={{ background: '#fff', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  <div className="muted" style={{ fontSize: 11 }}>Fecha de ingreso</div>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>{user.hire_date || 'Pendiente de registrar por RRHH'}</div>
+                </div>
+                <div style={{ background: '#fff', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  <div className="muted" style={{ fontSize: 11 }}>Antigüedad laboral</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#2563eb' }}>{user.years_of_service ?? 0} {user.years_of_service === 1 ? 'año' : 'años'} de servicio</div>
+                </div>
+                <div style={{ background: '#fff', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  <div className="muted" style={{ fontSize: 11 }}>Días correspondientes al año</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#16a34a' }}>{user.vacation_entitlement ?? 0} días por ley</div>
+                </div>
+                <div style={{ background: '#fff', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  <div className="muted" style={{ fontSize: 11 }}>Saldo actual disponible</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#ea580c' }}>{user.vacation_balance ?? 0} días restantes</div>
+                </div>
+                <div style={{ background: '#fff', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  <div className="muted" style={{ fontSize: 11 }}>Días disfrutados este ciclo</div>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>{Math.max(0, (user.vacation_entitlement ?? 0) - (user.vacation_balance ?? 0))} días</div>
+                </div>
               </div>
             </div>
 
+            {/* Banner de Prima Vacacional */}
             <div style={{ background: '#ecfdf5', padding: 14, borderRadius: 8, marginBottom: 16, border: '1px solid #a7f3d0' }}>
-              <div style={{ fontWeight: 600, fontSize: 14, color: '#065f46', marginBottom: 6 }}>
-                ?? Prima Vacacional Legal (Art. 80 LFT - M?nimo 25%)
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#065f46', marginBottom: 4 }}>
+                💵 Prima Vacacional Legal (Art. 80 LFT - Mínimo 25%)
               </div>
               <div style={{ fontSize: 12, color: '#047857', marginBottom: 8, lineHeight: 1.5 }}>
-                La Ley Federal del Trabajo exige que el patr?n pague al menos el <b>25% sobre el salario correspondiente a los d?as de vacaciones</b> disfrutados.
+                La Ley Federal del Trabajo exige que el patrón pague al trabajador al menos el <b>25% sobre el salario correspondiente a los días de vacaciones</b> disfrutados.
               </div>
-              <div className="row" style={{ gap: 16, fontSize: 13, color: '#064e3b' }}>
+              <div className="row" style={{ gap: 16, fontSize: 13, color: '#064e3b', flexWrap: 'wrap' }}>
                 <div><b>Sueldo mensual:</b> ${(user.salary || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN</div>
                 <div><b>Salario diario base:</b> ${(user.daily_wage || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN</div>
-                <div><b>Prima vacacional anual estimada (25%):</b> <span style={{ fontWeight: 700, fontSize: 14 }}>${(user.vacation_premium_estimated || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN</span></div>
+                <div><b>Prima vacacional anual estimada (25%):</b> <span style={{ fontWeight: 700, fontSize: 14, color: '#047857' }}>${(user.vacation_premium_estimated || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN</span></div>
               </div>
             </div>
 
+            {/* Regla de vacaciones continuas */}
             <div style={{ background: '#eff6ff', padding: 14, borderRadius: 8, marginBottom: 16, border: '1px solid #bfdbfe' }}>
-              <div style={{ fontWeight: 600, fontSize: 14, color: '#1e40af', marginBottom: 4 }}>
-                ??? Regla de Vacaciones Continuas (Art. 78 LFT - Vacaciones Dignas)
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#1e40af', marginBottom: 4 }}>
+                🏖️ Regla de Vacaciones Continuas (Art. 78 LFT - Vacaciones Dignas)
               </div>
-              <div style={{ fontSize: 12, color: '#1e3a8a', lineHeight: 1.5 }}>
-                La ley exige que los trabajadores disfruten de <b>al menos 12 d?as continuos</b> de vacaciones. Los d?as restantes pueden distribuirse en las fechas que acuerden el empleado y el patr?n a lo largo del a?o.
+              <div style={{ fontSize: 12.5, color: '#1e3a8a', lineHeight: 1.5 }}>
+                La ley exige que los trabajadores disfruten de <b>al menos 12 días continuos</b> de vacaciones. Los días restantes pueden distribuirse en las fechas que acuerden libremente el colaborador y la empresa a lo largo del año.
               </div>
             </div>
 
+            {/* Tabla LFT */}
             <div style={{ marginTop: 12 }}>
-              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8 }}>
-                Tabla Oficial de Vacaciones por Antig?edad (Reforma LFT 2023)
+              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8, color: '#0f172a' }}>
+                📋 Tabla Oficial de Vacaciones por Años de Antigüedad (LFT México)
               </div>
-              <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', fontSize: 12.5, borderCollapse: 'collapse', border: '1px solid #e2e8f0' }}>
                 <thead>
-                  <tr style={{ background: '#f1f5f9', textAlign: 'left' }}>
-                    <th style={{ padding: '8px 10px' }}>A?os de antig?edad</th>
-                    <th style={{ padding: '8px 10px' }}>D?as de vacaciones</th>
-                    <th style={{ padding: '8px 10px' }}>Estatus en tu expediente</th>
+                  <tr style={{ background: '#f8fafc', textAlign: 'left', borderBottom: '2px solid #cbd5e1' }}>
+                    <th style={{ padding: '9px 12px' }}>Años de antigüedad</th>
+                    <th style={{ padding: '9px 12px' }}>Días de vacaciones</th>
+                    <th style={{ padding: '9px 12px' }}>Estatus en tu expediente</th>
                   </tr>
                 </thead>
                 <tbody>
                   {[
-                    { y: '1 a?o', days: 12, match: user.years_of_service === 1 },
-                    { y: '2 a?os', days: 14, match: user.years_of_service === 2 },
-                    { y: '3 a?os', days: 16, match: user.years_of_service === 3 },
-                    { y: '4 a?os', days: 18, match: user.years_of_service === 4 },
-                    { y: '5 a?os', days: 20, match: user.years_of_service === 5 },
-                    { y: '6 a 10 a?os', days: 22, match: user.years_of_service >= 6 && user.years_of_service <= 10 },
-                    { y: '11 a 15 a?os', days: 24, match: user.years_of_service >= 11 && user.years_of_service <= 15 },
-                    { y: '16 a 20 a?os', days: 26, match: user.years_of_service >= 16 && user.years_of_service <= 20 },
-                    { y: '21 a 25 a?os', days: 28, match: user.years_of_service >= 21 && user.years_of_service <= 25 },
-                    { y: '26 a 30 a?os', days: 30, match: user.years_of_service >= 26 && user.years_of_service <= 30 },
+                    { y: '1 año', days: 12, match: user.years_of_service === 1 },
+                    { y: '2 años', days: 14, match: user.years_of_service === 2 },
+                    { y: '3 años', days: 16, match: user.years_of_service === 3 },
+                    { y: '4 años', days: 18, match: user.years_of_service === 4 },
+                    { y: '5 años', days: 20, match: user.years_of_service === 5 },
+                    { y: '6 a 10 años', days: 22, match: user.years_of_service >= 6 && user.years_of_service <= 10 },
+                    { y: '11 a 15 años', days: 24, match: user.years_of_service >= 11 && user.years_of_service <= 15 },
+                    { y: '16 a 20 años', days: 26, match: user.years_of_service >= 16 && user.years_of_service <= 20 },
+                    { y: '21 a 25 años', days: 28, match: user.years_of_service >= 21 && user.years_of_service <= 25 },
+                    { y: '26 a 30 años', days: 30, match: user.years_of_service >= 26 && user.years_of_service <= 30 },
                   ].map((row, idx) => (
-                    <tr key={idx} style={{ background: row.match ? '#dcfce7' : idx % 2 === 0 ? '#fff' : '#f8fafc', fontWeight: row.match ? 600 : 400 }}>
-                      <td style={{ padding: '8px 10px' }}>{row.y}</td>
-                      <td style={{ padding: '8px 10px' }}><b>{row.days} d?as</b></td>
-                      <td style={{ padding: '8px 10px' }}>
-                        {row.match ? <span style={{ color: '#15803d', fontWeight: 700 }}>? Tu nivel actual ({user.years_of_service} a?os)</span> : '?'}
+                    <tr
+                      key={idx}
+                      style={{
+                        background: row.match ? '#dcfce7' : idx % 2 === 0 ? '#fff' : '#f8fafc',
+                        borderBottom: '1px solid #f1f5f9',
+                      }}
+                    >
+                      <td style={{ padding: '9px 12px', fontWeight: row.match ? 700 : 400 }}>{row.y}</td>
+                      <td style={{ padding: '9px 12px', fontWeight: 700, color: row.match ? '#15803d' : '#0f172a' }}>{row.days} días</td>
+                      <td style={{ padding: '9px 12px' }}>
+                        {row.match ? (
+                          <span style={{ color: '#15803d', fontWeight: 700, background: '#bbf7d0', padding: '3px 8px', borderRadius: 12, fontSize: 11.5 }}>
+                            ✓ Tu nivel actual ({user.years_of_service} {user.years_of_service === 1 ? 'año' : 'años'})
+                          </span>
+                        ) : (
+                          <span style={{ color: '#94a3b8' }}>—</span>
+                        )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <p className="muted" style={{ fontSize: 11, marginTop: 8 }}>
-                * A partir del 6? a?o, los d?as de vacaciones aumentan 2 d?as por cada 5 a?os de servicio (art. 76 LFT).
+              <p className="muted" style={{ fontSize: 11.5, marginTop: 10, lineHeight: 1.4 }}>
+                * <i>Conforme al artículo 76 de la Ley Federal del Trabajo:</i> A partir del 6º año de servicio, el periodo de vacaciones aumentará en 2 días por cada 5 años de servicio.
               </p>
             </div>
           </div>
           <div className="row end" style={{ marginTop: 16 }}>
             <button className="btn primary" onClick={() => setShowVacationModal(false)}>
-              Cerrar
+              Entendido
             </button>
           </div>
         </Modal>

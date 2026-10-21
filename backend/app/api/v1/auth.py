@@ -161,6 +161,33 @@ async def forgot_password(body: ForgotPasswordIn, request: HttpRequest, db: Asyn
     )).scalar_one_or_none()
 
     if not user:
+        # Si el usuario no existe en la BD local, buscar en Keycloak
+        try:
+            kc = get_keycloak_service()
+            kc_user = await kc.find_user(raw_ident)
+            if kc_user and kc_user.get("email"):
+                kc_email = kc_user["email"].lower()
+                user = (await db.execute(select(User).where(func.lower(User.email) == kc_email))).scalar_one_or_none()
+                if not user:
+                    fn = (kc_user.get("firstName") or "").strip()
+                    ln = (kc_user.get("lastName") or "").strip()
+                    full = f"{fn} {ln}".strip() or kc_user.get("username") or kc_email
+                    user = User(
+                        employee_id=kc_user.get("username") or f"SSO-{secrets.token_hex(4).upper()}",
+                        email=kc_email,
+                        full_name=full,
+                        hashed_password=None,
+                        auth_provider="oidc",
+                        oidc_sub=kc_user.get("id"),
+                        role=UserRole.EMPLOYEE,
+                        vacation_balance=0,
+                    )
+                    db.add(user)
+                    await db.flush()
+        except Exception as e:
+            pass
+
+    if not user:
         return {
             "message": "Si la cuenta está registrada, recibirás un correo con el código de recuperación.",
             "email": raw_ident,
@@ -201,9 +228,10 @@ async def forgot_password(body: ForgotPasswordIn, request: HttpRequest, db: Asyn
         "max_attempts": 3,
         "email_sent": email_sent,
     }
-    if not email_sent:
+    if not email_sent or get_settings().ENVIRONMENT in ("testing", "development"):
         resp["dev_code"] = code
-        resp["message"] += " (Simulación de servidor: código generado)."
+        if not email_sent:
+            resp["message"] += " (Simulación de servidor: código generado)."
     return resp
 
 

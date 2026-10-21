@@ -15,7 +15,10 @@ class KeycloakService:
 
     def __init__(self) -> None:
         self.settings = get_settings()
-        self.base_url = (self.settings.OIDC_ISSUER or "").replace("/realms/rrhh", "")
+        if self.settings.OIDC_JWKS_URL:
+            self.base_url = self.settings.OIDC_JWKS_URL.split("/realms/")[0]
+        else:
+            self.base_url = (self.settings.OIDC_ISSUER or "").replace("/realms/rrhh", "")
         self.realm = "rrhh"
         self._token: Optional[str] = None
 
@@ -23,11 +26,11 @@ class KeycloakService:
     def is_enabled(self) -> bool:
         return bool(self.settings.OIDC_ISSUER and self.base_url and self.settings.ENVIRONMENT != "testing")
 
-    async def _get_token(self) -> str:
+    async def _get_token(self, force_refresh: bool = False) -> str:
         """Obtiene un token de administrador de Keycloak."""
         if not self.is_enabled:
             return "mock_token"
-        if self._token:
+        if self._token and not force_refresh:
             return self._token
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.post(
@@ -43,32 +46,75 @@ class KeycloakService:
             self._token = resp.json()["access_token"]
             return self._token
 
+    async def find_user(self, identifier: str) -> Optional[dict]:
+        """Busca un usuario en Keycloak por email o username."""
+        if not self.is_enabled:
+            return None
+        token = await self._get_token()
+        ident = identifier.strip().lower()
+        async with httpx.AsyncClient(timeout=10) as client:
+            try:
+                headers = {"Authorization": f"Bearer {token}"}
+                # Buscar por email
+                resp = await client.get(
+                    f"{self.base_url}/admin/realms/{self.realm}/users?email={ident}",
+                    headers=headers,
+                )
+                if resp.status_code == 401:
+                    token = await self._get_token(force_refresh=True)
+                    headers = {"Authorization": f"Bearer {token}"}
+                    resp = await client.get(
+                        f"{self.base_url}/admin/realms/{self.realm}/users?email={ident}",
+                        headers=headers,
+                    )
+                users = resp.json() if resp.status_code == 200 else []
+                if not users:
+                    # Buscar por username
+                    resp = await client.get(
+                        f"{self.base_url}/admin/realms/{self.realm}/users?username={ident}",
+                        headers=headers,
+                    )
+                    users = resp.json() if resp.status_code == 200 else []
+                return users[0] if users else None
+            except Exception as e:
+                logger.warning("Error buscando usuario en Keycloak: %s", e)
+                return None
+
     async def create_user(
         self,
         email: str,
         full_name: str,
         role: str,
-        password: Optional[str] = None,
+        temporary_password: Optional[str] = None,
     ) -> dict:
+        """Crea un usuario en el realm de Keycloak y le asigna su rol."""
         if not self.is_enabled:
-            return {"id": "mock_kc_id", "email": email, "role": role}
+            return {"id": "mock-kc-id", "email": email, "username": email}
         token = await self._get_token()
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
         }
+        parts = full_name.strip().split()
+        first_name = parts[0] if parts else email
+        last_name = " ".join(parts[1:]) if len(parts) > 1 else ""
 
-        # Crear usuario
         user_data = {
             "username": email,
             "email": email,
-            "emailVerified": True,
+            "firstName": first_name,
+            "lastName": last_name,
             "enabled": True,
-            "firstName": full_name.split()[0] if full_name else email,
-            "lastName": " ".join(full_name.split()[1:]) if len(full_name.split()) > 1 else "",
+            "emailVerified": True,
         }
-        if password:
-            user_data["credentials"] = [{"type": "password", "value": password, "temporary": False}]
+        if temporary_password:
+            user_data["credentials"] = [
+                {
+                    "type": "password",
+                    "value": temporary_password,
+                    "temporary": True,
+                }
+            ]
 
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.post(
@@ -76,43 +122,52 @@ class KeycloakService:
                 headers=headers,
                 json=user_data,
             )
+            if resp.status_code == 401:
+                token = await self._get_token(force_refresh=True)
+                headers["Authorization"] = f"Bearer {token}"
+                resp = await client.post(
+                    f"{self.base_url}/admin/realms/{self.realm}/users",
+                    headers=headers,
+                    json=user_data,
+                )
             if resp.status_code == 409:
-                raise HTTPException(409, f"Ya existe un usuario con el correo {email} en Keycloak.")
+                # Ya existe en Keycloak, buscar su ID
+                get_resp = await client.get(
+                    f"{self.base_url}/admin/realms/{self.realm}/users?email={email}",
+                    headers=headers,
+                )
+                get_resp.raise_for_status()
+                existing = get_resp.json()
+                if existing:
+                    return existing[0]
+                raise HTTPException(409, "El usuario ya existe en Keycloak.")
             resp.raise_for_status()
 
-            # Obtener el ID del usuario creado
-            resp = await client.get(
-                f"{self.base_url}/admin/realms/{self.realm}/users?username={email}",
+            # Obtener ID del usuario creado
+            get_resp = await client.get(
+                f"{self.base_url}/admin/realms/{self.realm}/users?email={email}",
                 headers=headers,
             )
-            resp.raise_for_status()
-            users = resp.json()
-            if not users:
-                raise HTTPException(500, "No se pudo obtener el ID del usuario creado en Keycloak.")
-            kc_user_id = users[0]["id"]
+            get_resp.raise_for_status()
+            user = get_resp.json()[0]
+            user_id = user["id"]
 
             # Asignar rol del realm
-            resp = await client.get(
+            role_resp = await client.get(
                 f"{self.base_url}/admin/realms/{self.realm}/roles/{role}",
                 headers=headers,
             )
-            if resp.status_code == 404:
-                raise HTTPException(400, f"Rol '{role}' no encontrado en Keycloak.")
-            resp.raise_for_status()
-            role_data = resp.json()
-
-            resp = await client.post(
-                f"{self.base_url}/admin/realms/{self.realm}/users/{kc_user_id}/role-mappings/realm",
-                headers=headers,
-                json=[role_data],
-            )
-            resp.raise_for_status()
-
-            logger.info("Usuario creado en Keycloak: %s con rol %s", email, role)
-            return {"id": kc_user_id, "email": email, "role": role}
+            if role_resp.status_code == 200:
+                role_data = role_resp.json()
+                await client.post(
+                    f"{self.base_url}/admin/realms/{self.realm}/users/{user_id}/role-mappings/realm",
+                    headers=headers,
+                    json=[{"id": role_data["id"], "name": role_data["name"]}],
+                )
+            return user
 
     async def reset_password(self, email: str, new_password: str) -> bool:
-        """Actualiza la contraseña del usuario en Keycloak."""
+        """Restablece la contraseña de un usuario en Keycloak de forma permanente."""
         if not self.is_enabled:
             return True
         token = await self._get_token()
@@ -121,11 +176,17 @@ class KeycloakService:
             "Content-Type": "application/json",
         }
         async with httpx.AsyncClient(timeout=10) as client:
-            # Buscar primero por correo y luego por nombre de usuario
             resp = await client.get(
                 f"{self.base_url}/admin/realms/{self.realm}/users?email={email}",
                 headers=headers,
             )
+            if resp.status_code == 401:
+                token = await self._get_token(force_refresh=True)
+                headers["Authorization"] = f"Bearer {token}"
+                resp = await client.get(
+                    f"{self.base_url}/admin/realms/{self.realm}/users?email={email}",
+                    headers=headers,
+                )
             users = resp.json() if resp.status_code == 200 else []
             if not users:
                 resp = await client.get(
@@ -141,7 +202,7 @@ class KeycloakService:
                 headers=headers,
                 json={"type": "password", "value": new_password, "temporary": False},
             )
-            # Limpiar la acci?n requerida UPDATE_PASSWORD para que el usuario pueda entrar directamente
+            # Limpiar la acción requerida UPDATE_PASSWORD para que el usuario pueda entrar directamente
             existing_actions = [a for a in (users[0].get("requiredActions") or []) if a != "UPDATE_PASSWORD"]
             await client.put(
                 f"{self.base_url}/admin/realms/{self.realm}/users/{user_id}",
@@ -164,6 +225,13 @@ class KeycloakService:
                 f"{self.base_url}/admin/realms/{self.realm}/users?username={email}",
                 headers=headers,
             )
+            if resp.status_code == 401:
+                token = await self._get_token(force_refresh=True)
+                headers["Authorization"] = f"Bearer {token}"
+                resp = await client.get(
+                    f"{self.base_url}/admin/realms/{self.realm}/users?username={email}",
+                    headers=headers,
+                )
             resp.raise_for_status()
             users = resp.json()
             if not users:
@@ -187,11 +255,10 @@ class KeycloakService:
             return True
 
     async def send_password_reset(self, email: str, redirect_uri: Optional[str] = None) -> dict:
-        """Envía enlace de restablecimiento de contraseña por Keycloak (execute-actions-email) o marca UPDATE_PASSWORD."""
+        """Envía enlace de restablecimiento de contraseña por Keycloak o marca UPDATE_PASSWORD."""
         if not self.is_enabled:
             return {"email_sent": False, "reset_url": "http://localhost:8080/realms/rrhh/login-actions/reset-credentials"}
-        self._token = None
-        token = await self._get_token()
+        token = await self._get_token(force_refresh=True)
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",

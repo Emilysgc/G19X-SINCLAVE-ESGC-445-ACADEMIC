@@ -5,6 +5,7 @@ from typing import Any, Optional
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.models import RequestType, UserRole, UserStatus
+from app.services.utils import clabe_is_valid
 
 
 class SetupIn(BaseModel):
@@ -25,16 +26,26 @@ class OidcLoginIn(BaseModel):
 
 class PasswordChangeIn(BaseModel):
     current_password: str
-    new_password: str = Field(min_length=10, max_length=128)
-
-
-class ForgotPasswordIn(BaseModel):
-    email: str = Field(min_length=3, max_length=120)
-
-
-class ResetPasswordCodeIn(BaseModel):
-    email: str = Field(min_length=3, max_length=120)
-    code: str = Field(min_length=6, max_length=6)
+    new_password: str = Field(min_length=10, max_length=128)
+
+
+
+
+
+class ForgotPasswordIn(BaseModel):
+
+    email: str = Field(min_length=3, max_length=120)
+
+
+
+
+
+class ResetPasswordCodeIn(BaseModel):
+
+    email: str = Field(min_length=3, max_length=120)
+
+    code: str = Field(min_length=6, max_length=6)
+
     new_password: str = Field(min_length=10, max_length=128)
 
 
@@ -80,8 +91,12 @@ class BankAccountChangeData(BaseModel):
     @classmethod
     def _validate_clabe(cls, v: str) -> str:
         clean = (v or "").strip().replace(" ", "").replace("-", "")
-        if clean and not clean.isdigit():
-            raise ValueError("La CLABE solo debe contener números (18 dígitos).")
+        if not clean:
+            return clean
+        if len(clean) != 18 or not clean.isdigit():
+            raise ValueError("La CLABE debe tener exactamente 18 dígitos numéricos.")
+        if not clabe_is_valid(clean):
+            raise ValueError("Dígito verificador de CLABE inválido según el estándar de Banco de México.")
         return clean
 
 

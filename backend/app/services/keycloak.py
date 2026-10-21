@@ -85,8 +85,10 @@ class KeycloakService:
         email: str,
         full_name: str,
         role: str,
+        password: Optional[str] = None,
         temporary_password: Optional[str] = None,
     ) -> dict:
+        pwd = password or temporary_password
         """Crea un usuario en el realm de Keycloak y le asigna su rol."""
         if not self.is_enabled:
             return {"id": "mock-kc-id", "email": email, "username": email}
@@ -107,11 +109,11 @@ class KeycloakService:
             "enabled": True,
             "emailVerified": True,
         }
-        if temporary_password:
+        if pwd:
             user_data["credentials"] = [
                 {
                     "type": "password",
-                    "value": temporary_password,
+                    "value": pwd,
                     "temporary": True,
                 }
             ]

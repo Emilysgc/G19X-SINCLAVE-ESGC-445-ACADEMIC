@@ -47,7 +47,7 @@ Copia la plantilla de variables de entorno lista para evaluación:
   cp .env.example .env
   ```
 
-> ⚠️ **Nota sobre credenciales de demostración:** El archivo `.env.example` incluye contraseñas y claves preconfiguradas con fines exclusivamente académicos y de prueba en entornos locales (`localhost`). Para un entorno productivo real, es indispensable sustituir todas las credenciales y secretos (`SECRET_KEY`, `POSTGRES_PASSWORD`, `KEYCLOAK_ADMIN_PASSWORD`, etc.) por valores de alta seguridad y resguardarlos en un gestor de secretos.
+> ⚠️ **Nota sobre credenciales de demostración:** El archivo `.env.example` y los usuarios de prueba contienen contraseñas de demostración preconfiguradas únicamente para facilitar la evaluación en local (`localhost`). No deben considerarse seguras para un entorno de producción real; en producción es indispensable sustituir todas las credenciales y secretos (`SECRET_KEY`, `POSTGRES_PASSWORD`, `KEYCLOAK_ADMIN_PASSWORD`, etc.) por valores de alta seguridad gestionados mediante un gestor de secretos corporativo.
 > *(Opcional)*: Si deseas activar el asistente de IA con Groq en la nube, puedes agregar tu `GROQ_API_KEY` en el archivo `.env`. Si no la configuras, el sistema funcionará automáticamente con el motor de reglas y soporte para Ollama local.
 
 ---
@@ -151,15 +151,15 @@ El sistema genera automáticamente el esquema analítico para reportes de Busine
 
 ## Pruebas Automatizadas (Pytest)
 
-Para ejecutar la suite completa de 49 pruebas unitarias y de integración:
+Para ejecutar la suite completa de 50 pruebas unitarias y de integración:
 
 ```bash
 docker compose exec backend pytest tests/ -v
 ```
 
-> **Resultado:** **49 de 49 pruebas aprobadas (100% PASSED)** cubriendo:
+> **Resultado:** **50 de 50 pruebas aprobadas (100% PASSED)** cubriendo:
 > - **Pruebas unitarias (`test_units.py` - 3 pruebas):** Cálculo de días hábiles LFT, tabla de antigüedad y validación matemática de CLABE (estándar Banxico módulo-10).
-> - **API y reglas de negocio (`test_api.py` - 30 pruebas):** Autenticación, creación de solicitudes, prevención de empalmes, permisos con auto-aprobación, aprobación multinivel de vacaciones, cifrado de datos sensibles, descargas seguras y vistas analíticas.
+> - **API y reglas de negocio (`test_api.py` - 31 pruebas):** Autenticación, creación de solicitudes, prevención de empalmes, permisos con auto-aprobación, aprobación multinivel de vacaciones, cifrado de datos sensibles, descargas seguras y vistas analíticas.
 > - **Integraciones y resiliencia (`test_integrations.py` - 11 pruebas):** Keycloak OIDC, linking de usuarios SSO, alternancia automática de proveedores de IA y degradación elegante al motor de reglas.
 > - **Comportamiento del Agente de IA (`test_ai_agent_behavior.py` - 5 pruebas):** Inyección de fecha Ciudad de México, system prompt estructurado con alcance/reglas/ejemplos, filtro de solicitudes fuera de alcance y parámetros de inferencia.
 

@@ -63,7 +63,7 @@ Para garantizar el principio de mínimo privilegio y auditoría estricta, el sis
 ---
 
 ## 5. Control de Calidad y Pruebas Automatizadas
-La suite de pruebas automatizadas en Pytest consta de **50 pruebas** cubriendo:
+La suite de pruebas automatizadas en Pytest consta de **51 pruebas** cubriendo:
 1. **Unidades (`test_units.py`):** Días hábiles LFT, cálculo de vacaciones por antigüedad y algoritmo Banxico de CLABE.
 2. **API y Seguridad (`test_api.py`):** Matriz de accesos, bloqueo de autoedición de expediente, recuperación de contraseña con código OTP (10 min y 3 intentos), flujos multinivel y restricciones de rol.
 3. **Integraciones (`test_integrations.py`):** Resiliencia de proveedores de IA, sincronización SSO con Keycloak y caché distribuida en Redis.

@@ -62,39 +62,72 @@ export default function Calendar() {
           setLoading(false)
         }
       })
+
+    // Sincronizar notas persistidas en el backend
+    api.get('/users/me/calendar-notes')
+      .then((notes) => {
+        if (!cancel && Array.isArray(notes)) {
+          setActivities(notes)
+          try {
+            localStorage.setItem('hr_user_activities', JSON.stringify(notes))
+          } catch {}
+        }
+      })
+      .catch(() => {})
+
     return () => { cancel = true }
   }, [currentYear, currentMonth])
 
-  // Guardar nueva actividad o nota
-  const handleSaveActivity = (e) => {
+  // Guardar nueva actividad o nota en el backend
+  const handleSaveActivity = async (e) => {
     e.preventDefault()
     if (!actTitle.trim()) return
 
-    const newAct = {
-      id: 'act_' + Date.now(),
+    const payload = {
       title: actTitle.trim(),
-      start_date: actDate,
-      end_date: actDate,
+      date: actDate,
       type: actType,
-      description: actDesc.trim(),
-      isCustomActivity: true,
-      requester: { full_name: user.full_name },
-      created_at: new Date().toISOString()
+      description: actDesc.trim() || null,
     }
 
-    const updated = [newAct, ...activities]
-    setActivities(updated)
-    localStorage.setItem('hr_user_activities', JSON.stringify(updated))
+    try {
+      const created = await api.post('/users/me/calendar-notes', payload)
+      const updated = [created, ...activities.filter((a) => a.id !== created.id)]
+      setActivities(updated)
+      try { localStorage.setItem('hr_user_activities', JSON.stringify(updated)) } catch {}
+    } catch {
+      // Respaldo local
+      const newAct = {
+        id: 'act_' + Date.now(),
+        title: actTitle.trim(),
+        start_date: actDate,
+        end_date: actDate,
+        type: actType,
+        description: actDesc.trim(),
+        isCustomActivity: true,
+        requester: { full_name: user?.full_name || 'Usuario' },
+        created_at: new Date().toISOString()
+      }
+      const updated = [newAct, ...activities]
+      setActivities(updated)
+      try { localStorage.setItem('hr_user_activities', JSON.stringify(updated)) } catch {}
+    }
+
     setModalNew(false)
     setActTitle('')
     setActDesc('')
   }
 
-  // Eliminar actividad o nota personalizada
-  const handleDeleteActivity = (id) => {
+  // Eliminar actividad o nota personalizada en el backend
+  const handleDeleteActivity = async (id) => {
+    try {
+      await api.del(`/users/me/calendar-notes/${id}`)
+    } catch {
+      // Continuar eliminando localmente
+    }
     const updated = activities.filter((a) => a.id !== id)
     setActivities(updated)
-    localStorage.setItem('hr_user_activities', JSON.stringify(updated))
+    try { localStorage.setItem('hr_user_activities', JSON.stringify(updated)) } catch {}
     setSelectedEvent(null)
   }
 

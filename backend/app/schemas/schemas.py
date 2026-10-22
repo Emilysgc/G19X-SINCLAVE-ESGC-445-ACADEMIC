@@ -223,3 +223,10 @@ class RequestTypeConfigIn(BaseModel):
     auto_approve_days: Optional[float] = Field(default=None, ge=0, le=30)
     sla_hours: Optional[int] = Field(default=None, ge=1, le=720)
     is_active: Optional[bool] = None
+
+
+class CalendarNoteIn(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    date: date
+    type: str = Field(default="Actividad", max_length=50)
+    description: Optional[str] = Field(default=None, max_length=1000)

@@ -13,8 +13,8 @@ from app.api.serializers import user_public
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.security import hash_password, verify_password
-from app.models import AuditAction, Department, User, UserRole, UserStatus
-from app.schemas.schemas import DepartmentIn, ProfileUpdateIn, UserCreateIn, UserUpdateIn
+from app.models import AuditAction, CalendarNote, Department, User, UserRole, UserStatus
+from app.schemas.schemas import CalendarNoteIn, DepartmentIn, ProfileUpdateIn, UserCreateIn, UserUpdateIn
 from app.services.audit import audit
 from app.services.keycloak import get_keycloak_service
 from app.services.utils import vacation_entitlement
@@ -376,3 +376,80 @@ async def upload_avatar(file: UploadFile = File(...), actor: User = Depends(get_
 
 
 
+
+
+# ── Notas y Actividades de Calendario ───────────────────────────────────────
+@router.get("/me/calendar-notes", summary="Listar notas y actividades de calendario del usuario")
+async def list_calendar_notes(actor: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    notes = (
+        await db.execute(
+            select(CalendarNote)
+            .where(CalendarNote.user_id == actor.id)
+            .order_by(CalendarNote.date.desc(), CalendarNote.created_at.desc())
+        )
+    ).scalars().all()
+    return [
+        {
+            "id": f"act_{n.id}",
+            "note_db_id": n.id,
+            "title": n.title,
+            "start_date": str(n.date),
+            "end_date": str(n.date),
+            "type": n.type,
+            "description": n.description or "",
+            "isCustomActivity": True,
+            "requester": {"full_name": actor.full_name},
+            "created_at": n.created_at.isoformat() if n.created_at else None,
+        }
+        for n in notes
+    ]
+
+
+@router.post("/me/calendar-notes", status_code=201, summary="Crear nota o actividad en calendario")
+async def create_calendar_note(
+    body: CalendarNoteIn,
+    actor: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    note = CalendarNote(
+        user_id=actor.id,
+        title=body.title.strip(),
+        date=body.date,
+        type=body.type.strip() if body.type else "Actividad",
+        description=body.description.strip() if body.description else None,
+    )
+    db.add(note)
+    await db.flush()
+    return {
+        "id": f"act_{note.id}",
+        "note_db_id": note.id,
+        "title": note.title,
+        "start_date": str(note.date),
+        "end_date": str(note.date),
+        "type": note.type,
+        "description": note.description or "",
+        "isCustomActivity": True,
+        "requester": {"full_name": actor.full_name},
+        "created_at": note.created_at.isoformat() if note.created_at else None,
+    }
+
+
+@router.delete("/me/calendar-notes/{note_id}", summary="Eliminar nota o actividad de calendario")
+async def delete_calendar_note(
+    note_id: str,
+    actor: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    raw_id = note_id.replace("act_", "")
+    try:
+        numeric_id = int(raw_id)
+    except ValueError:
+        raise HTTPException(400, "ID de nota inválido")
+
+    note = await db.get(CalendarNote, numeric_id)
+    if not note or note.user_id != actor.id:
+        raise HTTPException(404, "Nota o actividad no encontrada")
+
+    await db.delete(note)
+    await db.flush()
+    return {"ok": True}

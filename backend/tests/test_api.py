@@ -430,3 +430,48 @@ async def test_password_recovery_production_does_not_leak_dev_code_nor_email(api
     assert "dev_code" not in d2
     assert "email" not in d2
     assert d1 == d2
+
+
+async def test_calendar_notes_crud_for_user(api):
+    # 1. Listar inicialmente (debe ser lista vacía para emp1)
+    r = await api.get("emp1", f"{V}/users/me/calendar-notes")
+    assert r.status_code == 200
+    assert r.json() == []
+
+    # 2. Crear una nota de calendario
+    payload = {
+        "title": "Entrega de Sprint y Revisión",
+        "date": "2026-11-05",
+        "type": "Entrega",
+        "description": "Revisión final de métricas de desempeño.",
+    }
+    create_res = await api.post("emp1", f"{V}/users/me/calendar-notes", json=payload)
+    assert create_res.status_code == 201
+    note = create_res.json()
+    assert note["title"] == payload["title"]
+    assert note["start_date"] == payload["date"]
+    assert note["type"] == payload["type"]
+    assert note["isCustomActivity"] is True
+    note_id = note["id"]
+
+    # 3. Listar notas: debe contener la nota creada
+    list_res = await api.get("emp1", f"{V}/users/me/calendar-notes")
+    assert list_res.status_code == 200
+    items = list_res.json()
+    assert len(items) == 1
+    assert items[0]["id"] == note_id
+
+    # 4. Otro usuario (mgr) no debe ver la nota privada de emp1
+    mgr_list = await api.get("mgr", f"{V}/users/me/calendar-notes")
+    assert mgr_list.status_code == 200
+    assert len(mgr_list.json()) == 0
+
+    # 5. Eliminar la nota
+    del_res = await api.c.delete(f"{V}/users/me/calendar-notes/{note_id}", headers=api.h("emp1"))
+    assert del_res.status_code == 200
+    assert del_res.json()["ok"] is True
+
+    # 6. Confirmar eliminación
+    list_after = await api.get("emp1", f"{V}/users/me/calendar-notes")
+    assert list_after.status_code == 200
+    assert len(list_after.json()) == 0

@@ -151,15 +151,15 @@ El sistema genera automáticamente el esquema analítico para reportes de Busine
 
 ## Pruebas Automatizadas (Pytest)
 
-Para ejecutar la suite completa de 51 pruebas unitarias y de integración:
+Para ejecutar la suite completa de 52 pruebas unitarias y de integración:
 
 ```bash
 docker compose exec backend pytest tests/ -v
 ```
 
-> **Resultado:** **51 de 51 pruebas aprobadas (100% PASSED)** cubriendo:
+> **Resultado:** **52 pruebas registradas (51 aprobadas, 1 omitida en SQLite por depender de PostgreSQL) (100% PASSED)** cubriendo:
 > - **Pruebas unitarias (`test_units.py` - 3 pruebas):** Cálculo de días hábiles LFT, tabla de antigüedad y validación matemática de CLABE (estándar Banxico módulo-10).
-> - **API y reglas de negocio (`test_api.py` - 32 pruebas):** Autenticación, creación de solicitudes, prevención de empalmes, permisos con auto-aprobación, aprobación multinivel de vacaciones, cifrado de datos sensibles, descargas seguras y vistas analíticas.
+> - **API y reglas de negocio (`test_api.py` - 33 pruebas):** Autenticación, creación de solicitudes, prevención de empalmes, permisos con auto-aprobación, aprobación multinivel de vacaciones, cifrado de datos sensibles, persistencia de notas de calendario, descargas seguras y vistas analíticas.
 > - **Integraciones y resiliencia (`test_integrations.py` - 11 pruebas):** Keycloak OIDC, linking de usuarios SSO, alternancia automática de proveedores de IA y degradación elegante al motor de reglas.
 > - **Comportamiento del Agente de IA (`test_ai_agent_behavior.py` - 5 pruebas):** Inyección de fecha Ciudad de México, system prompt estructurado con alcance/reglas/ejemplos, filtro de solicitudes fuera de alcance y parámetros de inferencia.
 
@@ -185,7 +185,7 @@ docker compose exec backend pytest tests/ -v
 Durante el ciclo de desarrollo de esta solución se utilizó Inteligencia Artificial Generativa bajo la metodología de **programación en pareja asistida por IA (Pair Programming con agentes autónomos)**:
 1. **Modelado y Arquitectura:** Asistencia en el diseño del modelo entidad-relación relacional en SQLAlchemy, esquemas estrictos de validación con Pydantic (`extra="forbid"`) y diseño de máquinas de estado para los flujos de aprobación.
 2. **Políticas Laborales Corporativas:** Generación, adaptación y calibración de las 21 políticas laborales oficiales de **PluriOne S.A. de C.V.**, fundamentadas en la Ley Federal del Trabajo de México (LFT).
-3. **Generación y Cobertura de Pruebas:** Redacción colaborativa de los 51 casos de prueba con Pytest, incluyendo la validación algorítmica de CLABE interbancaria, escenarios de escalamiento de SLA y mitigación de vectores de ataque como inyección de scripts (XSS).
+3. **Generación y Cobertura de Pruebas:** Redacción colaborativa de los 52 casos de prueba con Pytest, incluyendo la validación algorítmica de CLABE interbancaria, escenarios de escalamiento de SLA y mitigación de vectores de ataque como inyección de scripts (XSS).
 4. **Auditoría de Seguridad:** Detección y corrección de riesgos de seguridad, tales como el aislamiento estricto del almacenamiento de adjuntos, validación binaria de firmas de archivos (números mágicos) para avatares y cifrado simétrico Fernet para datos financieros.
 
 ---

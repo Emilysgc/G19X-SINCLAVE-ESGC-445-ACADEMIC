@@ -69,3 +69,18 @@ class User(Base):
 
     department: Mapped[Optional[Department]] = relationship("Department", back_populates="users", foreign_keys=[department_id])
     direct_supervisor: Mapped[Optional["User"]] = relationship("User", remote_side="User.id", foreign_keys=[direct_supervisor_id])
+    calendar_notes: Mapped[List["CalendarNote"]] = relationship("CalendarNote", back_populates="user", cascade="all, delete-orphan")
+
+
+class CalendarNote(Base):
+    __tablename__ = "calendar_notes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    title: Mapped[str] = mapped_column(String(200))
+    date: Mapped[date] = mapped_column(Date)
+    type: Mapped[str] = mapped_column(String(50), default="Actividad")
+    description: Mapped[Optional[str]] = mapped_column(String(1000))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    user: Mapped["User"] = relationship("User", back_populates="calendar_notes")

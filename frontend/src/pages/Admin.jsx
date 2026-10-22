@@ -828,7 +828,6 @@ const ALL_TABS = [
   ['types', 'Trámites y SLA', Types],
   ['policies', 'Políticas Laborales', Policies],
   ['audit', 'Auditoría', Audit],
-  ['system', 'Estado del Sistema', System],
 ]
 
 export default function Admin() {

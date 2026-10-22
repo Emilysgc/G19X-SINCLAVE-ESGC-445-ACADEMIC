@@ -1,4 +1,5 @@
 import hmac
+import logging
 import secrets
 from datetime import datetime, timezone
 
@@ -21,6 +22,7 @@ from app.services.keycloak import get_keycloak_service
 from app.services.notifications import send_recovery_code_email
 from app.services.utils import vacation_entitlement, years_of_service
 
+logger = logging.getLogger("hr.auth")
 router = APIRouter()
 _DUMMY_HASH = hash_password("dummy-password-for-timing")
 _oauth = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
@@ -154,46 +156,25 @@ async def forgot_password(body: ForgotPasswordIn, request: HttpRequest, db: Asyn
     ip = client_ip(request)
     await rate_limit(f"forgot-pwd-ip:{ip}", 10, 300)
     raw_ident = body.email.strip().lower()
-    
-    # Buscar usuario por correo o por employee_id / username
+    s = get_settings()
+
+    # Respuesta genérica uniforme para prevenir enumeración de usuarios y filtración de correos
+    generic_resp = {
+        "message": "Si la cuenta está registrada, recibirás un correo con el código de recuperación.",
+        "expires_in_minutes": 10,
+        "max_attempts": 3,
+    }
+
+    # Buscar usuario registrado en la base de datos por correo o por employee_id
     user = (await db.execute(
         select(User).where((func.lower(User.email) == raw_ident) | (func.lower(User.employee_id) == raw_ident))
     )).scalar_one_or_none()
 
     if not user:
-        # Si el usuario no existe en la BD local, buscar en Keycloak
-        try:
-            kc = get_keycloak_service()
-            kc_user = await kc.find_user(raw_ident)
-            if kc_user and kc_user.get("email"):
-                kc_email = kc_user["email"].lower()
-                user = (await db.execute(select(User).where(func.lower(User.email) == kc_email))).scalar_one_or_none()
-                if not user:
-                    fn = (kc_user.get("firstName") or "").strip()
-                    ln = (kc_user.get("lastName") or "").strip()
-                    full = f"{fn} {ln}".strip() or kc_user.get("username") or kc_email
-                    user = User(
-                        employee_id=kc_user.get("username") or f"SSO-{secrets.token_hex(4).upper()}",
-                        email=kc_email,
-                        full_name=full,
-                        hashed_password=None,
-                        auth_provider="oidc",
-                        oidc_sub=kc_user.get("id"),
-                        role=UserRole.EMPLOYEE,
-                        vacation_balance=0,
-                    )
-                    db.add(user)
-                    await db.flush()
-        except Exception as e:
-            pass
-
-    if not user:
-        return {
-            "message": "Si la cuenta está registrada, recibirás un correo con el código de recuperación.",
-            "email": raw_ident,
-            "expires_in_minutes": 10,
-            "max_attempts": 3,
-        }
+        # No se crean usuarios sin sesión y se mantiene la respuesta idéntica
+        logger.info("Solicitud de recuperación para identificador no registrado: %s", raw_ident)
+        resp = dict(generic_resp)
+        return resp
 
     # Generar código numérico seguro de 6 dígitos
     code = f"{secrets.randbelow(900000) + 100000}"
@@ -211,27 +192,27 @@ async def forgot_password(body: ForgotPasswordIn, request: HttpRequest, db: Asyn
         await cache.set_json(f"pwd_reset:{raw_ident}", cache_data, ttl=600)
 
     # Enviar correo electrónico
-    email_sent = send_recovery_code_email(
-        to=user.email,
-        code=code,
-        minutes=10,
-        max_attempts=3
-    )
+    try:
+        email_sent = send_recovery_code_email(
+            to=user.email,
+            code=code,
+            minutes=10,
+            max_attempts=3
+        )
+        if not email_sent:
+            logger.warning("No se pudo enviar el correo de recuperación a %s (SMTP no activo o simulado)", user.email)
+    except Exception as exc:
+        logger.error("Error al enviar correo de recuperación a %s: %s", user.email, exc)
 
     audit(db, user.id, "Auth", user.id, AuditAction.UPDATE, f"Código de recuperación de contraseña solicitado para {user.email}", ip=ip)
     await db.commit()
 
-    resp = {
-        "message": f"Código de recuperación de 6 dígitos enviado a {user.email}.",
-        "email": user.email,
-        "expires_in_minutes": 10,
-        "max_attempts": 3,
-        "email_sent": email_sent,
-    }
-    if not email_sent or get_settings().ENVIRONMENT in ("testing", "development"):
+    resp = dict(generic_resp)
+    # Devuelve dev_code SOLO cuando ENVIRONMENT sea testing o development
+    # NUNCA en production y NUNCA como plan B si falla el correo
+    if s.ENVIRONMENT in ("testing", "development"):
         resp["dev_code"] = code
-        if not email_sent:
-            resp["message"] += " (Simulación de servidor: código generado)."
+
     return resp
 
 

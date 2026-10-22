@@ -370,10 +370,11 @@ async def test_password_recovery_flow_and_attempt_limits(api):
     req = await api.c.post(f"{V}/auth/forgot-password", json={"email": "emp1@pruebas-rh.com"})
     assert req.status_code == 200
     data = req.json()
-    assert "email" in data and data["email"] == "emp1@pruebas-rh.com"
+    assert data["message"] == "Si la cuenta está registrada, recibirás un correo con el código de recuperación."
+    assert "email" not in data  # No revela el correo para evitar fugas ni enumeración
     assert data["max_attempts"] == 3
     assert data["expires_in_minutes"] == 10
-    assert "dev_code" in data
+    assert "dev_code" in data  # en modo testing sí viene para la prueba
     real_code = data["dev_code"]
     assert len(real_code) == 6
 
@@ -407,3 +408,25 @@ async def test_password_recovery_flow_and_attempt_limits(api):
     login = await api.c.post(f"{V}/auth/login", json={"email": "emp1@pruebas-rh.com", "password": "NewSecretPass123!"})
     assert login.status_code == 200
     assert "access_token" in login.json()
+
+
+
+async def test_password_recovery_production_does_not_leak_dev_code_nor_email(api, monkeypatch):
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "ENVIRONMENT", "production")
+
+    # 1. Usuario existente en production: nunca incluye dev_code ni revela email
+    r1 = await api.c.post(f"{V}/auth/forgot-password", json={"email": "emp1@pruebas-rh.com"})
+    assert r1.status_code == 200
+    d1 = r1.json()
+    assert "dev_code" not in d1
+    assert "email" not in d1
+    assert d1["message"] == "Si la cuenta está registrada, recibirás un correo con el código de recuperación."
+
+    # 2. Usuario inexistente en production: respuesta exactamente idéntica (anti-enumeración)
+    r2 = await api.c.post(f"{V}/auth/forgot-password", json={"email": "usuario_fantasma_no_existe@test.com"})
+    assert r2.status_code == 200
+    d2 = r2.json()
+    assert "dev_code" not in d2
+    assert "email" not in d2
+    assert d1 == d2

@@ -4,13 +4,15 @@ import { Alert, Field, Modal } from '../components/ui.jsx'
 import { api, errorList } from '../services/api'
 
 export default function Login() {
-  const { config, loginOidc } = useAuth()
+  const { login } = useAuth()
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [err, setErr] = useState([])
   const [busy, setBusy] = useState(false)
 
-  // Estados del modal de recuperación con código
+  // Estados del modal de recuperación con código OTP
   const [showRecovery, setShowRecovery] = useState(false)
-  const [recoveryStep, setRecoveryStep] = useState(1) // 1: pedir correo, 2: ingresar código y contraseña, 3: éxito
+  const [recoveryStep, setRecoveryStep] = useState(1) // 1: pedir correo, 2: código y nueva contraseña, 3: éxito
   const [recoveryEmail, setRecoveryEmail] = useState('')
   const [recoveryCode, setRecoveryCode] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -20,11 +22,13 @@ export default function Login() {
   const [recoverySuccess, setRecoverySuccess] = useState('')
   const [recoveryBusy, setRecoveryBusy] = useState(false)
 
-  const run = async (fn) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!username.trim() || !password) return
     setErr([])
     setBusy(true)
     try {
-      await fn()
+      await login(username.trim(), password)
     } catch (e) {
       setErr(errorList(e))
     } finally {
@@ -98,49 +102,150 @@ export default function Login() {
   }
 
   return (
-    <div className="auth">
-      <div className="auth-brand">
-        <div className="logo-mark lg">RH</div>
-        <h2>Gestiona tus trámites de RRHH en minutos</h2>
-        <ul>
-          <li>✓ Vacaciones, permisos y constancias en un solo lugar</li>
-          <li>✓ Validación automática con reglas e inteligencia artificial</li>
-          <li>✓ Seguimiento en tiempo real y aprobaciones ágiles</li>
-        </ul>
-      </div>
-      <div className="box">
-        <div className="card auth-card">
-          <h1>{config?.company_name || 'Solicitudes de RRHH'}</h1>
-          <p className="muted">Inicia sesión con tu cuenta corporativa para gestionar tus solicitudes internas.</p>
+    <div className="img3-login-screen">
+      <div className="img3-workspace-container">
+        {/* ── Ilustración plana del espacio de trabajo (Imagen 3) ───────── */}
+        <div className="img3-illustration-pane">
+          <svg viewBox="0 0 650 500" style={{ width: '100%', maxWidth: 580, height: 'auto' }} fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Reloj de pared circular arriba */}
+            <circle cx="340" cy="110" r="50" fill="#ffffff" stroke="#2563eb" strokeWidth="12" />
+            <circle cx="340" cy="110" r="5" fill="#1e40af" />
+            <path d="M340 110V78" stroke="#1e40af" strokeWidth="6" strokeLinecap="round" />
+            <path d="M340 110L360 120" stroke="#1e40af" strokeWidth="6" strokeLinecap="round" />
 
-          {err.length > 0 && <Alert kind="err" items={err} />}
+            {/* Calendario en la pared a la izquierda */}
+            <rect x="60" y="145" width="130" height="120" rx="8" fill="#ffffff" stroke="#cbd5e1" strokeWidth="2" />
+            <path d="M60 145H190V175H60V145Z" fill="#3b82f6" />
+            {/* Cuadrícula del calendario */}
+            <line x1="60" y1="200" x2="190" y2="200" stroke="#e2e8f0" strokeWidth="1.5" />
+            <line x1="60" y1="225" x2="190" y2="225" stroke="#e2e8f0" strokeWidth="1.5" />
+            <line x1="60" y1="250" x2="190" y2="250" stroke="#e2e8f0" strokeWidth="1.5" />
+            <line x1="92" y1="175" x2="92" y2="265" stroke="#e2e8f0" strokeWidth="1.5" />
+            <line x1="125" y1="175" x2="125" y2="265" stroke="#e2e8f0" strokeWidth="1.5" />
+            <line x1="158" y1="175" x2="158" y2="265" stroke="#e2e8f0" strokeWidth="1.5" />
+            {/* Marca de X en un día */}
+            <path d="M99 208L117 222M117 208L99 222" stroke="#0f172a" strokeWidth="3" strokeLinecap="round" />
 
-          {/* Inicio de sesión corporativo con Keycloak (OIDC) */}
-          {config?.oidc?.enabled && (
-            <div style={{ marginTop: 12 }}>
-              <button
-                className="btn primary"
-                style={{ width: '100%', padding: '10px 14px', fontSize: '0.95rem' }}
-                disabled={busy}
-                onClick={() => run(loginOidc)}
-              >
-                🔐 Iniciar sesión con {config.oidc.provider_name || 'Keycloak'}
-              </button>
-              <div style={{ marginTop: 16, textAlign: 'center' }}>
-                <a
-                  href="#recuperar"
-                  onClick={handleOpenRecovery}
-                  style={{ color: 'var(--brand)', fontSize: 13, textDecoration: 'none', fontWeight: 500 }}
-                >
-                  ¿Olvidaste tu contraseña? Restablécela con código por correo
-                </a>
-              </div>
+            {/* Escritorio moderno: tablero y patas */}
+            <rect x="50" y="325" width="530" height="16" rx="3" fill="#1e3a8a" />
+            {/* Patas en triángulo */}
+            <path d="M110 341L70 455H90L125 341H110Z" fill="#3b82f6" />
+            <path d="M125 341L160 455H140L110 341H125Z" fill="#2563eb" />
+            <line x1="80" y1="420" x2="150" y2="420" stroke="#1d4ed8" strokeWidth="5" strokeLinecap="round" />
+
+            <path d="M530 341L490 455H510L545 341H530Z" fill="#3b82f6" />
+            <path d="M545 341L580 455H560L530 341H545Z" fill="#2563eb" />
+            <line x1="500" y1="420" x2="570" y2="420" stroke="#1d4ed8" strokeWidth="5" strokeLinecap="round" />
+
+            {/* Monitor de computadora */}
+            <rect x="200" y="200" width="185" height="115" rx="6" fill="#ffffff" stroke="#93c5fd" strokeWidth="4" />
+            <rect x="210" y="210" width="165" height="95" rx="3" fill="#f8fafc" />
+            <rect x="220" y="222" width="60" height="50" rx="3" fill="#60a5fa" />
+            <path d="M225 258L240 240L255 258H225Z" fill="#ffffff" opacity="0.8" />
+            <line x1="295" y1="230" x2="355" y2="230" stroke="#cbd5e1" strokeWidth="4" strokeLinecap="round" />
+            <line x1="295" y1="242" x2="345" y2="242" stroke="#cbd5e1" strokeWidth="4" strokeLinecap="round" />
+            <line x1="295" y1="254" x2="350" y2="254" stroke="#cbd5e1" strokeWidth="4" strokeLinecap="round" />
+            {/* Soporte del monitor */}
+            <rect x="282" y="315" width="22" height="12" fill="#94a3b8" />
+            <rect x="260" y="323" width="65" height="4" rx="2" fill="#64748b" />
+
+            {/* Taza de café */}
+            <rect x="140" y="285" width="28" height="40" rx="4" fill="#ffffff" />
+            <path d="M168 295C175 295 178 300 178 305C178 310 175 315 168 315" stroke="#ffffff" strokeWidth="4" />
+
+            {/* Lámpara de escritorio articulada */}
+            <path d="M495 325L520 230L440 185" stroke="#1e3a8a" strokeWidth="6" strokeLinecap="round" />
+            <circle cx="520" cy="230" r="7" fill="#1e40af" />
+            <circle cx="440" cy="185" r="7" fill="#1e40af" />
+            {/* Pantalla de lámpara */}
+            <path d="M425 175L455 195L440 215L410 195Z" fill="#2563eb" />
+            {/* Cono de luz sutil */}
+            <path d="M410 205L340 325H480L445 205Z" fill="#fef08a" opacity="0.15" />
+
+            {/* Silla ergonómica azul */}
+            <rect x="178" y="240" width="80" height="150" rx="14" fill="#2563eb" />
+            <rect x="168" y="370" width="100" height="28" rx="8" fill="#1d4ed8" />
+            {/* Reposabrazos */}
+            <path d="M165 330V355H180" stroke="#1e3a8a" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M272 330V355H257" stroke="#1e3a8a" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+            {/* Base neumática y ruedas */}
+            <rect x="212" y="398" width="12" height="40" fill="#0f172a" />
+            <path d="M218 438L180 470M218 438L255 470M218 438L218 472" stroke="#0f172a" strokeWidth="8" strokeLinecap="round" />
+            <circle cx="178" cy="472" r="6" fill="#0f172a" />
+            <circle cx="218" cy="474" r="6" fill="#0f172a" />
+            <circle cx="257" cy="472" r="6" fill="#0f172a" />
+
+            {/* Línea de suelo sutil */}
+            <line x1="20" y1="475" x2="630" y2="475" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="6 6" />
+          </svg>
+        </div>
+
+        {/* ── Tarjeta Flotante Derecha (Imagen 3) ──────────────────────── */}
+        <div className="img3-floating-card">
+          <div className="img3-card-top-header">
+            <span style={{ fontSize: 20 }}>👥</span>
+            <span>Dashboard Login</span>
+          </div>
+
+          {err.length > 0 && (
+            <div className="img3-error-banner">
+              Wrong Password!! {err[0]}
             </div>
           )}
+
+          <h2 className="img3-welcome-title">WELCOME BACK</h2>
+          <p className="img3-welcome-sub">¡Ingresa a tu cuenta para gestionar tus trámites!</p>
+
+          <form onSubmit={handleSubmit}>
+            {/* Campo de Usuario */}
+            <div className="img3-input-box">
+              <span className="img3-input-icon">👤</span>
+              <input
+                type="text"
+                className="img3-input"
+                placeholder="Username or email"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+
+            {/* Campo de Contraseña */}
+            <div className="img3-input-box">
+              <span className="img3-input-icon">🔒</span>
+              <input
+                type="password"
+                className="img3-input"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            {/* Botón Iniciar Sesión (Login to My Account) */}
+            <button
+              type="submit"
+              className="img3-btn-submit"
+              disabled={busy}
+            >
+              <span>➔</span> {busy ? 'Iniciando sesión…' : 'Login to My Account'}
+            </button>
+
+            {/* Enlace de recuperación solicitado explícitamente */}
+            <a
+              href="#recuperar"
+              className="img3-forgot-link"
+              onClick={handleOpenRecovery}
+            >
+              ¿Olvidaste tu contraseña? Restablécela con código por correo
+            </a>
+          </form>
         </div>
       </div>
 
-      {/* Modal de recuperación de contraseña con código OTP */}
+      {/* ── Modal de Recuperación con Código OTP (10 min · 3 intentos) ── */}
       {showRecovery && (
         <Modal
           title={
@@ -157,7 +262,7 @@ export default function Login() {
           {recoveryStep === 1 && (
             <form onSubmit={handleSendCode} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-                Ingresa tu correo corporativo o usuario (ej: <b>nubec42@gmail.com</b> o <b>empleado2</b>). Te enviaremos un código de seguridad de 6 dígitos válido por 10 minutos con límite de 3 intentos.
+                Ingresa tu correo corporativo o número de empleado. Te enviaremos un código de seguridad de 6 dígitos con límite de 3 intentos y validez de 10 minutos.
               </p>
 
               <Field label="Correo o usuario">
@@ -276,17 +381,14 @@ export default function Login() {
               <div style={{ fontSize: 42 }}>✅</div>
               <h3 style={{ margin: 0, color: '#16a34a' }}>¡Contraseña actualizada con éxito!</h3>
               <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-                Tu contraseña ha sido sincronizada en el sistema y en Keycloak. Ya puedes iniciar sesión con tu nueva contraseña.
+                Tu contraseña ha sido sincronizada. Ya puedes iniciar sesión en el portal con tu nueva contraseña.
               </p>
               <button
                 className="btn primary"
                 style={{ width: '100%', marginTop: 8 }}
-                onClick={() => {
-                  setShowRecovery(false)
-                  loginOidc()
-                }}
+                onClick={() => setShowRecovery(false)}
               >
-                🔐 Iniciar sesión ahora
+                Ir a Iniciar Sesión
               </button>
             </div>
           )}

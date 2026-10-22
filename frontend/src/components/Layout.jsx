@@ -97,7 +97,7 @@ export default function Layout() {
             <div className="me-name">{user.full_name}</div>
             <div className="me-role">{ROLE[user.role]}</div>
           </div>
-          <button className="icon-btn dark" title="Cerrar sesión" aria-label="Cerrar sesión" onClick={logout}>
+          <button className="icon-btn dark" title="Cerrar sesión" aria-label="Cerrar sesión" onClick={() => setConfirmLogout(true)}>
             <Icon name="logout" size={17} />
           </button>
         </div>
@@ -171,9 +171,9 @@ export default function Layout() {
       </div>
 
             {confirmLogout && (
-        <Modal title="Confirmar cierre de sesi?n" onClose={() => setConfirmLogout(false)}>
+        <Modal title="Confirmar cierre de sesión" onClose={() => setConfirmLogout(false)}>
           <p style={{ marginTop: 8, marginBottom: 20 }}>
-            ?Est?s seguro de que deseas cerrar tu sesi?n en <b>PluriOne S.A. de C.V.</b>?
+            ¿Estás seguro de que deseas cerrar tu sesión en <b>PluriOne S.A. de C.V.</b>?
           </p>
           <div className="row end" style={{ gap: 10 }}>
             <button className="btn" type="button" onClick={() => setConfirmLogout(false)}>

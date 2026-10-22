@@ -1,4 +1,4 @@
-"""Políticas internas de RRHH: base de conocimiento que consulta el agente de IA."""
+"""Políticas internas de RRHH: base de conocimiento corporativa para consultas laborales."""
 from datetime import datetime
 from typing import Optional
 

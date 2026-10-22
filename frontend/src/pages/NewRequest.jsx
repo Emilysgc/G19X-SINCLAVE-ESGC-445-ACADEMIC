@@ -347,7 +347,7 @@ export default function NewRequest() {
               {check.warnings.length > 0 && <Alert kind="warn" title="Observaciones para el aprobador:" items={check.warnings} />}
               {check.recommendations.length > 0 && <Alert kind="info" items={check.recommendations} />}
               {check.errors.length === 0 && check.warnings.length === 0 && (
-                <Alert kind="ok">Cumple con las políticas vigentes.{check.used_ai && ' (Revisado por IA)'}</Alert>
+                <Alert kind="ok">Cumple con las políticas vigentes.{check.used_ai && ' (Validación normativa)'}</Alert>
               )}
             </div>
           )}

@@ -132,7 +132,7 @@ export default function Layout() {
               <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
             </button>
             <button className={`ai-toggle ${chatOpen ? 'on' : ''}`} onClick={() => setChatOpen(!chatOpen)} aria-pressed={chatOpen}>
-              <Icon name="sparkles" size={16} /> Asistente IA
+              <Icon name="sparkles" size={16} /> Asistente RH
             </button>
             <button className="icon-btn bell" onClick={() => setOpen(!open)} aria-label="Notificaciones">
               <Icon name="bell" size={19} />

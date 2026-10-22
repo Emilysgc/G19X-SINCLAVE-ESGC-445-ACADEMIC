@@ -194,7 +194,7 @@ export default function Chat({ open, onClose }) {
             </div>
           </form>
           <div className="script-footer-note">
-            El agente de IA de RRHH responde basado en las políticas oficiales vigentes de la empresa.
+            Asistente de Recursos Humanos · Respuestas fundamentadas en las políticas vigentes de PluriOne S.A. de C.V.
           </div>
         </div>
       </div>

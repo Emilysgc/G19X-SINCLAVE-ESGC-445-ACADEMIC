@@ -52,7 +52,7 @@ export default function RequestDetail() {
           <button className="btn primary" onClick={() => api.file(`/requests/${r.id}/document.pdf`, `${r.folio}.pdf`)}>Descargar PDF</button>
           <button className="btn" onClick={() => api.file(`/requests/${r.id}/document`, '', true)}>Vista previa</button></div>}
       </div>
-      <div className="card"><h2>Revisión automática (agente de IA)</h2>
+      <div className="card"><h2>Validación y Dictamen Automático</h2>
         <div className="row"><span>Riesgo:</span><RiskBadge value={r.ai_risk_level} /><span className="muted">Puntaje: {r.ai_validation_score ?? '—'}</span></div>
         <pre className="n" style={{ marginTop: 10 }}>{r.ai_validation_notes || 'Sin observaciones.'}</pre>
       </div>

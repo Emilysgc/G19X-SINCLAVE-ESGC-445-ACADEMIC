@@ -4,7 +4,7 @@ import { Alert, Field, Modal } from '../components/ui.jsx'
 import { api, errorList } from '../services/api'
 
 export default function Login() {
-  const { login } = useAuth()
+  const { login, loginOidc, config } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [err, setErr] = useState([])
@@ -232,6 +232,42 @@ export default function Login() {
             >
               <span>➔</span> {busy ? 'Iniciando sesión…' : 'Login to My Account'}
             </button>
+
+            {/* Inicio de sesión unificado con Keycloak (SSO) */}
+            {config?.oidc?.enabled && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', margin: '16px 0 12px', color: '#94a3b8', fontSize: 11.5 }}>
+                  <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                  <span style={{ padding: '0 10px' }}>o accede con credencial institucional</span>
+                  <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                </div>
+
+                <button
+                  type="button"
+                  style={{
+                    width: '100%',
+                    padding: '11px 16px',
+                    borderRadius: 12,
+                    fontWeight: 600,
+                    fontSize: 13,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    background: '#ffffff',
+                    border: '1.5px solid #cbd5e1',
+                    color: '#0f172a',
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                    transition: 'all 0.15s ease',
+                  }}
+                  disabled={busy}
+                  onClick={loginOidc}
+                >
+                  <span style={{ fontSize: 15 }}>🔐</span> Iniciar sesión con {config.oidc.provider_name || 'Keycloak'}
+                </button>
+              </>
+            )}
 
             {/* Enlace de recuperación solicitado explícitamente */}
             <a

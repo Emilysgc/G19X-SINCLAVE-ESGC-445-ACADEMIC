@@ -193,91 +193,36 @@ export default function Login() {
             </div>
           )}
 
-          <h2 className="img3-welcome-title">WELCOME BACK</h2>
+          <h2 className="img3-welcome-title">BIENVENIDO</h2>
           <p className="img3-welcome-sub">¡Ingresa a tu cuenta para gestionar tus trámites!</p>
 
-          <form onSubmit={handleSubmit}>
-            {/* Campo de Usuario */}
-            <div className="img3-input-box">
-              <span className="img3-input-icon">👤</span>
-              <input
-                type="text"
-                className="img3-input"
-                placeholder="Username or email"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                autoFocus
-              />
-            </div>
-
-            {/* Campo de Contraseña */}
-            <div className="img3-input-box">
-              <span className="img3-input-icon">🔒</span>
-              <input
-                type="password"
-                className="img3-input"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            {/* Botón Iniciar Sesión (Login to My Account) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 24 }}>
+            {/* Botón principal: Iniciar sesión con Keycloak */}
             <button
-              type="submit"
+              type="button"
               className="img3-btn-submit"
               disabled={busy}
+              onClick={loginOidc}
+              style={{
+                padding: '14px 20px',
+                fontSize: 15,
+                fontWeight: 700,
+                letterSpacing: '0.01em',
+              }}
             >
-              <span>➔</span> {busy ? 'Iniciando sesión…' : 'Login to My Account'}
+              <span>🔐</span> Iniciar sesión con {config?.oidc?.provider_name || 'Keycloak'}
             </button>
 
-            {/* Inicio de sesión unificado con Keycloak (SSO) */}
-            {config?.oidc?.enabled && (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', margin: '16px 0 12px', color: '#94a3b8', fontSize: 11.5 }}>
-                  <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-                  <span style={{ padding: '0 10px' }}>o accede con credencial institucional</span>
-                  <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-                </div>
-
-                <button
-                  type="button"
-                  style={{
-                    width: '100%',
-                    padding: '11px 16px',
-                    borderRadius: 12,
-                    fontWeight: 600,
-                    fontSize: 13,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    background: '#ffffff',
-                    border: '1.5px solid #cbd5e1',
-                    color: '#0f172a',
-                    cursor: 'pointer',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                    transition: 'all 0.15s ease',
-                  }}
-                  disabled={busy}
-                  onClick={loginOidc}
-                >
-                  <span style={{ fontSize: 15 }}>🔐</span> Iniciar sesión con {config.oidc.provider_name || 'Keycloak'}
-                </button>
-              </>
-            )}
-
-            {/* Enlace de recuperación solicitado explícitamente */}
+            {/* Enlace de recuperación de contraseña */}
             <a
               href="#recuperar"
               className="img3-forgot-link"
               onClick={handleOpenRecovery}
+              style={{ marginTop: 8 }}
             >
               ¿Olvidaste tu contraseña? Restablécela con código por correo
             </a>
-          </form>
+          </div>
         </div>
       </div>
 

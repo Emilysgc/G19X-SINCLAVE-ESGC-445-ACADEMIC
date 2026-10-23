@@ -8,17 +8,83 @@ import { TYPE } from '../services/labels'
 const DATED = ['VACATION', 'PERSONAL_LEAVE', 'MEDICAL_LEAVE', 'MATERNITY_PATERNITY']
 const today = () => new Date().toISOString().slice(0, 10)
 
-const TYPE_META = {
-  VACATION: { icon: '🌴', bg: '#fff7ed', color: '#ea580c' },
-  PERSONAL_LEAVE: { icon: '📅', bg: '#fefce8', color: '#ca8a04' },
-  MEDICAL_LEAVE: { icon: '🩺', bg: '#fef2f2', color: '#dc2626' },
-  MATERNITY_PATERNITY: { icon: '👶', bg: '#faf5ff', color: '#9333ea' },
-  CERTIFICATE_EMPLOYMENT: { icon: '📄', bg: '#f0f9ff', color: '#0284c7' },
-  CERTIFICATE_SALARY: { icon: '💼', bg: '#f0fdfa', color: '#0d9488' },
-  ADDRESS_CHANGE: { icon: '🏡', bg: '#fff7ed', color: '#c2410c' },
-  BANK_ACCOUNT_CHANGE: { icon: '💳', bg: '#eef2ff', color: '#4f46e5' },
-  PAYROLL_INCIDENT: { icon: '⚠️', bg: '#fefce8', color: '#a16207' },
-  OTHER: { icon: '📝', bg: '#f8fafc', color: '#475569' },
+// Franjas de color y esquemas de tarjeta estilo Imagen 3
+const TYPE_STRIPES = {
+  VACATION: '#eab308',           // Franja amarilla
+  PERSONAL_LEAVE: '#64748b',     // Franja gris pizarra
+  MEDICAL_LEAVE: '#22c55e',      // Franja verde esmeralda
+  MATERNITY_PATERNITY: '#06b6d4',// Franja cian turquesa
+  CERTIFICATE_EMPLOYMENT: '#2563eb', // Franja azul marino
+  CERTIFICATE_SALARY: '#854d0e', // Franja bronce / marrón cálido
+  ADDRESS_CHANGE: '#f97316',     // Franja naranja
+  BANK_ACCOUNT_CHANGE: '#ec4899',// Franja magenta
+  PAYROLL_INCIDENT: '#7c3aed',   // Franja púrpura
+  OTHER: '#0d9488',              // Franja verde azulado
+}
+
+function renderTypeIcon(typeKey) {
+  switch (typeKey) {
+    case 'VACATION':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>
+        </svg>
+      )
+    case 'PERSONAL_LEAVE':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      )
+    case 'MEDICAL_LEAVE':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+      )
+    case 'MATERNITY_PATERNITY':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+        </svg>
+      )
+    case 'CERTIFICATE_EMPLOYMENT':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+      )
+    case 'CERTIFICATE_SALARY':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      )
+    case 'ADDRESS_CHANGE':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>
+        </svg>
+      )
+    case 'BANK_ACCOUNT_CHANGE':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+        </svg>
+      )
+    case 'PAYROLL_INCIDENT':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      )
+    default:
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+      )
+  }
 }
 
 export default function NewRequest() {
@@ -107,30 +173,32 @@ export default function NewRequest() {
         </p>
       </div>
 
-      {/* ── Rejilla de Contenedores 3x3 estilo Imagen 4 (conservando colores) ── */}
+      {/* ── Rejilla de Contenedores 3x3 estilo Imagen 3 con barra inferior ── */}
       <div className="requests-types-grid">
         {types.map((t) => {
-          const meta = TYPE_META[t.type] || { icon: '📋', bg: '#f8fafc', color: '#475569' }
           const isSelected = type === t.type
+          const stripeColor = TYPE_STRIPES[t.type] || '#3b82f6'
           return (
             <div
               key={t.type}
               className={`requests-card-tile ${isSelected ? 'selected' : ''}`}
               onClick={() => pick(t.type)}
             >
-              <div
-                className="requests-icon-container"
-                style={{ background: meta.bg, color: meta.color }}
-              >
-                <span>{meta.icon}</span>
+              <div className="requests-card-top-row">
+                <span className="requests-card-title-badge">{t.name}</span>
+                <span className="requests-card-header-icon">{renderTypeIcon(t.type)}</span>
               </div>
 
-              <h3 className="requests-card-title">{t.name}</h3>
               <p className="requests-card-desc">{t.description}</p>
 
-              <div className="requests-card-footer">
+              <div className="requests-card-meta-sla">
                 {t.requires_approval ? `Respuesta en ≤ ${t.sla_hours} h` : 'Se genera al instante'}
               </div>
+
+              <div
+                className="requests-card-stripe"
+                style={{ backgroundColor: stripeColor }}
+              />
             </div>
           )
         })}

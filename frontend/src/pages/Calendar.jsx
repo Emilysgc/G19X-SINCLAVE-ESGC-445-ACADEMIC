@@ -2,15 +2,16 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import { useAuth } from '../services/auth.jsx'
-import { Loading, StatusBadge, Modal, Icon, initials, UserAvatar, Field } from '../components/ui.jsx'
-import { TYPE, fmtDate } from '../services/labels'
+import { Loading, StatusBadge, Modal, Field } from '../components/ui.jsx'
+import { TYPE, STATUS, fmtDate } from '../services/labels'
 
 const MONTHS_ES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ]
 
-const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+const WEEKDAYS_SHORT_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+const WEEKDAYS_LONG_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
 function toDateString(year, month, day) {
   const m = String(month + 1).padStart(2, '0')
@@ -28,10 +29,11 @@ export default function Calendar() {
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedEvent, setSelectedEvent] = useState(null)
-  const [selectedDayEvents, setSelectedDayEvents] = useState(null)
-  const [selectedDate, setSelectedDate] = useState(() => toDateString(today.getFullYear(), today.getMonth(), today.getDate()))
+  const [selectedDate, setSelectedDate] = useState(() =>
+    toDateString(today.getFullYear(), today.getMonth(), today.getDate())
+  )
 
-  // Notas y actividades locales del usuario
+  // Notas y actividades del usuario
   const [activities, setActivities] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('hr_user_activities') || '[]')
@@ -42,14 +44,17 @@ export default function Calendar() {
 
   const [modalNew, setModalNew] = useState(false)
   const [actTitle, setActTitle] = useState('')
-  const [actDate, setActDate] = useState(() => toDateString(today.getFullYear(), today.getMonth(), today.getDate()))
+  const [actDate, setActDate] = useState(() =>
+    toDateString(today.getFullYear(), today.getMonth(), today.getDate())
+  )
   const [actType, setActType] = useState('Actividad')
   const [actDesc, setActDesc] = useState('')
 
   useEffect(() => {
     let cancel = false
     setLoading(true)
-    api.get('/requests?limit=150')
+    api
+      .get('/requests?limit=150')
       .then((res) => {
         if (!cancel) {
           setRequests(res.items || [])
@@ -64,7 +69,8 @@ export default function Calendar() {
       })
 
     // Sincronizar notas persistidas en el backend
-    api.get('/users/me/calendar-notes')
+    api
+      .get('/users/me/calendar-notes')
       .then((notes) => {
         if (!cancel && Array.isArray(notes)) {
           setActivities(notes)
@@ -75,7 +81,9 @@ export default function Calendar() {
       })
       .catch(() => {})
 
-    return () => { cancel = true }
+    return () => {
+      cancel = true
+    }
   }, [currentYear, currentMonth])
 
   // Guardar nueva actividad o nota en el backend
@@ -94,7 +102,9 @@ export default function Calendar() {
       const created = await api.post('/users/me/calendar-notes', payload)
       const updated = [created, ...activities.filter((a) => a.id !== created.id)]
       setActivities(updated)
-      try { localStorage.setItem('hr_user_activities', JSON.stringify(updated)) } catch {}
+      try {
+        localStorage.setItem('hr_user_activities', JSON.stringify(updated))
+      } catch {}
     } catch {
       // Respaldo local
       const newAct = {
@@ -106,11 +116,13 @@ export default function Calendar() {
         description: actDesc.trim(),
         isCustomActivity: true,
         requester: { full_name: user?.full_name || 'Usuario' },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       }
       const updated = [newAct, ...activities]
       setActivities(updated)
-      try { localStorage.setItem('hr_user_activities', JSON.stringify(updated)) } catch {}
+      try {
+        localStorage.setItem('hr_user_activities', JSON.stringify(updated))
+      } catch {}
     }
 
     setModalNew(false)
@@ -118,25 +130,48 @@ export default function Calendar() {
     setActDesc('')
   }
 
-  // Eliminar actividad o nota personalizada en el backend
+  // Eliminar actividad o nota
   const handleDeleteActivity = async (id) => {
     try {
       await api.del(`/users/me/calendar-notes/${id}`)
-    } catch {
-      // Continuar eliminando localmente
-    }
+    } catch {}
     const updated = activities.filter((a) => a.id !== id)
     setActivities(updated)
-    try { localStorage.setItem('hr_user_activities', JSON.stringify(updated)) } catch {}
+    try {
+      localStorage.setItem('hr_user_activities', JSON.stringify(updated))
+    } catch {}
     setSelectedEvent(null)
   }
 
-  // Combinar solicitudes del servidor con actividades/notas
+  // Combinar solicitudes con notas
   const allEvents = useMemo(() => {
     return [...requests, ...activities]
   }, [requests, activities])
 
-  // Matriz de días
+  // Agrupar eventos por fecha
+  const eventsByDate = useMemo(() => {
+    const map = {}
+    allEvents.forEach((r) => {
+      if (!r.start_date) return
+      const start = r.start_date.slice(0, 10)
+      const end = (r.end_date || r.start_date).slice(0, 10)
+
+      const [sy, sm, sd] = start.split('-').map(Number)
+      const [ey, em, ed] = end.split('-').map(Number)
+      const cur = new Date(sy, sm - 1, sd)
+      const last = new Date(ey, em - 1, ed)
+
+      while (cur <= last) {
+        const ds = toDateString(cur.getFullYear(), cur.getMonth(), cur.getDate())
+        if (!map[ds]) map[ds] = []
+        map[ds].push(r)
+        cur.setDate(cur.getDate() + 1)
+      }
+    })
+    return map
+  }, [allEvents])
+
+  // Matriz de días del mes
   const calendarDays = useMemo(() => {
     const firstDay = new Date(currentYear, currentMonth, 1)
     const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate()
@@ -184,189 +219,207 @@ export default function Calendar() {
     return days
   }, [currentYear, currentMonth])
 
-  // Agrupar eventos por fecha
-  const eventsByDate = useMemo(() => {
-    const map = {}
-    allEvents.forEach((r) => {
-      if (!r.start_date) return
-      const start = r.start_date.slice(0, 10)
-      const end = (r.end_date || r.start_date).slice(0, 10)
+  // Datos del día seleccionado
+  const selectedDateObj = useMemo(() => {
+    if (!selectedDate) return today
+    const [y, m, d] = selectedDate.split('-').map(Number)
+    return new Date(y, m - 1, d)
+  }, [selectedDate, today])
 
-      const [sy, sm, sd] = start.split('-').map(Number)
-      const [ey, em, ed] = end.split('-').map(Number)
-      const cur = new Date(sy, sm - 1, sd)
-      const last = new Date(ey, em - 1, ed)
+  const selectedDayNum = selectedDateObj.getDate()
+  const selectedWeekdayName = WEEKDAYS_LONG_ES[selectedDateObj.getDay()]
+  const selectedDayEvents = eventsByDate[selectedDate] || []
 
-      while (cur <= last) {
-        const ds = toDateString(cur.getFullYear(), cur.getMonth(), cur.getDate())
-        if (!map[ds]) map[ds] = []
-        map[ds].push(r)
-        cur.setDate(cur.getDate() + 1)
-      }
-    })
-    return map
-  }, [allEvents])
+  const nextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0)
+      setCurrentYear((y) => y + 1)
+    } else {
+      setCurrentMonth((m) => m + 1)
+    }
+  }
 
-  // Lista de eventos del mes actual para la barra lateral
-  const monthEvents = useMemo(() => {
-    return allEvents
-      .filter((r) => {
-        if (!r.start_date) return false
-        const [y, m] = r.start_date.slice(0, 7).split('-').map(Number)
-        return y === currentYear && m === currentMonth + 1
-      })
-      .sort((a, b) => a.start_date.localeCompare(b.start_date))
-  }, [allEvents, currentYear, currentMonth])
-
-  const dotColorClass = (idx) => {
-    const colors = ['dot-mint', 'dot-coral', 'dot-lavender', 'dot-amber', 'dot-sky']
-    return colors[idx % colors.length]
+  const prevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11)
+      setCurrentYear((y) => y - 1)
+    } else {
+      setCurrentMonth((m) => m - 1)
+    }
   }
 
   return (
-    <div className="cal-tri-layout">
-      {/* 1. Columna Izquierda: Años y lista vertical de meses en español */}
-      <aside className="cal-left-sidebar">
-        <div className="cal-year-nav">
-          <button onClick={() => setCurrentYear((y) => y - 1)} className="cal-nav-arr" title="Año anterior">‹</button>
-          <span className="cal-year-num">{currentYear}</span>
-          <button onClick={() => setCurrentYear((y) => y + 1)} className="cal-nav-arr" title="Año siguiente">›</button>
-        </div>
+    <div className="cal5-page-container">
+      {/* ── Contenedor Tarjeta Dividida estilo Imagen 5 ────────────── */}
+      <div className="cal5-main-card">
+        {/* ── Columna Izquierda: Calendario mensual en español ──────── */}
+        <div className="cal5-left-pane">
+          {/* Encabezado con selector de mes y año */}
+          <div className="cal5-header-row">
+            <div className="cal5-month-selector">
+              <span className="cal5-month-title">{MONTHS_ES[currentMonth]}</span>
+              <button
+                type="button"
+                className="cal5-month-chevron"
+                onClick={nextMonth}
+                title="Siguiente mes"
+              >
+                ▾
+              </button>
+              <div className="cal5-month-arrows">
+                <button type="button" className="cal5-arrow-btn" onClick={prevMonth} title="Mes anterior">
+                  ‹
+                </button>
+                <button type="button" className="cal5-arrow-btn" onClick={nextMonth} title="Mes siguiente">
+                  ›
+                </button>
+              </div>
+            </div>
 
-        <nav className="cal-month-list">
-          {MONTHS_ES.map((name, idx) => (
-            <button
-              key={name}
-              className={`cal-month-item ${idx === currentMonth ? 'active' : ''}`}
-              onClick={() => setCurrentMonth(idx)}
-            >
-              <span>{name}</span>
-              <span className="cal-month-count">
-                {allEvents.filter((r) => r.start_date && Number(r.start_date.slice(5, 7)) === idx + 1).length || ''}
-              </span>
-            </button>
-          ))}
-        </nav>
-      </aside>
-
-      {/* 2. Columna Central: Cuadrícula con días en español */}
-      <main className="cal-center-grid">
-        <header className="cal-center-header">
-          <h2 className="cal-month-big">{MONTHS_ES[currentMonth].toUpperCase()}</h2>
-          <div className="cal-top-profile-badge">
-            <UserAvatar user={user} className="cal-user-avatar" onClick={() => nav('/settings')} title="Ir a configuración" />
-            <button
-              type="button"
-              className="cal-add-floating-btn"
-              onClick={() => setModalNew(true)}
-              title="Agregar actividad o nota"
-            >
-              <Icon name="plus" size={18} />
-            </button>
+            <div className="cal5-year-label">{currentYear}</div>
           </div>
-        </header>
 
-        <div className="cal-circle-grid">
-          <div className="cal-weekdays-row">
-            {DAYS.map((d) => (
-              <div key={d} className="cal-th-day">{d}</div>
+          {/* Días de la semana en español */}
+          <div className="cal5-weekdays-row">
+            {WEEKDAYS_SHORT_ES.map((dayName) => (
+              <div key={dayName} className="cal5-th-weekday">
+                {dayName}
+              </div>
             ))}
           </div>
 
-          <div className="cal-days-body">
-            {calendarDays.map((cd, i) => {
-              const events = eventsByDate[cd.dateStr] || []
-              const hasEvents = events.length > 0
-              const isToday = cd.dateStr === toDateString(today.getFullYear(), today.getMonth(), today.getDate())
+          {/* Cuadrícula de días */}
+          <div className="cal5-days-grid">
+            {calendarDays.map((cd, idx) => {
               const isSelected = cd.dateStr === selectedDate
+              const dayEvents = eventsByDate[cd.dateStr] || []
+              const hasEvents = dayEvents.length > 0
+
+              // Elegir color de punto (amarillo, rojo o verde como en Imagen 5)
+              let dotColor = null
+              if (hasEvents) {
+                if (dayEvents.some((e) => e.status === 'APPROVED')) dotColor = '#22c55e' // Verde
+                else if (dayEvents.some((e) => e.status === 'REJECTED')) dotColor = '#ef4444' // Rojo
+                else dotColor = '#eab308' // Amarillo
+              }
 
               return (
                 <div
-                  key={i}
-                  className={`cal-day-slot ${!cd.currentMonth ? 'cal-muted-slot' : ''}`}
+                  key={idx}
+                  className={`cal5-day-cell ${!cd.currentMonth ? 'cal5-day-outside' : ''}`}
                   onClick={() => {
                     setSelectedDate(cd.dateStr)
                     setActDate(cd.dateStr)
-                    if (hasEvents) {
-                      setSelectedDayEvents({ date: cd.dateStr, events })
-                    }
                   }}
                 >
-                  <div
-                    className={`cal-day-bubble ${isSelected ? 'cal-day-selected' : ''} ${hasEvents ? dotColorClass(cd.day) : ''} ${isToday && !hasEvents && !isSelected ? 'cal-today-ring' : ''}`}
-                  >
+                  <div className={`cal5-day-number ${isSelected ? 'cal5-day-selected' : ''}`}>
                     {cd.day}
                   </div>
+                  {hasEvents && (
+                    <div
+                      className="cal5-day-dot"
+                      style={{
+                        backgroundColor: isSelected ? 'transparent' : dotColor,
+                      }}
+                    />
+                  )}
                 </div>
               )
             })}
           </div>
         </div>
-      </main>
 
-      {/* 3. Columna Derecha: Timeline vertical de eventos */}
-      <aside className="cal-right-sidebar">
-        <div className="cal-timeline-header">
-          <div className="cal-selected-badge" title="Día seleccionado">
-            <span>Día: </span>
-            <b>{selectedDate ? fmtDate(selectedDate) : 'Hoy'}</b>
+        {/* ── Divisor vertical ─────────────────────────────────────── */}
+        <div className="cal5-divider" />
+
+        {/* ── Columna Derecha: Detalle del día y Eventos (Imagen 5) ─── */}
+        <div className="cal5-right-pane">
+          {/* Día seleccionado y nombre del día en español */}
+          <div className="cal5-selected-header">
+            <div className="cal5-selected-number">{selectedDayNum}</div>
+            <div className="cal5-selected-weekday">{selectedWeekdayName}</div>
           </div>
-          <button
-            onClick={() => setCurrentMonth((m) => (m === 11 ? 0 : m + 1))}
-            className="cal-next-month-btn"
-            title="Siguiente mes"
-          >
-            ›
-          </button>
-        </div>
 
-        <div className="cal-timeline-body">
-          {monthEvents.length === 0 ? (
-            <div className="muted" style={{ padding: '24px 16px', fontSize: 13, textAlign: 'center' }}>
-              Sin actividades ni trámites para este mes.
-            </div>
-          ) : (
-            <div className="cal-timeline-list">
-              {monthEvents.map((ev, idx) => (
-                <div key={ev.id} className="cal-timeline-item" onClick={() => setSelectedEvent(ev)}>
-                  <div className="cal-timeline-axis">
-                    <span className={`cal-timeline-dot ${dotColorClass(idx)}`} />
-                    <span className="cal-timeline-line" />
-                  </div>
-                  <div className="cal-timeline-card">
-                    <div className="cal-timeline-time">{fmtDate(ev.start_date)}</div>
-                    <div className="cal-timeline-title">
-                      {ev.isCustomActivity ? `📌 ${ev.title}` : (ev.title || TYPE[ev.type])}
+          {/* Subtítulo: Eventos con botón redondo + */}
+          <div className="cal5-events-subheader">
+            <h3 className="cal5-events-heading">Eventos</h3>
+            <button
+              type="button"
+              className="cal5-add-round-btn"
+              onClick={() => {
+                setActDate(selectedDate)
+                setModalNew(true)
+              }}
+              title="Agregar evento o nota para este día"
+            >
+              +
+            </button>
+          </div>
+
+          {/* Lista de eventos con círculos huecos de colores (Imagen 5) */}
+          <div className="cal5-events-container">
+            {selectedDayEvents.length === 0 ? (
+              <div className="cal5-empty-state">
+                <p className="cal5-empty-msg">No hay eventos ni ausencias programadas para este día.</p>
+                <button
+                  type="button"
+                  className="cal5-btn-inline-add"
+                  onClick={() => {
+                    setActDate(selectedDate)
+                    setModalNew(true)
+                  }}
+                >
+                  + Agregar actividad o nota
+                </button>
+              </div>
+            ) : (
+              <div className="cal5-events-list">
+                {selectedDayEvents.map((ev, idx) => {
+                  // Colores de los círculos huecos: rojo, amarillo, verde, azul
+                  const colors = ['#ef4444', '#eab308', '#22c55e', '#3b82f6']
+                  const circleColor = colors[idx % colors.length]
+
+                  return (
+                    <div
+                      key={ev.id}
+                      className="cal5-event-item"
+                      onClick={() => setSelectedEvent(ev)}
+                    >
+                      <span
+                        className="cal5-hollow-bullet"
+                        style={{ borderColor: circleColor }}
+                      />
+                      <div className="cal5-event-content">
+                        <span className="cal5-event-text">
+                          {ev.isCustomActivity
+                            ? ev.title
+                            : ev.title || TYPE[ev.type] || 'Solicitud de personal'}
+                        </span>
+                        <span className="cal5-event-meta">
+                          {ev.isCustomActivity
+                            ? ev.type
+                            : `${ev.requester?.full_name || user.full_name} · ${
+                                STATUS[ev.status]?.[0] || 'En revisión'
+                              }`}
+                        </span>
+                      </div>
                     </div>
-                    <div className="cal-timeline-person">
-                      {ev.isCustomActivity ? ev.type : (ev.requester?.full_name || user.full_name)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
+      </div>
 
-        <div className="cal-timeline-footer">
-          <button
-            type="button"
-            className="cal-bottom-action-btn"
-            onClick={() => setModalNew(true)}
-          >
-            + Agregar actividad o nota
-          </button>
-        </div>
-      </aside>
-
-      {/* Modal: Agregar Actividad o Nota */}
+      {/* ── Modal: Registrar nueva actividad o nota ───────────────── */}
       {modalNew && (
         <Modal title="Agregar actividad o nota personal" onClose={() => setModalNew(false)}>
           <form onSubmit={handleSaveActivity}>
-            <Field label="Título de la actividad o nota">
+            <Field label="Título del evento o actividad">
               <input
                 required
-                placeholder="Ej. Reunión de equipo, Revisión con supervisor..."
+                placeholder="Ej. Reunión de equipo, Revisión con supervisor, Entrega..."
                 value={actTitle}
                 onChange={(e) => setActTitle(e.target.value)}
               />
@@ -387,50 +440,58 @@ export default function Calendar() {
                 <Field label="Categoría">
                   <select value={actType} onChange={(e) => setActType(e.target.value)}>
                     <option value="Actividad">Actividad</option>
-                    <option value="Nota">Nota</option>
-                    <option value="Recordatorio">Recordatorio</option>
                     <option value="Reunión">Reunión interna</option>
+                    <option value="Recordatorio">Recordatorio</option>
+                    <option value="Nota">Nota personal</option>
                   </select>
                 </Field>
               </div>
             </div>
 
-            <Field label="Detalle o descripción (opcional)">
+            <Field label="Descripción o detalles adicionales">
               <textarea
                 style={{ minHeight: 80 }}
-                placeholder="Escribe notas adicionales o recordatorios..."
+                placeholder="Añade detalles relevantes o recordatorios de esta actividad..."
                 value={actDesc}
                 onChange={(e) => setActDesc(e.target.value)}
               />
             </Field>
 
-            <div className="row" style={{ marginTop: 18, justifyContent: 'flex-end', gap: 10 }}>
+            <div className="row" style={{ marginTop: 20, justifyContent: 'flex-end', gap: 10 }}>
               <button type="button" className="btn" onClick={() => setModalNew(false)}>
                 Cancelar
               </button>
               <button type="submit" className="btn primary">
-                Guardar en calendario
+                Guardar evento
               </button>
             </div>
           </form>
         </Modal>
       )}
 
-      {/* Modal de Detalle de Evento */}
+      {/* ── Modal de Detalle de Evento ────────────────────────────── */}
       {selectedEvent && (
         <Modal
-          title={selectedEvent.isCustomActivity ? `Actividad: ${selectedEvent.title}` : `Solicitud ${selectedEvent.folio || ''}`}
+          title={
+            selectedEvent.isCustomActivity
+              ? `Actividad: ${selectedEvent.title}`
+              : `Solicitud ${selectedEvent.folio || ''}`
+          }
           onClose={() => setSelectedEvent(null)}
         >
-          <div style={{ padding: '4px 0' }}>
+          <div style={{ padding: '6px 0' }}>
             <div className="row between" style={{ marginBottom: 16 }}>
               <div>
-                <h3 style={{ margin: 0 }}>
-                  {selectedEvent.isCustomActivity ? selectedEvent.title : (selectedEvent.title || TYPE[selectedEvent.type])}
+                <h3 style={{ margin: 0, fontSize: 17 }}>
+                  {selectedEvent.isCustomActivity
+                    ? selectedEvent.title
+                    : selectedEvent.title || TYPE[selectedEvent.type]}
                 </h3>
-                <span className="muted">
+                <span className="muted" style={{ fontSize: 13 }}>
                   {fmtDate(selectedEvent.start_date)}
-                  {selectedEvent.end_date && selectedEvent.end_date !== selectedEvent.start_date && ` al ${fmtDate(selectedEvent.end_date)}`}
+                  {selectedEvent.end_date &&
+                    selectedEvent.end_date !== selectedEvent.start_date &&
+                    ` al ${fmtDate(selectedEvent.end_date)}`}
                 </span>
               </div>
               {selectedEvent.isCustomActivity ? (
@@ -440,18 +501,18 @@ export default function Calendar() {
               )}
             </div>
 
-            <p style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.5 }}>
-              {selectedEvent.description || 'Sin notas adicionales.'}
+            <p style={{ fontSize: 13.5, color: 'var(--ink-2)', lineHeight: 1.5, margin: '14px 0' }}>
+              {selectedEvent.description || 'Sin detalles adicionales registrados.'}
             </p>
 
-            <div className="row" style={{ marginTop: 20, justifyContent: 'flex-end', gap: 10 }}>
+            <div className="row" style={{ marginTop: 22, justifyContent: 'flex-end', gap: 10 }}>
               {selectedEvent.isCustomActivity ? (
                 <button
                   type="button"
                   className="btn danger"
                   onClick={() => handleDeleteActivity(selectedEvent.id)}
                 >
-                  Eliminar nota
+                  Eliminar actividad
                 </button>
               ) : (
                 <button
@@ -466,33 +527,6 @@ export default function Calendar() {
                 Cerrar
               </button>
             </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Modal de eventos del día */}
-      {selectedDayEvents && (
-        <Modal title={`Actividades y trámites del ${fmtDate(selectedDayEvents.date)}`} onClose={() => setSelectedDayEvents(null)}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {selectedDayEvents.events.map((ev) => (
-              <div
-                key={ev.id}
-                className="card click"
-                onClick={() => {
-                  setSelectedDayEvents(null)
-                  setSelectedEvent(ev)
-                }}
-                style={{ marginBottom: 0, padding: 14 }}
-              >
-                <div className="row between">
-                  <b>{ev.isCustomActivity ? `📌 ${ev.title}` : (ev.title || TYPE[ev.type])}</b>
-                  {ev.isCustomActivity ? <span className="badge blue">{ev.type}</span> : <StatusBadge value={ev.status} />}
-                </div>
-                <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                  {ev.isCustomActivity ? ev.description || 'Nota personal' : `Solicitado por: ${ev.requester?.full_name || user.full_name} · Folio: ${ev.folio}`}
-                </div>
-              </div>
-            ))}
           </div>
         </Modal>
       )}

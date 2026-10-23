@@ -4,13 +4,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript" />
-  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
   <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
   <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
   <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis" />
   <img src="https://img.shields.io/badge/Keycloak-1A2433?style=for-the-badge&logo=keycloak&logoColor=white" alt="Keycloak" />
+  <img src="https://img.shields.io/badge/Groq-F55036?style=for-the-badge&logo=groq&logoColor=white" alt="Groq" />
   <img src="https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white" alt="Ollama" />
+  <img src="https://img.shields.io/badge/Power_BI-F2C811?style=for-the-badge&logo=powerbi&logoColor=black" alt="Power BI" />
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
   <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white" alt="GitHub Actions" />
 </p>
@@ -19,15 +20,18 @@ Automatización integral de trámites laborales (vacaciones, permisos personales
 
 | Componente | Tecnología | Rol en la Arquitectura | Estado |
 |---|---|---|:---:|
-| **Backend** | Python 3.11 + FastAPI | API REST asíncrona, motor de reglas, workflows y agentes |  Operativo |
-| **Frontend** | React 18 + Vite | SPA corporativa con Dashboard ejecutivo Atlas y modo oscuro OLED |  Operativo |
+| **Backend** | Python 3.11 + FastAPI | API REST asíncrona, motor de reglas, workflows y agentes | Operativo |
+| **Frontend** | React 18 + Vite | SPA corporativa con Dashboard ejecutivo Atlas y modo oscuro OLED | Operativo |
 | **Identidad & SSO** | Keycloak 26 (OIDC/PKCE) | Autenticación centralizada con realm `rrhh` y roles RBAC | Operativo |
 | **Base de Datos** | PostgreSQL 16 | Almacenamiento relacional, histórico y vistas SQL analíticas | Operativo |
 | **Caché & Sesiones** | Redis 7 | Rate limiting, listas negras de tokens y sesiones | Operativo |
-| **Inteligencia Artificial**| Groq (Llama 3.3) + Ollama | Asistente de consultas laborales y validación inteligente |  Operativo |
+| **IA en Nube** | Groq (Llama 3.3 70B) | Inferencia ultrarrápida para consultas laborales con LLM en la nube | Operativo |
+| **IA Local** | Ollama | Modelo de lenguaje local para fallback y soberanía de datos | Operativo |
 | **Analítica** | Power BI | Vistas SQL analíticas (`vw_*` y `dim_*`) para tableros gerenciales | Operativo |
 | **Orquestación** | Docker & Docker Compose | Contenerización completa de microservicios | Operativo |
 | **CI/CD** | GitHub Actions | Pipeline automatizado de pruebas, análisis y empaquetado | Operativo |
+
+> 📄 **Documentación Oficial del Proyecto:** Consulta la definición técnica y funcional completa en el [Documento del MVP (v2.4.0)](docs/MVP.md) y el [Documento de Requisitos de Producto (PRD)](PRD.md).
 
 ---
 

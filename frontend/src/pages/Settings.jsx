@@ -121,18 +121,18 @@ export default function Settings() {
       {msg && <Alert kind="ok">{msg}</Alert>}
       {err.length > 0 && <Alert kind="err" items={err} />}
 
-      <div className="img1-settings-container">
+      <div className="settings-settings-container">
         {/* ── Tarjeta Lateral Izquierda (Imagen 1) ────────────────────── */}
-        <aside className="img1-sidebar-card">
-          <div className="img1-avatar-wrapper">
+        <aside className="settings-sidebar-card">
+          <div className="settings-avatar-wrapper">
             {avatarPreview ? (
-              <img src={avatarPreview} alt={user?.full_name} className="img1-avatar-img" />
+              <img src={avatarPreview} alt={user?.full_name} className="settings-avatar-img" />
             ) : (
-              <div className="img1-avatar-placeholder">
+              <div className="settings-avatar-placeholder">
                 {initials(user?.full_name || 'U')}
               </div>
             )}
-            <label className="img1-avatar-badge" title="Cambiar foto de perfil">
+            <label className="settings-avatar-badge" title="Cambiar foto de perfil">
               ✎
               <input
                 type="file"
@@ -143,34 +143,34 @@ export default function Settings() {
             </label>
           </div>
 
-          <h3 className="img1-user-name">{user?.full_name || 'Colaborador'}</h3>
-          <div className="img1-user-role">{user?.job_title || ROLE[user?.role] || 'Puesto en RRHH'}</div>
+          <h3 className="settings-user-name">{user?.full_name || 'Colaborador'}</h3>
+          <div className="settings-user-role">{user?.job_title || ROLE[user?.role] || 'Puesto en RRHH'}</div>
 
-          <nav className="img1-nav-list">
+          <nav className="settings-nav-list">
             <button
               type="button"
-              className={`img1-nav-item ${activeTab === 'personal' ? 'active' : ''}`}
+              className={`settings-nav-item ${activeTab === 'personal' ? 'active' : ''}`}
               onClick={() => setActiveTab('personal')}
             >
               <span>👤</span> Información Personal
             </button>
             <button
               type="button"
-              className={`img1-nav-item ${activeTab === 'security' ? 'active' : ''}`}
+              className={`settings-nav-item ${activeTab === 'security' ? 'active' : ''}`}
               onClick={() => setActiveTab('security')}
             >
               <span>🔒</span> Inicio de sesión y Contraseña
             </button>
             <button
               type="button"
-              className={`img1-nav-item ${activeTab === 'vacations' ? 'active' : ''}`}
+              className={`settings-nav-item ${activeTab === 'vacations' ? 'active' : ''}`}
               onClick={() => setActiveTab('vacations')}
             >
               <span>🌴</span> Mis Vacaciones (LFT)
             </button>
             <button
               type="button"
-              className="img1-nav-item logout"
+              className="settings-nav-item logout"
               onClick={() => setShowLogoutModal(true)}
             >
               <span>🚪</span> Cerrar Sesión
@@ -179,14 +179,14 @@ export default function Settings() {
         </aside>
 
         {/* ── Tarjeta Principal Derecha (Imagen 1) ────────────────────── */}
-        <main className="img1-main-card">
+        <main className="settings-main-card">
           {activeTab === 'personal' && (
             <form onSubmit={handleSave}>
-              <h2 className="img1-section-title">Información Personal</h2>
+              <h2 className="settings-section-title">Información Personal</h2>
 
               {/* Selector de Género / Identidad */}
-              <div className="img1-radio-group">
-                <label className="img1-radio-label">
+              <div className="settings-radio-group">
+                <label className="settings-radio-label">
                   <input
                     type="radio"
                     name="gender"
@@ -196,7 +196,7 @@ export default function Settings() {
                   />
                   Hombre
                 </label>
-                <label className="img1-radio-label">
+                <label className="settings-radio-label">
                   <input
                     type="radio"
                     name="gender"
@@ -206,7 +206,7 @@ export default function Settings() {
                   />
                   Mujer
                 </label>
-                <label className="img1-radio-label">
+                <label className="settings-radio-label">
                   <input
                     type="radio"
                     name="gender"
@@ -221,18 +221,18 @@ export default function Settings() {
               {/* Nombre y Apellidos */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                 <div>
-                  <label className="img1-field-label">Nombre(s)</label>
+                  <label className="settings-field-label">Nombre(s)</label>
                   <input
-                    className="img1-input"
+                    className="settings-input"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     required
                   />
                 </div>
                 <div>
-                  <label className="img1-field-label">Apellidos</label>
+                  <label className="settings-field-label">Apellidos</label>
                   <input
-                    className="img1-input"
+                    className="settings-input"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     required
@@ -243,11 +243,11 @@ export default function Settings() {
               {/* Correo Electrónico con Badge Verificado */}
               <div style={{ marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <label className="img1-field-label" style={{ margin: 0 }}>Correo electrónico</label>
-                  <span className="img1-verified-badge">✔ Verificado</span>
+                  <label className="settings-field-label" style={{ margin: 0 }}>Correo electrónico</label>
+                  <span className="settings-verified-badge">✔ Verificado</span>
                 </div>
                 <input
-                  className="img1-input"
+                  className="settings-input"
                   disabled
                   value={user?.email || ''}
                   title="Gestionado institucionalmente"
@@ -256,9 +256,9 @@ export default function Settings() {
 
               {/* Dirección */}
               <div style={{ marginBottom: 16 }}>
-                <label className="img1-field-label">Dirección / Domicilio</label>
+                <label className="settings-field-label">Dirección / Domicilio</label>
                 <input
-                  className="img1-input"
+                  className="settings-input"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="Ej. Av. Insurgentes Sur 1602, Col. Crédito Constructor"
@@ -268,18 +268,18 @@ export default function Settings() {
               {/* Teléfono y Fecha de Ingreso */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                 <div>
-                  <label className="img1-field-label">Número de Teléfono</label>
+                  <label className="settings-field-label">Número de Teléfono</label>
                   <input
-                    className="img1-input"
+                    className="settings-input"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="(55) 5555-0128"
                   />
                 </div>
                 <div>
-                  <label className="img1-field-label">Fecha de Ingreso (Laboral)</label>
+                  <label className="settings-field-label">Fecha de Ingreso (Laboral)</label>
                   <input
-                    className="img1-input"
+                    className="settings-input"
                     type="date"
                     disabled
                     value={user?.hire_date || ''}
@@ -290,17 +290,17 @@ export default function Settings() {
               {/* Ubicación y Código Postal */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 }}>
                 <div>
-                  <label className="img1-field-label">Ubicación / Sede</label>
+                  <label className="settings-field-label">Ubicación / Sede</label>
                   <input
-                    className="img1-input"
+                    className="settings-input"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className="img1-field-label">Código Postal</label>
+                  <label className="settings-field-label">Código Postal</label>
                   <input
-                    className="img1-input"
+                    className="settings-input"
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
                   />
@@ -311,7 +311,7 @@ export default function Settings() {
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 14 }}>
                 <button
                   type="button"
-                  className="img1-btn-discard"
+                  className="settings-btn-discard"
                   onClick={handleDiscard}
                   disabled={busy}
                 >
@@ -319,7 +319,7 @@ export default function Settings() {
                 </button>
                 <button
                   type="submit"
-                  className="img1-btn-save"
+                  className="settings-btn-save"
                   disabled={busy}
                 >
                   {busy ? 'Guardando…' : 'Guardar Cambios'}
@@ -330,17 +330,17 @@ export default function Settings() {
 
           {activeTab === 'security' && (
             <form onSubmit={handleSave}>
-              <h2 className="img1-section-title">Inicio de sesión y Contraseña</h2>
+              <h2 className="settings-section-title">Inicio de sesión y Contraseña</h2>
               {user?.auth_provider === 'local' ? (
                 <>
                   <p className="muted" style={{ fontSize: 13, marginTop: -8, marginBottom: 20 }}>
                     Para modificar tu contraseña actual, ingresa tus credenciales y confirma la nueva clave de acceso.
                   </p>
                   <div style={{ marginBottom: 16 }}>
-                    <label className="img1-field-label">Contraseña actual</label>
+                    <label className="settings-field-label">Contraseña actual</label>
                     <input
                       type="password"
-                      className="img1-input"
+                      className="settings-input"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="Ingresa tu contraseña actual"
@@ -349,10 +349,10 @@ export default function Settings() {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 }}>
                     <div>
-                      <label className="img1-field-label">Nueva contraseña</label>
+                      <label className="settings-field-label">Nueva contraseña</label>
                       <input
                         type="password"
-                        className="img1-input"
+                        className="settings-input"
                         minLength={10}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
@@ -361,10 +361,10 @@ export default function Settings() {
                       />
                     </div>
                     <div>
-                      <label className="img1-field-label">Confirmar nueva contraseña</label>
+                      <label className="settings-field-label">Confirmar nueva contraseña</label>
                       <input
                         type="password"
-                        className="img1-input"
+                        className="settings-input"
                         minLength={10}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
@@ -376,7 +376,7 @@ export default function Settings() {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 14 }}>
                     <button
                       type="button"
-                      className="img1-btn-discard"
+                      className="settings-btn-discard"
                       onClick={handleDiscard}
                       disabled={busy}
                     >
@@ -384,7 +384,7 @@ export default function Settings() {
                     </button>
                     <button
                       type="submit"
-                      className="img1-btn-save"
+                      className="settings-btn-save"
                       disabled={busy || !newPassword}
                     >
                       {busy ? 'Guardando…' : 'Actualizar Contraseña'}
@@ -404,7 +404,7 @@ export default function Settings() {
 
           {activeTab === 'vacations' && (
             <div>
-              <h2 className="img1-section-title">Mis Vacaciones y Antigüedad Laboral (LFT)</h2>
+              <h2 className="settings-section-title">Mis Vacaciones y Antigüedad Laboral (LFT)</h2>
               <p className="muted" style={{ fontSize: 13, marginTop: -10, marginBottom: 20 }}>
                 Información oficial calculada automáticamente conforme a tu fecha de ingreso y la Ley Federal del Trabajo de México.
               </p>

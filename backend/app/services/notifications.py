@@ -61,16 +61,16 @@ async def mark_all_read(db: AsyncSession, user_id: int) -> None:
 
 
 def send_recovery_code_email(to: str, code: str, minutes: int = 10, max_attempts: int = 3) -> bool:
-    """Env?a el c?digo OTP de restablecimiento de contrase?a por correo SMTP."""
+    """Envía el código OTP de restablecimiento de contraseña por correo SMTP."""
     s = get_settings()
-    subject = f"C?digo de verificaci?n para restablecer contrase?a: {code}"
+    subject = f"Código de verificación para restablecer contraseña: {code}"
     text_content = (
         f"Hola,\n\n"
-        f"Recibimos una solicitud para restablecer tu contrase?a en {s.COMPANY_NAME}.\n\n"
-        f"Tu c?digo de verificaci?n de 6 d?gitos es: {code}\n\n"
-        f"Por seguridad, este c?digo expira en {minutes} minutos y cuenta con un l?mite estricto de {max_attempts} intentos.\n\n"
+        f"Recibimos una solicitud para restablecer tu contraseña en {s.COMPANY_NAME}.\n\n"
+        f"Tu código de verificación de 6 dígitos es: {code}\n\n"
+        f"Por seguridad, este código expira en {minutes} minutos y cuenta con un límite estricto de {max_attempts} intentos.\n\n"
         f"Si no solicitaste este cambio, ignora este correo. Tu cuenta sigue protegida.\n\n"
-        f"Atentamente,\nEquipo de TI y Recursos Humanos ? {s.COMPANY_NAME}"
+        f"Atentamente,\nEquipo de TI y Recursos Humanos · {s.COMPANY_NAME}"
     )
     html_content = f"""<!DOCTYPE html>
 <html>
@@ -84,28 +84,31 @@ def send_recovery_code_email(to: str, code: str, minutes: int = 10, max_attempts
     <div style="padding: 28px 24px;">
       <p style="font-size: 15px; margin: 0 0 16px;">Hola,</p>
       <p style="font-size: 14px; line-height: 1.5; color: #475569; margin: 0 0 20px;">
-        Recibimos una solicitud para restablecer la contrase?a de acceso a tu cuenta corporativa. Utiliza el siguiente c?digo de verificaci?n:
+        Recibimos una solicitud para restablecer la contraseña de acceso a tu cuenta corporativa. Utiliza el siguiente código de verificación:
       </p>
       <div style="background: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 10px; padding: 18px; text-align: center; margin: 20px 0;">
         <span style="font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #0f172a;">{code}</span>
       </div>
       <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 14px; border-radius: 4px; font-size: 12px; color: #92400e; margin: 20px 0;">
-        ?? <b>Tiempo l?mite:</b> V?lido por <b>{minutes} minutos</b>.<br>
-        ?? <b>Seguridad:</b> Cuentas con un m?ximo de <b>{max_attempts} intentos</b>. Tras superarlos, el c?digo se invalidar? autom?ticamente.
+        ⏱️ <b>Tiempo límite:</b> Válido por <b>{minutes} minutos</b>.<br>
+        🛡️ <b>Seguridad:</b> Cuentas con un máximo de <b>{max_attempts} intentos</b>. Tras superarlos, el código se invalidará automáticamente.
       </div>
       <p style="font-size: 13px; color: #64748b; line-height: 1.5; margin: 24px 0 0;">
-        Si no realizaste esta solicitud, puedes ignorar este mensaje de forma segura. Nadie puede acceder a tu cuenta sin este c?digo.
+        Si no realizaste esta solicitud, puedes ignorar este mensaje de forma segura. Nadie puede acceder a tu cuenta sin este código.
       </p>
     </div>
     <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px; text-align: center; font-size: 12px; color: #94a3b8;">
-      ? {s.COMPANY_NAME} ? Todos los derechos reservados.
+      © {s.COMPANY_NAME} · Todos los derechos reservados.
     </div>
   </div>
 </body>
 </html>"""
 
     if not s.SMTP_HOST:
-        logger.info("[SIMULACI?N CORREO] C?digo para %s: %s (v?lido %d min)", to, code, minutes)
+        if s.ENVIRONMENT in ("testing", "development"):
+            logger.info("[SIMULACIÓN CORREO] Código para %s: %s (válido %d min)", to, code, minutes)
+        else:
+            logger.info("[SIMULACIÓN CORREO] Código de recuperación generado para %s (SMTP no configurado en entorno de producción; código protegido no registrado en logs).", to)
         return False
 
     try:
@@ -127,7 +130,7 @@ def send_recovery_code_email(to: str, code: str, minutes: int = 10, max_attempts
                 if s.SMTP_USER:
                     smtp.login(s.SMTP_USER, s.SMTP_PASSWORD or "")
                 smtp.send_message(msg)
-        logger.info("Correo de recuperaci?n enviado con ?xito a %s", to)
+        logger.info("Correo de recuperación enviado con éxito a %s", to)
         return True
     except Exception as exc:
         logger.error("Error al enviar correo SMTP a %s: %s", to, exc)

@@ -88,16 +88,16 @@ function Users() {
   return (
     <>
       {/* ── Barra de Búsqueda y Filtros estilo Imagen 2 ───────────────── */}
-      <div className="img2-filter-bar">
+      <div className="admin-filter-bar">
         <input
-          className="img2-search-input"
+          className="admin-search-input"
           placeholder="Buscar por nombre, correo o puesto..."
           value={search}
           onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
         />
 
         <select
-          className="img2-search-input"
+          className="admin-search-input"
           style={{ minWidth: 180 }}
           value={deptFilter}
           onChange={(e) => { setDeptFilter(e.target.value); setCurrentPage(1) }}
@@ -110,7 +110,7 @@ function Users() {
 
         <button
           type="button"
-          className="img2-btn-search"
+          className="admin-btn-search"
           onClick={() => setCurrentPage(1)}
         >
           Buscar
@@ -125,7 +125,7 @@ function Users() {
 
         <button
           type="button"
-          className="img2-btn-export"
+          className="admin-btn-export"
           onClick={() => {
             const csvContent = 'data:text/csv;charset=utf-8,' +
               ['No,Nombre,Correo,Rol,Vacaciones,Estado'].join(',') + '\n' +
@@ -160,7 +160,7 @@ function Users() {
         <Empty>No se encontraron empleados coincidentes con la búsqueda.</Empty>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table className="img2-table">
+          <table className="admin-table">
             <thead>
               <tr>
                 <th>No. Empleado</th>
@@ -199,7 +199,7 @@ function Users() {
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <button
                         type="button"
-                        className="img2-pill-btn"
+                        className="admin-pill-btn"
                         onClick={() => alert(`Colaborador: ${u.full_name}\nID: ${u.employee_id}\nCorreo: ${u.email}\nSueldo registrado: $${u.salary || 0} MXN`)}
                       >
                         Notificar
@@ -208,7 +208,7 @@ function Users() {
                       {canEditRow ? (
                         <button
                           type="button"
-                          className="img2-pill-btn"
+                          className="admin-pill-btn"
                           onClick={() => {
                             setErr([])
                             setEdit({
@@ -239,10 +239,10 @@ function Users() {
 
       {/* ── Paginación estilo Imagen 2 ─────────────────────────────────── */}
       {totalPages > 1 && (
-        <div className="img2-pagination">
+        <div className="admin-pagination">
           <button
             type="button"
-            className="img2-page-item"
+            className="admin-page-item"
             disabled={currentPage === 1}
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
           >
@@ -252,7 +252,7 @@ function Users() {
             <button
               key={num}
               type="button"
-              className={`img2-page-item ${currentPage === num ? 'active' : ''}`}
+              className={`admin-page-item ${currentPage === num ? 'active' : ''}`}
               onClick={() => setCurrentPage(num)}
             >
               {num}
@@ -260,7 +260,7 @@ function Users() {
           ))}
           <button
             type="button"
-            className="img2-page-item"
+            className="admin-page-item"
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
           >
@@ -425,7 +425,7 @@ function Departments() {
         <Empty>Crea los departamentos de la empresa.</Empty>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table className="img2-table">
+          <table className="admin-table">
             <thead>
               <tr>
                 <th>Código</th>
@@ -440,7 +440,7 @@ function Departments() {
                   <td>{d.name}</td>
                   <td>
                     <select
-                      className="img2-search-input"
+                      className="admin-search-input"
                       value={d.manager_id ?? ''}
                       onChange={(e) => setMgr(d, e.target.value)}
                     >
@@ -499,7 +499,7 @@ function Policies() {
       </div>
 
       <div style={{ overflowX: 'auto' }}>
-        <table className="img2-table">
+        <table className="admin-table">
           <thead>
             <tr>
               <th>Título de la Política</th>
@@ -519,11 +519,11 @@ function Policies() {
                   </span>
                 </td>
                 <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  <button className="img2-pill-btn" onClick={() => { setErr([]); setEdit(p) }}>
+                  <button className="admin-pill-btn" onClick={() => { setErr([]); setEdit(p) }}>
                     Editar
                   </button>
                   <button
-                    className="img2-pill-btn danger"
+                    className="admin-pill-btn danger"
                     onClick={async () => {
                       if (window.confirm('¿Eliminar la política seleccionada?')) {
                         await api.del(`/admin/policies/${p.id}`)
@@ -594,7 +594,7 @@ function Types() {
       </p>
       {msg && <Alert kind="ok">{msg}</Alert>}
       <div style={{ overflowX: 'auto' }}>
-        <table className="img2-table">
+        <table className="admin-table">
           <thead>
             <tr>
               <th>Trámite</th>
@@ -629,7 +629,7 @@ function TypeRow({ c, onSave, isSaving }) {
           type="number"
           min="1"
           max="720"
-          className="img2-search-input"
+          className="admin-search-input"
           style={{ width: 100, minWidth: 100 }}
           value={sla}
           onChange={(e) => setSla(e.target.value)}
@@ -642,7 +642,7 @@ function TypeRow({ c, onSave, isSaving }) {
             min="0"
             max="30"
             step="0.5"
-            className="img2-search-input"
+            className="admin-search-input"
             style={{ width: 100, minWidth: 100 }}
             value={days}
             onChange={(e) => setDays(e.target.value)}
@@ -661,7 +661,7 @@ function TypeRow({ c, onSave, isSaving }) {
       </td>
       <td style={{ textAlign: 'right' }}>
         <button
-          className={`img2-pill-btn ${hasChanges ? 'active' : ''}`}
+          className={`admin-pill-btn ${hasChanges ? 'active' : ''}`}
           disabled={isSaving || !hasChanges}
           onClick={() => onSave(c, sla, days, active)}
         >
@@ -685,7 +685,7 @@ function Audit() {
   return (
     <>
       <div style={{ overflowX: 'auto' }}>
-        <table className="img2-table">
+        <table className="admin-table">
           <thead>
             <tr>
               <th>Fecha y Hora</th>
@@ -712,12 +712,12 @@ function Audit() {
           </tbody>
         </table>
       </div>
-      <div className="img2-pagination" style={{ marginTop: 16 }}>
+      <div className="admin-pagination" style={{ marginTop: 16 }}>
         <span className="muted" style={{ marginRight: 'auto', fontSize: 12.5 }}>{d.total} evento(s) registrados</span>
-        <button className="img2-page-item" disabled={page === 0} onClick={() => setPage(page - 1)}>
+        <button className="admin-page-item" disabled={page === 0} onClick={() => setPage(page - 1)}>
           ← Anterior
         </button>
-        <button className="img2-page-item" disabled={(page + 1) * 30 >= d.total} onClick={() => setPage(page + 1)}>
+        <button className="admin-page-item" disabled={(page + 1) * 30 >= d.total} onClick={() => setPage(page + 1)}>
           Siguiente →
         </button>
       </div>
@@ -744,7 +744,7 @@ function Integrations() {
     <div style={{ marginTop: 24 }}>
       <div className="row between">
         <h3 style={{ margin: 0, fontSize: 16 }}>Integraciones obligatorias</h3>
-        <button className="img2-btn-export" disabled={busy} onClick={run}>
+        <button className="admin-btn-export" disabled={busy} onClick={run}>
           {busy ? 'Probando…' : 'Probar integraciones'}
         </button>
       </div>
@@ -758,7 +758,7 @@ function Integrations() {
       )}
       {res && (
         <div style={{ overflowX: 'auto', marginTop: 10 }}>
-          <table className="img2-table">
+          <table className="admin-table">
             <tbody>
               {res.map((r) => (
                 <tr key={r.key}>
@@ -795,7 +795,7 @@ function System() {
   return (
     <>
       <div style={{ overflowX: 'auto' }}>
-        <table className="img2-table">
+        <table className="admin-table">
           <tbody>
             <Row l="Base de datos" ok={s.database.ok} t={s.database.ok ? `PostgreSQL conectado` : 'Sin conexión'} />
             <Row l="Redis (caché, sesiones, límites)" ok={s.redis.backend === 'redis'} t={s.redis.backend === 'redis' ? 'Conectado' : 'No disponible (memoria local)'} />
@@ -812,7 +812,7 @@ function System() {
       <Integrations />
 
       <div className="row" style={{ marginTop: 18, alignItems: 'center', gap: 12 }}>
-        <button className="img2-btn-search" onClick={async () => setR(await api.post('/admin/sla/run'))}>
+        <button className="admin-btn-search" onClick={async () => setR(await api.post('/admin/sla/run'))}>
           Ejecutar agente de SLA ahora
         </button>
         {r && <span>{r.reminded} recordatorio(s), {r.escalated} escalamiento(s).</span>}
@@ -835,7 +835,7 @@ export default function Admin() {
   const Comp = (ALL_TABS.find((t) => t[0] === tab) || ALL_TABS[0])[2]
 
   return (
-    <div className="img2-admin-container">
+    <div className="admin-admin-container">
       {/* ── Encabezado Principal estilo Imagen 2 ──────────────────────── */}
       <div style={{ marginBottom: 18 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>
@@ -847,12 +847,12 @@ export default function Admin() {
       </div>
 
       {/* ── Pestañas en forma de carpeta estilo Imagen 2 ──────────────── */}
-      <div className="img2-folder-tabs">
+      <div className="admin-folder-tabs">
         {ALL_TABS.map(([k, l]) => (
           <button
             key={k}
             type="button"
-            className={`img2-folder-tab ${tab === k ? 'active' : ''}`}
+            className={`admin-folder-tab ${tab === k ? 'active' : ''}`}
             onClick={() => setTab(k)}
           >
             {l}
@@ -861,7 +861,7 @@ export default function Admin() {
       </div>
 
       {/* ── Contenedor Principal conectado a la pestaña ──────────────── */}
-      <div className="img2-main-card">
+      <div className="admin-main-card">
         <Comp />
       </div>
     </div>

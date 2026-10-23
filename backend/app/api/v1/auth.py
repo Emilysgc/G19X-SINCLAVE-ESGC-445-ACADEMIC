@@ -258,11 +258,13 @@ async def reset_password_code(body: ResetPasswordCodeIn, request: HttpRequest, d
 
     user.hashed_password = hash_password(body.new_password)
     
+    kc_synced = True
     try:
         kc = get_keycloak_service()
         await kc.reset_password(user.email, body.new_password)
-    except Exception:
-        pass
+    except Exception as e:
+        kc_synced = False
+        logger.error("No se pudo sincronizar el cambio de contraseña con Keycloak para %s: %s", user.email, e)
 
     await cache.delete(cache_key)
     await cache.delete(f"pwd_reset:{user_email}")
@@ -270,4 +272,13 @@ async def reset_password_code(body: ResetPasswordCodeIn, request: HttpRequest, d
     audit(db, user.id, "Auth", user.id, AuditAction.UPDATE, f"Contraseña restablecida exitosamente con código para {user.email}", ip=ip)
     await db.commit()
 
-    return {"message": "¡Tu contraseña ha sido restablecida exitosamente! Ya puedes iniciar sesión con tu nueva contraseña."}
+    if not kc_synced:
+        return {
+            "message": "Contraseña local actualizada, pero no se pudo sincronizar con Keycloak. Si utilizas inicio de sesión único (SSO), contacta al administrador.",
+            "keycloak_synced": False,
+        }
+
+    return {
+        "message": "¡Tu contraseña ha sido restablecida exitosamente! Ya puedes iniciar sesión con tu nueva contraseña.",
+        "keycloak_synced": True,
+    }

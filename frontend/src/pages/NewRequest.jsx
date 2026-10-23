@@ -108,27 +108,27 @@ export default function NewRequest() {
       </div>
 
       {/* ── Rejilla de Contenedores 3x3 estilo Imagen 4 (conservando colores) ── */}
-      <div className="img4-types-grid">
+      <div className="requests-types-grid">
         {types.map((t) => {
           const meta = TYPE_META[t.type] || { icon: '📋', bg: '#f8fafc', color: '#475569' }
           const isSelected = type === t.type
           return (
             <div
               key={t.type}
-              className={`img4-card-tile ${isSelected ? 'selected' : ''}`}
+              className={`requests-card-tile ${isSelected ? 'selected' : ''}`}
               onClick={() => pick(t.type)}
             >
               <div
-                className="img4-icon-container"
+                className="requests-icon-container"
                 style={{ background: meta.bg, color: meta.color }}
               >
                 <span>{meta.icon}</span>
               </div>
 
-              <h3 className="img4-card-title">{t.name}</h3>
-              <p className="img4-card-desc">{t.description}</p>
+              <h3 className="requests-card-title">{t.name}</h3>
+              <p className="requests-card-desc">{t.description}</p>
 
-              <div className="img4-card-footer">
+              <div className="requests-card-footer">
                 {t.requires_approval ? `Respuesta en ≤ ${t.sla_hours} h` : 'Se genera al instante'}
               </div>
             </div>

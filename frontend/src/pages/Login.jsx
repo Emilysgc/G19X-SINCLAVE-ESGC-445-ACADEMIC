@@ -102,10 +102,10 @@ export default function Login() {
   }
 
   return (
-    <div className="img3-login-screen">
-      <div className="img3-workspace-container">
+    <div className="login-login-screen">
+      <div className="login-workspace-container">
         {/* ── Ilustración plana del espacio de trabajo (Imagen 3) ───────── */}
-        <div className="img3-illustration-pane">
+        <div className="login-illustration-pane">
           <svg viewBox="0 0 650 500" style={{ width: '100%', maxWidth: 580, height: 'auto' }} fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Reloj de pared circular arriba */}
             <circle cx="340" cy="110" r="50" fill="#ffffff" stroke="#2563eb" strokeWidth="12" />
@@ -181,26 +181,26 @@ export default function Login() {
         </div>
 
         {/* ── Tarjeta Flotante Derecha (Imagen 3) ──────────────────────── */}
-        <div className="img3-floating-card">
-          <div className="img3-card-top-header">
+        <div className="login-floating-card">
+          <div className="login-card-top-header">
             <span style={{ fontSize: 20 }}>👥</span>
             <span>Dashboard Login</span>
           </div>
 
           {err.length > 0 && (
-            <div className="img3-error-banner">
+            <div className="login-error-banner">
               Wrong Password!! {err[0]}
             </div>
           )}
 
-          <h2 className="img3-welcome-title">BIENVENIDO</h2>
-          <p className="img3-welcome-sub">¡Ingresa a tu cuenta para gestionar tus trámites!</p>
+          <h2 className="login-welcome-title">BIENVENIDO</h2>
+          <p className="login-welcome-sub">¡Ingresa a tu cuenta para gestionar tus trámites!</p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 24 }}>
             {/* Botón principal: Iniciar sesión con Keycloak */}
             <button
               type="button"
-              className="img3-btn-submit"
+              className="login-btn-submit"
               disabled={busy}
               onClick={loginOidc}
               style={{
@@ -216,7 +216,7 @@ export default function Login() {
             {/* Enlace de recuperación de contraseña */}
             <a
               href="#recuperar"
-              className="img3-forgot-link"
+              className="login-forgot-link"
               onClick={handleOpenRecovery}
               style={{ marginTop: 8 }}
             >

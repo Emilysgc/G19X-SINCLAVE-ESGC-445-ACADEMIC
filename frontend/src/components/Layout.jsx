@@ -75,7 +75,6 @@ export default function Layout() {
     <div className={`layout ${chatOpen ? 'with-chat' : ''}`}>
       <aside className="side">
         <div className="logo">
-          <div className="logo-mark">{initials(config?.company_name || 'RH') || 'RH'}</div>
           <div>
             <div className="logo-name">{config?.company_name || 'RRHH'}</div>
             <div className="logo-sub">Solicitudes internas</div>

@@ -105,7 +105,7 @@ export default function Dashboard() {
             <div
               className="atlas-donut-chart"
               style={{
-                background: `conic-gradient(#f97316 0% ${resolvedPct}%, #f87171 ${resolvedPct}% ${resolvedPct + Math.round(activePct / 2)}%, #e7e5e4 ${resolvedPct + Math.round(activePct / 2)}% 100%)`
+                background: `conic-gradient(#06b6d4 0% ${resolvedPct}%, #22d3ee ${resolvedPct}% ${resolvedPct + Math.round(activePct / 2)}%, #e2e8f0 ${resolvedPct + Math.round(activePct / 2)}% 100%)`
               }}
             >
               <div className="atlas-donut-hole">
@@ -121,7 +121,7 @@ export default function Dashboard() {
               </div>
               <div className="atlas-leader-list">
                 <div className="atlas-leader-row">
-                  <span className="dot dot-orange" />
+                  <span className="dot" style={{ backgroundColor: "#06b6d4" }} />
                   <span className="leader-lbl">Resueltas</span>
                   <span className="leader-dots" />
                   <span className="leader-val">{totalReq - activeReq}</span>
@@ -153,7 +153,7 @@ export default function Dashboard() {
             <div
               className="atlas-sla-ring"
               style={{
-                background: `conic-gradient(#f97316 0% ${s?.sla_compliance_pct ?? 100}%, #fed7aa ${s?.sla_compliance_pct ?? 100}% 100%)`
+                background: `conic-gradient(#06b6d4 0% ${s?.sla_compliance_pct ?? 100}%, #a5f3fc ${s?.sla_compliance_pct ?? 100}% 100%)`
               }}
             >
               <div className="atlas-sla-hole">
@@ -200,7 +200,7 @@ export default function Dashboard() {
                 <rect x="10" y="10" width="70" height="30" rx="8" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1.5" />
                 <circle cx="28" cy="38" r="6" fill="#334155" />
                 <circle cx="62" cy="38" r="6" fill="#334155" />
-                <path d="M22 22h30" stroke="#f97316" strokeWidth="3" strokeLinecap="round" />
+                <path d="M22 22h30" stroke="#06b6d4" strokeWidth="3" strokeLinecap="round" />
               </svg>
             </div>
           </div>
@@ -224,7 +224,7 @@ export default function Dashboard() {
               <span className="atlas-trend-badge up">↗ En tiempo real</span>
             </div>
             <div className="atlas-chart-legend">
-              <span className="legend-item"><span className="dot dot-orange" /> Este período</span>
+              <span className="legend-item"><span className="dot" style={{ backgroundColor: "#06b6d4" }} /> Este período</span>
               <span className="legend-item"><span className="dot dot-stone" /> Período anterior</span>
             </div>
           </div>
@@ -234,8 +234,8 @@ export default function Dashboard() {
             <svg viewBox="0 0 540 130" className="atlas-chart-svg" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="atlasGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#f97316" stopOpacity="0.45" />
-                  <stop offset="100%" stopColor="#f97316" stopOpacity="0.0" />
+                  <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.45" />
+                  <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
               <path
@@ -245,7 +245,7 @@ export default function Dashboard() {
               <path
                 d="M 0 95 Q 60 70 120 78 T 240 85 T 360 40 T 470 36"
                 fill="none"
-                stroke="#f97316"
+                stroke="#06b6d4"
                 strokeWidth="2.5"
               />
               <path
@@ -268,9 +268,9 @@ export default function Dashboard() {
             <span className="atlas-card-title">Trámites más frecuentes</span>
           </div>
           <div className="atlas-legend-row" style={{ fontSize: 11, marginBottom: 16 }}>
-            <span className="dot dot-orange" /> Mayor
-            <span className="dot dot-peach" style={{ marginLeft: 10 }} /> Medio
-            <span className="dot dot-cream" style={{ marginLeft: 10 }} /> Menor
+            <span className="dot" style={{ backgroundColor: "#06b6d4" }} /> Mayor
+            <span className="dot" style={{ backgroundColor: "#22d3ee", marginLeft: 10 }} /> Medio
+            <span className="dot" style={{ backgroundColor: "#a5f3fc", marginLeft: 10 }} /> Menor
           </div>
           <div className="atlas-bars-list">
             {(a?.by_type?.length ? a.by_type : [
@@ -286,7 +286,7 @@ export default function Dashboard() {
                     className="atlas-bar-fill"
                     style={{
                       width: `${Math.min(100, Math.max(18, (item.count / 15) * 100))}%`,
-                      backgroundColor: idx === 0 ? '#f97316' : idx === 1 ? '#fb923c' : idx === 2 ? '#fdba74' : '#fed7aa'
+                      backgroundColor: idx === 0 ? '#06b6d4' : idx === 1 ? '#22d3ee' : idx === 2 ? '#67e8f9' : '#a5f3fc'
                     }}
                   />
                 </div>

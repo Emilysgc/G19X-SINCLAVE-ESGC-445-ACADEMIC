@@ -30,17 +30,37 @@ export default function Dashboard() {
   const filteredRecent = recent ? recent.filter((r) => {
     const matchesSearch = !search || `${r.folio} ${r.title} ${TYPE[r.type]}`.toLowerCase().includes(search.toLowerCase())
     if (!matchesSearch) return false
-    if (filterTab === 'DELIVERED') return r.status === 'COMPLETED' || r.status === 'APPROVED'
-    if (filterTab === 'IN_TRANSIT') return r.status === 'IN_REVIEW' || r.status === 'PENDING_APPROVAL'
+    if (filterTab === 'APPROVED') return r.status === 'COMPLETED' || r.status === 'APPROVED'
+    if (filterTab === 'IN_REVIEW') return r.status === 'IN_REVIEW'
     if (filterTab === 'PENDING') return r.status === 'PENDING_APPROVAL'
     return true
   }) : []
 
-  const totalReq = s?.total || (recent ? recent.length : 0) || 1
+  const totalReq = s?.total ?? (recent?.length || 0)
   const activeReq = s?.active ?? (recent?.filter(r => r.status === 'PENDING_APPROVAL' || r.status === 'IN_REVIEW').length || 0)
-  const activePct = Math.min(100, Math.round((activeReq / totalReq) * 100))
-  const resolvedPct = 100 - activePct
+  const resolvedReq = totalReq > 0 ? Math.max(0, totalReq - activeReq) : 0
+  const activePct = totalReq > 0 ? Math.min(100, Math.round((activeReq / totalReq) * 100)) : 0
+  const resolvedPct = totalReq > 0 ? Math.max(0, 100 - activePct) : null
 
+  // Tendencia mensual real últimos 12 meses
+  const monthlyList = a?.monthly_trend || []
+  const maxMonthlyVal = Math.max(1, ...monthlyList.map(m => Math.max(m.created || 0, m.resolved || 0)))
+  const chartHasData = monthlyList.some(m => (m.created || 0) > 0 || (m.resolved || 0) > 0)
+  const chartPoints = monthlyList.map((m, idx) => {
+    const x = monthlyList.length > 1 ? 25 + (idx / (monthlyList.length - 1)) * 490 : 270
+    const yCreated = 105 - ((m.created || 0) / maxMonthlyVal) * 80
+    const yResolved = 105 - ((m.resolved || 0) / maxMonthlyVal) * 80
+    return { ...m, x, yCreated, yResolved }
+  })
+  const createdSvgPath = chartPoints.length > 0
+    ? chartPoints.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x.toFixed(1)} ${pt.yCreated.toFixed(1)}`).join(' ')
+    : ''
+  const createdAreaSvgPath = chartPoints.length > 0
+    ? `${createdSvgPath} L ${chartPoints[chartPoints.length - 1].x.toFixed(1)} 105 L ${chartPoints[0].x.toFixed(1)} 105 Z`
+    : ''
+  const resolvedSvgPath = chartPoints.length > 0
+    ? chartPoints.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x.toFixed(1)} ${pt.yResolved.toFixed(1)}`).join(' ')
+    : ''
   const today = new Date()
   const dayNum = today.getDate()
   const dayNameWeekday = today.toLocaleDateString('es-MX', { weekday: 'short' })
@@ -98,14 +118,15 @@ export default function Dashboard() {
         <div className="atlas-card">
           <div className="atlas-card-header-row">
             <span className="atlas-card-title">Eficiencia de Trámites</span>
-            <span className="atlas-select-pill">Anual ▾</span>
           </div>
 
           <div className="atlas-donut-layout">
             <div
               className="atlas-donut-chart"
               style={{
-                background: `conic-gradient(#06b6d4 0% ${resolvedPct}%, #22d3ee ${resolvedPct}% ${resolvedPct + Math.round(activePct / 2)}%, #e2e8f0 ${resolvedPct + Math.round(activePct / 2)}% 100%)`
+                background: totalReq > 0
+                  ? `conic-gradient(#06b6d4 0% ${resolvedPct}%, #22d3ee ${resolvedPct}% ${resolvedPct + Math.round(activePct / 2)}%, #e2e8f0 ${resolvedPct + Math.round(activePct / 2)}% 100%)`
+                  : '#e2e8f0'
               }}
             >
               <div className="atlas-donut-hole">
@@ -116,7 +137,7 @@ export default function Dashboard() {
 
             <div className="atlas-donut-metrics">
               <div className="atlas-metric-big">
-                <b>{resolvedPct || 100}%</b>
+                <b>{resolvedPct !== null ? `${resolvedPct}%` : '—'}</b>
                 <span className="atlas-trend-badge up">Tasa de resolución</span>
               </div>
               <div className="atlas-leader-list">
@@ -124,13 +145,13 @@ export default function Dashboard() {
                   <span className="dot" style={{ backgroundColor: "#06b6d4" }} />
                   <span className="leader-lbl">Resueltas</span>
                   <span className="leader-dots" />
-                  <span className="leader-val">{totalReq - activeReq}</span>
+                  <span className="leader-val">{totalReq > 0 ? resolvedReq : '—'}</span>
                 </div>
                 <div className="atlas-leader-row">
                   <span className="dot dot-stone" />
                   <span className="leader-lbl">En trámite</span>
                   <span className="leader-dots" />
-                  <span className="leader-val">{activeReq}</span>
+                  <span className="leader-val">{totalReq > 0 ? activeReq : '—'}</span>
                 </div>
                 <div className="atlas-leader-row">
                   <span className="dot dot-coral" />
@@ -153,16 +174,18 @@ export default function Dashboard() {
             <div
               className="atlas-sla-ring"
               style={{
-                background: `conic-gradient(#06b6d4 0% ${s?.sla_compliance_pct ?? 100}%, #a5f3fc ${s?.sla_compliance_pct ?? 100}% 100%)`
+                background: s?.sla_compliance_pct != null
+                  ? `conic-gradient(#06b6d4 0% ${s.sla_compliance_pct}%, #a5f3fc ${s.sla_compliance_pct}% 100%)`
+                  : '#e2e8f0'
               }}
             >
               <div className="atlas-sla-hole">
-                <b>{s?.sla_compliance_pct ?? 100}%</b>
-                <small>A tiempo</small>
+                <b>{s?.sla_compliance_pct != null ? `${s.sla_compliance_pct}%` : '—'}</b>
+                <small>{s?.sla_compliance_pct != null ? 'A tiempo' : 'Sin datos'}</small>
               </div>
             </div>
             <div className="muted" style={{ fontSize: 11.5, marginTop: 10, textAlign: 'center' }}>
-              Promedio: <b>{s?.avg_resolution_hours ?? 24} horas</b>
+              Promedio: <b>{s?.avg_resolution_hours != null ? `${s.avg_resolution_hours} horas` : '—'}</b>
             </div>
           </div>
         </div>
@@ -172,9 +195,9 @@ export default function Dashboard() {
           <div className="atlas-card-header-row">
             <span className="atlas-card-title"><span className="live-dot" /> Mis Vacaciones y Saldos</span>
           </div>
-          <div className="atlas-truck-content">
+          <div className="atlas-balance-content">
             <div className="atlas-kpi-header-num">
-              <span className="atlas-truck-big-val">{user.vacation_balance ?? 0}</span>
+              <span className="atlas-balance-big-val">{user.vacation_balance ?? 0}</span>
               <span className="atlas-trend-badge up">días disponibles</span>
             </div>
             <div style={{ fontSize: 12, color: '#44403c', marginTop: 4, marginBottom: 10, lineHeight: 1.4 }}>
@@ -195,14 +218,6 @@ export default function Dashboard() {
             >
               🌴 Ver días por antigüedad y LFT
             </button>
-            <div className="atlas-truck-graphic" aria-hidden="true">
-              <svg width="100" height="50" viewBox="0 0 100 50" fill="none">
-                <rect x="10" y="10" width="70" height="30" rx="8" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1.5" />
-                <circle cx="28" cy="38" r="6" fill="#334155" />
-                <circle cx="62" cy="38" r="6" fill="#334155" />
-                <path d="M22 22h30" stroke="#06b6d4" strokeWidth="3" strokeLinecap="round" />
-              </svg>
-            </div>
           </div>
         </div>
       </div>
@@ -212,10 +227,7 @@ export default function Dashboard() {
         <div className="atlas-card atlas-chart-card">
           <div className="atlas-card-header-row">
             <span className="atlas-card-title">Tendencia de Solicitudes</span>
-            <div className="row" style={{ gap: 8 }}>
-              <span className="atlas-select-pill">Mensual ▾</span>
-              <span className="atlas-select-pill">2026 ▾</span>
-            </div>
+            <span className="atlas-select-pill" style={{ pointerEvents: 'none' }}>Últimos 12 meses</span>
           </div>
 
           <div className="atlas-chart-metric-row">
@@ -224,41 +236,78 @@ export default function Dashboard() {
               <span className="atlas-trend-badge up">↗ En tiempo real</span>
             </div>
             <div className="atlas-chart-legend">
-              <span className="legend-item"><span className="dot" style={{ backgroundColor: "#06b6d4" }} /> Este período</span>
-              <span className="legend-item"><span className="dot dot-stone" /> Período anterior</span>
+              <span className="legend-item"><span className="dot" style={{ backgroundColor: "#06b6d4" }} /> Solicitudes creadas</span>
+              <span className="legend-item"><span className="dot" style={{ backgroundColor: "#8b5cf6" }} /> Solicitudes resueltas</span>
             </div>
           </div>
 
-          {/* Curva SVG estilizada exacta Atlas con degradado naranja cálido */}
+          {/* Curva SVG dinámica con datos reales */}
           <div className="atlas-chart-container">
-            <svg viewBox="0 0 540 130" className="atlas-chart-svg" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="atlasGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.45" />
-                  <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M 0 95 Q 60 70 120 78 T 240 85 T 360 40 T 470 36 L 470 130 L 0 130 Z"
-                fill="url(#atlasGrad)"
-              />
-              <path
-                d="M 0 95 Q 60 70 120 78 T 240 85 T 360 40 T 470 36"
-                fill="none"
-                stroke="#06b6d4"
-                strokeWidth="2.5"
-              />
-              <path
-                d="M 0 102 Q 70 95 140 82 T 280 88 T 420 62 T 540 66"
-                fill="none"
-                stroke="#d6d3d1"
-                strokeWidth="1.8"
-                strokeDasharray="4 4"
-              />
-            </svg>
-            <div className="atlas-chart-labels">
-              <span>Ene</span><span>Feb</span><span>Mar</span><span>Abr</span><span>May</span><span>Jun</span><span>Jul</span><span>Ago</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dic</span>
-            </div>
+            {!chartHasData ? (
+              <div style={{ padding: '36px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                Sin solicitudes registradas en este período.
+              </div>
+            ) : (
+              <>
+                <svg viewBox="0 0 540 130" className="atlas-chart-svg" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="atlasGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.35" />
+                      <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+                  {/* Guías horizontales */}
+                  <line x1="20" y1="25" x2="520" y2="25" stroke="#f1f5f9" strokeDasharray="3 3" />
+                  <line x1="20" y1="65" x2="520" y2="65" stroke="#f1f5f9" strokeDasharray="3 3" />
+                  <line x1="20" y1="105" x2="520" y2="105" stroke="#e2e8f0" />
+
+                  {/* Área bajo la curva */}
+                  {createdAreaSvgPath && <path d={createdAreaSvgPath} fill="url(#atlasGrad)" />}
+
+                  {/* Línea de creadas */}
+                  {createdSvgPath && (
+                    <path
+                      d={createdSvgPath}
+                      fill="none"
+                      stroke="#06b6d4"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    />
+                  )}
+
+                  {/* Línea de resueltas */}
+                  {resolvedSvgPath && (
+                    <path
+                      d={resolvedSvgPath}
+                      fill="none"
+                      stroke="#8b5cf6"
+                      strokeWidth="2"
+                      strokeDasharray="4 3"
+                      strokeLinecap="round"
+                    />
+                  )}
+
+                  {/* Puntos de datos con título */}
+                  {chartPoints.map((pt, i) => (
+                    <g key={i}>
+                      <circle cx={pt.x} cy={pt.yCreated} r="3.5" fill="#06b6d4">
+                        <title>{`${pt.label} ${pt.year}: ${pt.created} creadas`}</title>
+                      </circle>
+                      {pt.resolved > 0 && (
+                        <circle cx={pt.x} cy={pt.yResolved} r="3" fill="#8b5cf6">
+                          <title>{`${pt.label} ${pt.year}: ${pt.resolved} resueltas`}</title>
+                        </circle>
+                      )}
+                    </g>
+                  ))}
+                </svg>
+                <div className="atlas-chart-labels">
+                  {monthlyList.map((m, idx) => (
+                    <span key={idx}>{m.label}</span>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -273,26 +322,30 @@ export default function Dashboard() {
             <span className="dot" style={{ backgroundColor: "#a5f3fc", marginLeft: 10 }} /> Menor
           </div>
           <div className="atlas-bars-list">
-            {(a?.by_type?.length ? a.by_type : [
-              { type: 'VACATION', count: 12 },
-              { type: 'PERSONAL_LEAVE', count: 8 },
-              { type: 'CERTIFICATE_EMPLOYMENT', count: 6 },
-              { type: 'MEDICAL_LEAVE', count: 4 },
-            ]).slice(0, 4).map((item, idx) => (
-              <div key={item.type} className="atlas-bar-row">
-                <span className="atlas-bar-name">{TYPE[item.type] || item.type}</span>
-                <div className="atlas-bar-track">
-                  <div
-                    className="atlas-bar-fill"
-                    style={{
-                      width: `${Math.min(100, Math.max(18, (item.count / 15) * 100))}%`,
-                      backgroundColor: idx === 0 ? '#06b6d4' : idx === 1 ? '#22d3ee' : idx === 2 ? '#67e8f9' : '#a5f3fc'
-                    }}
-                  />
-                </div>
-                <span className="atlas-bar-count">{item.count}</span>
+            {(!a?.by_type || a.by_type.length === 0) ? (
+              <div style={{ padding: '24px 0', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                Sin trámites registrados
               </div>
-            ))}
+            ) : (
+              (() => {
+                const maxTypeCount = Math.max(1, ...a.by_type.map(x => x.count))
+                return a.by_type.slice(0, 4).map((item, idx) => (
+                  <div key={item.type} className="atlas-bar-row">
+                    <span className="atlas-bar-name">{TYPE[item.type] || item.type}</span>
+                    <div className="atlas-bar-track">
+                      <div
+                        className="atlas-bar-fill"
+                        style={{
+                          width: `${Math.min(100, Math.max(12, Math.round((item.count / maxTypeCount) * 100)))}%`,
+                          backgroundColor: idx === 0 ? '#06b6d4' : idx === 1 ? '#22d3ee' : idx === 2 ? '#67e8f9' : '#a5f3fc'
+                        }}
+                      />
+                    </div>
+                    <span className="atlas-bar-count">{item.count}</span>
+                  </div>
+                ))
+              })()
+            )}
           </div>
         </div>
       </div>
@@ -308,8 +361,8 @@ export default function Dashboard() {
           <div className="atlas-table-controls">
             <div className="atlas-filter-pills-bar">
               <button className={filterTab === 'ALL' ? 'active' : ''} onClick={() => setFilterTab('ALL')}>Todas</button>
-              <button className={filterTab === 'DELIVERED' ? 'active' : ''} onClick={() => setFilterTab('DELIVERED')}>Aprobadas</button>
-              <button className={filterTab === 'IN_TRANSIT' ? 'active' : ''} onClick={() => setFilterTab('IN_TRANSIT')}>En revisión</button>
+              <button className={filterTab === 'APPROVED' ? 'active' : ''} onClick={() => setFilterTab('APPROVED')}>Aprobadas</button>
+              <button className={filterTab === 'IN_REVIEW' ? 'active' : ''} onClick={() => setFilterTab('IN_REVIEW')}>En revisión</button>
               <button className={filterTab === 'PENDING' ? 'active' : ''} onClick={() => setFilterTab('PENDING')}>Pendientes</button>
             </div>
             <div className="atlas-table-pagination">

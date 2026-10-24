@@ -3,14 +3,14 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import HR_ROLES, get_current_user
 from app.core.cache import cache
 from app.core.config import get_settings
 from app.core.database import get_db
-from app.models import ACTIVE_STATUSES, Department, Request, RequestStatus, User, UserRole
+from app.models import ACTIVE_STATUSES, Department, Request, RequestStatus, User, UserRole, UserStatus
 
 router = APIRouter()
 
@@ -64,10 +64,31 @@ async def overview(actor: User = Depends(get_current_user), db: AsyncSession = D
         cnt = Counter(depts.get(users.get(r.requester_id), "Sin departamento") for r in rows)
         by_dept = [{"department": k, "count": v} for k, v in cnt.most_common()]
 
+    total_employees = (await db.execute(select(func.count(User.id)).where(User.is_active == True, User.status == UserStatus.ACTIVE))).scalar() or 0
+
+    monthly_trend = []
+    month_names = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+    for i in range(11, -1, -1):
+        y = now.year
+        m = now.month - i
+        while m <= 0:
+            m += 12
+            y -= 1
+        m_str = f"{y}-{m:02d}"
+        created_count = sum(1 for r in rows if _aware(r.created_at).strftime("%Y-%m") == m_str)
+        resolved_count = sum(1 for r in rows if r.completed_at and _aware(r.completed_at).strftime("%Y-%m") == m_str)
+        monthly_trend.append({
+            "key": m_str,
+            "label": month_names[m - 1],
+            "year": y,
+            "created": created_count,
+            "resolved": resolved_count,
+        })
+
     scores = [r.ai_validation_score for r in rows if r.ai_validation_score is not None]
     data = {
         "summary": {
-            "total": len(rows), "active": len(active), "overdue": len(overdue),
+            "total": len(rows), "total_employees": total_employees, "active": len(active), "overdue": len(overdue),
             "approved": by_status.get("APPROVED", 0), "completed": by_status.get("COMPLETED", 0),
             "rejected": by_status.get("REJECTED", 0), "cancelled": by_status.get("CANCELLED", 0),
             "auto_resolved": len(auto), "auto_resolved_pct": round(100 * len(auto) / len(rows), 1) if rows else 0,
@@ -78,6 +99,7 @@ async def overview(actor: User = Depends(get_current_user), db: AsyncSession = D
         "by_type": [{"type": k, "count": v} for k, v in by_type.most_common()],
         "by_department": by_dept,
         "trend": [{"date": k, **v} for k, v in trend.items()],
+        "monthly_trend": monthly_trend,
         "ai": {"avg_score": round(sum(scores) / len(scores), 2) if scores else None,
                "risk": dict(Counter(r.ai_risk_level for r in rows if r.ai_risk_level))},
         "powerbi_report_url": get_settings().POWERBI_REPORT_URL,

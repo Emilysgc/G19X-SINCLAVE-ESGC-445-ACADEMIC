@@ -1531,7 +1531,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
 .dark-theme .atlas-card-kpi-beige {
   background: linear-gradient(135deg, #181818 0%, #121212 100%);
 }
-.atlas-truck-content {
+.atlas-balance-content {
   position: relative;
   min-height: 100px;
 }
@@ -1541,13 +1541,13 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   gap: 10px;
   margin-bottom: 12px;
 }
-.atlas-truck-big-val {
+.atlas-balance-big-val {
   font-size: 32px;
   font-weight: 800;
   color: #1c1c1c;
   line-height: 1;
 }
-.dark-theme .atlas-truck-big-val {
+.dark-theme .atlas-balance-big-val {
   color: #f8fafc;
 }
 .atlas-btn-track {
@@ -1563,12 +1563,6 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
 }
 .atlas-btn-track:hover {
   transform: translateY(-1px);
-}
-.atlas-truck-graphic {
-  position: absolute;
-  right: -8px;
-  bottom: -4px;
-  opacity: 0.9;
 }
 
 /* Chart Profit over time */
@@ -4204,7 +4198,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   gap: 20px;
 }
 
-.rep-mood-bars {
+.rep-status-bars {
   display: flex;
   gap: 6px;
   height: 18px;
@@ -4213,35 +4207,35 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   margin-bottom: 16px;
 }
 
-.rep-mood-bar.purple {
+.rep-status-bar.purple {
   background: #8b5cf6;
 }
-.rep-mood-bar.rose {
+.rep-status-bar.rose {
   background: #f43f5e;
 }
-.rep-mood-bar.teal {
+.rep-status-bar.teal {
   background: #06b6d4;
 }
 
-.rep-mood-legend {
+.rep-status-legend {
   display: flex;
   justify-content: space-between;
 }
 
-.rep-mood-item {
+.rep-status-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
 }
 
-.rep-mood-lbl {
+.rep-status-lbl {
   font-size: 11px;
   color: #94a3b8;
   font-weight: 600;
 }
 
-.rep-mood-val {
+.rep-status-val {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -4394,6 +4388,6 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   color: #cbd5e1;
   border-color: #222d3d;
 }
-[data-theme="dark"] .rep-mood-val {
+[data-theme="dark"] .rep-status-val {
   color: #f8fafc;
 }

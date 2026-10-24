@@ -434,6 +434,42 @@ async def create_calendar_note(
     }
 
 
+@router.put("/me/calendar-notes/{note_id}", summary="Actualizar nota o actividad de calendario")
+async def update_calendar_note(
+    note_id: str,
+    body: CalendarNoteIn,
+    actor: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    raw_id = note_id.replace("act_", "")
+    try:
+        numeric_id = int(raw_id)
+    except ValueError:
+        raise HTTPException(400, "ID de nota inválido")
+
+    note = await db.get(CalendarNote, numeric_id)
+    if not note or note.user_id != actor.id:
+        raise HTTPException(404, "Nota o actividad no encontrada")
+
+    note.title = body.title.strip()
+    note.date = body.date
+    note.type = body.type.strip() if body.type else "Actividad"
+    note.description = body.description.strip() if body.description else None
+    await db.flush()
+    return {
+        "id": f"act_{note.id}",
+        "note_db_id": note.id,
+        "title": note.title,
+        "start_date": str(note.date),
+        "end_date": str(note.date),
+        "type": note.type,
+        "description": note.description or "",
+        "isCustomActivity": True,
+        "requester": {"full_name": actor.full_name},
+        "created_at": note.created_at.isoformat() if note.created_at else None,
+    }
+
+
 @router.delete("/me/calendar-notes/{note_id}", summary="Eliminar nota o actividad de calendario")
 async def delete_calendar_note(
     note_id: str,

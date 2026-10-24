@@ -39,12 +39,12 @@ El presente documento describe el alcance funcional, técnico y operativo del **
   * Año 4: 18 días laborables.
   * Año 5: 20 días laborables.
   * De 6 a 10 años: 22 días laborables (y progresión de +2 días por cada lustro subsecuente).
-* **Deducción Inteligente de Días Hábiles:** El motor calcula los días solicitados excluyendo fines de semana (sábados y domingos) y días de descanso obligatorio oficiales según la LFT.
+* **Deducción de Días Hábiles:** El motor calcula los días solicitados excluyendo fines de semana (sábados y domingos de descanso laboral).
 * **Prima Vacacional:** Cálculo y proyección automática del 25% de prima vacacional legalmente exigible (artículo 80 LFT).
 
 ### 2.4. Calendario Laboral y Actividades Persistentes
 * **Visualización de Ausencias:** Calendario interactivo mensual que refleja en tiempo real las solicitudes aprobadas (vacaciones, incapacidades, permisos y días de paternidad/maternidad).
-* **Persistencia en Backend:** Módulo de notas y eventos de equipo respaldados en base de datos relacional (`calendar_notes`), permitiendo crear, editar y consultar recordatorios vinculados al colaborador o visibles para todo el departamento.
+* **Persistencia en Backend:** Módulo de notas y actividades personales respaldadas en base de datos relacional (`calendar_notes`), permitiendo crear, consultar, editar y eliminar recordatorios y notas propias del colaborador, integradas con el calendario de solicitudes aprobadas del equipo.
 * **Resiliencia Local:** Caché en cliente y sincronización asíncrona que garantiza la disponibilidad de consulta incluso ante desconexiones momentáneas.
 
 ### 2.5. Flujos de Aprobación y Matriz de Autorización

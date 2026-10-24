@@ -1,18 +1,61 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { api } from '../services/api'
 import { Loading } from '../components/ui.jsx'
 import { TYPE } from '../services/labels'
 
 export default function Reports() {
   const [a, setA] = useState(null)
-  const [selectedWeek, setSelectedWeek] = useState('Semana 01')
+  const [viewPeriod, setViewPeriod] = useState('months') // 'months' o 'days'
 
   useEffect(() => {
     api.get('/analytics/overview').then(setA).catch(() => setA(null))
   }, [])
 
+  const s = a?.summary
+
+  // Datos de tendencia según el período seleccionado
+  const chartData = useMemo(() => {
+    if (!a) return []
+    if (viewPeriod === 'days') {
+      return (a.trend || []).map((t) => ({
+        label: t.date.slice(5),
+        created: t.created || 0,
+        resolved: t.resolved || 0,
+      }))
+    }
+    return (a.monthly_trend || []).map((t) => ({
+      label: t.label,
+      created: t.created || 0,
+      resolved: t.resolved || 0,
+    }))
+  }, [a, viewPeriod])
+
   if (!a) return <Loading />
-  const s = a.summary
+
+  // Cálculo de coordenadas dinámicas para el gráfico SVG real
+  const maxVal = Math.max(1, ...chartData.map((d) => Math.max(d.created, d.resolved)))
+  const totalChartActivity = chartData.reduce((acc, d) => acc + d.created + d.resolved, 0)
+
+  const points = chartData.map((d, i) => {
+    const x = chartData.length > 1 ? (i / (chartData.length - 1)) * 520 + 40 : 280
+    const y = 175 - (d.created / maxVal) * 125
+    return `${x},${y}`
+  })
+  const curvePath = points.length > 1 ? `M ${points.join(' L ')}` : ''
+  const areaPath =
+    points.length > 1
+      ? `M ${points[0]} L ${points.join(' L ')} L ${chartData.length > 1 ? (chartData.length - 1) / (chartData.length - 1) * 520 + 40 : 540},180 L 40,180 Z`
+      : ''
+
+  // Desglose de estado para la barra de estado operativa
+  const approvedTotal = (s?.approved || 0) + (s?.completed || 0)
+  const activeTotal = s?.active || 0
+  const rejectedTotal = s?.rejected || 0
+  const grandTotal = s?.total || 0
+
+  const approvedPct = grandTotal > 0 ? Math.round((approvedTotal / grandTotal) * 100) : 0
+  const activePct = grandTotal > 0 ? Math.round((activeTotal / grandTotal) * 100) : 0
+  const rejectedPct = grandTotal > 0 ? Math.max(0, 100 - approvedPct - activePct) : 0
 
   return (
     <div className="rep-container">
@@ -22,16 +65,16 @@ export default function Reports() {
           Reportes y Power BI
         </h1>
         <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>
-          Métricas analíticas de Recursos Humanos, estadísticas de asistencia y tableros en tiempo real.
+          Indicadores analíticos oficiales obtenidos en tiempo real de la base de datos de Recursos Humanos.
         </p>
       </div>
 
-      {/* ── 4 Tarjetas de Métricas estilo Imagen 1 (Morado y Turquesa) ── */}
+      {/* ── 4 Tarjetas de Métricas (100% Datos Reales) ───────────────── */}
       <div className="rep-kpi-grid">
         {/* Card 1: Total Colaboradores */}
         <div className="rep-kpi-card">
           <div className="rep-kpi-top">
-            <span className="rep-kpi-title">Total Colaboradores</span>
+            <span className="rep-kpi-title">Colaboradores Activos</span>
             <div className="rep-icon-badge purple">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
@@ -40,256 +83,270 @@ export default function Reports() {
             </div>
           </div>
           <div className="rep-kpi-main">
-            <span className="rep-kpi-num">{s?.total ? s.total * 6 + 45 : 325}</span>
-            <span className="rep-kpi-badge teal">+18.2% ↗</span>
+            <span className="rep-kpi-num">
+              {s?.total_employees != null ? s.total_employees : 'Sin datos'}
+            </span>
           </div>
-          <span className="rep-kpi-sub">Mes anterior: 310</span>
+          <span className="rep-kpi-sub">Total en plantilla activa</span>
         </div>
 
-        {/* Card 2: Permisos de Personal */}
+        {/* Card 2: Solicitudes en Trámite */}
         <div className="rep-kpi-card">
           <div className="rep-kpi-top">
-            <span className="rep-kpi-title">Permisos de Personal</span>
-            <div className="rep-icon-badge purple">
+            <span className="rep-kpi-title">En Trámite Activo</span>
+            <div className="rep-icon-badge teal">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
               </svg>
             </div>
           </div>
           <div className="rep-kpi-main">
-            <span className="rep-kpi-num">{s?.active ?? 12}</span>
-            <span className="rep-kpi-badge rose">-2% ↘</span>
+            <span className="rep-kpi-num">{s?.active ?? 0}</span>
           </div>
-          <span className="rep-kpi-sub">Mes anterior: 8</span>
+          <span className="rep-kpi-sub">Pendientes de supervisor o RRHH</span>
         </div>
 
-        {/* Card 3: Bajas e Incidencias */}
+        {/* Card 3: Trámites Concluidos */}
         <div className="rep-kpi-card">
           <div className="rep-kpi-top">
-            <span className="rep-kpi-title">Bajas e Incidencias</span>
+            <span className="rep-kpi-title">Trámites Concluidos</span>
             <div className="rep-icon-badge purple">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                <polyline points="22,6 12,13 2,6" />
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
             </div>
           </div>
           <div className="rep-kpi-main">
-            <span className="rep-kpi-num">{s?.rejected ?? 21}</span>
-            <span className="rep-kpi-badge teal">+3.5% ↗</span>
+            <span className="rep-kpi-num">{approvedTotal}</span>
           </div>
-          <span className="rep-kpi-sub">Mes anterior: 7</span>
+          <span className="rep-kpi-sub">
+            {s?.auto_resolved_pct ? `${s.auto_resolved_pct}% aprobadas automáticamente` : 'Aprobadas o finalizadas'}
+          </span>
         </div>
 
-        {/* Card 4: Total Trámites Atendidos */}
+        {/* Card 4: Cumplimiento de SLA */}
         <div className="rep-kpi-card">
           <div className="rep-kpi-top">
-            <span className="rep-kpi-title">Total Trámites Atendidos</span>
-            <div className="rep-icon-badge purple">
+            <span className="rep-kpi-title">Cumplimiento de SLA</span>
+            <div className="rep-icon-badge teal">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
               </svg>
             </div>
           </div>
           <div className="rep-kpi-main">
-            <span className="rep-kpi-num">{s?.total ?? 234}</span>
-            <span className="rep-kpi-badge teal">Auto: {s?.auto_resolved_pct}%</span>
+            <span className="rep-kpi-num">
+              {s?.sla_compliance_pct != null ? `${s.sla_compliance_pct}%` : 'Sin datos'}
+            </span>
           </div>
-          <span className="rep-kpi-sub">SLA: {s?.sla_compliance_pct ?? 100}% a tiempo</span>
+          <span className="rep-kpi-sub">
+            {s?.avg_resolution_hours != null ? `Tiempo promedio: ${s.avg_resolution_hours} h` : 'Sin mediciones de SLA'}
+          </span>
         </div>
       </div>
 
-      {/* ── Fila Principal de Gráficas estilo Imagen 1 ──────────────── */}
+      {/* ── Fila Principal: Gráfica Dinámica + Estado de Solicitudes ── */}
       <div className="rep-main-grid">
-        {/* Gráfica 1: Estadísticas de Asistencia y Trámites (Curva + Barras) */}
+        {/* Gráfica Real de Tendencia de Trámites */}
         <div className="rep-card rep-chart-card">
           <div className="rep-card-header">
             <div className="row" style={{ gap: 10, alignItems: 'center' }}>
               <div className="rep-mini-icon purple">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
                 </svg>
               </div>
-              <span className="rep-card-title">Estadísticas de Asistencia y Trámites</span>
+              <span className="rep-card-title">Tendencia Real de Solicitudes</span>
             </div>
             <select
               className="rep-select-pill"
-              value={selectedWeek}
-              onChange={(e) => setSelectedWeek(e.target.value)}
+              value={viewPeriod}
+              onChange={(e) => setViewPeriod(e.target.value)}
             >
-              <option value="Semana 01">Semana 01 ▾</option>
-              <option value="Semana 02">Semana 02 ▾</option>
-              <option value="Semana 03">Semana 03 ▾</option>
+              <option value="months">Últimos 12 meses</option>
+              <option value="days">Últimos 30 días</option>
             </select>
           </div>
 
-          {/* Gráfico SVG Curva Morada + Columnas Turquesa/Rosa (Imagen 1) */}
+          {/* Gráfico SVG generado 100% dinámicamente con los datos reales */}
           <div className="rep-attendance-chart">
-            <svg viewBox="0 0 600 240" className="rep-svg-canvas" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="purpleGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.45" />
-                  <stop offset="60%" stopColor="#06b6d4" stopOpacity="0.15" />
-                  <stop offset="100%" stopColor="#ffffff" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
+            {totalChartActivity === 0 ? (
+              <div style={{ padding: '48px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                Sin solicitudes registradas en este período de análisis.
+              </div>
+            ) : (
+              <svg viewBox="0 0 580 220" className="rep-svg-canvas" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="realPurpleGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
+                  </linearGradient>
+                </defs>
 
-              {/* Líneas guía horizontales */}
-              <line x1="40" y1="40" x2="580" y2="40" stroke="#f1f5f9" strokeDasharray="3 3" />
-              <line x1="40" y1="80" x2="580" y2="80" stroke="#f1f5f9" strokeDasharray="3 3" />
-              <line x1="40" y1="120" x2="580" y2="120" stroke="#f1f5f9" strokeDasharray="3 3" />
-              <line x1="40" y1="160" x2="580" y2="160" stroke="#f1f5f9" strokeDasharray="3 3" />
+                {/* Líneas guía horizontales */}
+                <line x1="40" y1="50" x2="560" y2="50" stroke="#f1f5f9" strokeDasharray="3 3" />
+                <line x1="40" y1="115" x2="560" y2="115" stroke="#f1f5f9" strokeDasharray="3 3" />
+                <line x1="40" y1="180" x2="560" y2="180" stroke="#e2e8f0" />
 
-              {/* Etiquetas del eje Y */}
-              <text x="15" y="44" fill="#94a3b8" fontSize="11" fontFamily="sans-serif">120</text>
-              <text x="15" y="84" fill="#94a3b8" fontSize="11" fontFamily="sans-serif">90</text>
-              <text x="15" y="124" fill="#94a3b8" fontSize="11" fontFamily="sans-serif">60</text>
-              <text x="15" y="164" fill="#94a3b8" fontSize="11" fontFamily="sans-serif">30</text>
-              <text x="22" y="200" fill="#94a3b8" fontSize="11" fontFamily="sans-serif">0</text>
+                {/* Etiquetas de escala del eje Y */}
+                <text x="10" y="54" fill="#94a3b8" fontSize="10">{maxVal}</text>
+                <text x="10" y="119" fill="#94a3b8" fontSize="10">{Math.round(maxVal / 2)}</text>
+                <text x="15" y="184" fill="#94a3b8" fontSize="10">0</text>
 
-              {/* Barras compuestas de fondo (Morado / Turquesa / Rosa) */}
-              {/* LUN */}
-              <rect x="70" y="70" width="32" height="130" rx="8" fill="#8b5cf6" opacity="0.85" />
-              <rect x="70" y="145" width="32" height="55" rx="8" fill="#ec4899" opacity="0.3" />
+                {/* Columnas de barras reales */}
+                {chartData.map((d, i) => {
+                  const x = chartData.length > 1 ? (i / (chartData.length - 1)) * 520 + 30 : 270
+                  const barH = (d.created / maxVal) * 125
+                  const barY = 180 - barH
+                  return (
+                    <g key={i}>
+                      <rect
+                        x={x}
+                        y={barY}
+                        width="18"
+                        height={Math.max(2, barH)}
+                        rx="4"
+                        fill="#06b6d4"
+                        opacity="0.8"
+                      >
+                        <title>{`${d.label}: ${d.created} creadas, ${d.resolved} resueltas`}</title>
+                      </rect>
+                    </g>
+                  )
+                })}
 
-              {/* MAR */}
-              <rect x="145" y="100" width="32" height="100" rx="8" fill="#8b5cf6" opacity="0.45" />
-              <rect x="145" y="145" width="32" height="55" rx="8" fill="#ec4899" opacity="0.3" />
+                {/* Curva de área dinámica */}
+                {areaPath && <path d={areaPath} fill="url(#realPurpleGrad)" />}
+                {curvePath && (
+                  <path
+                    d={curvePath}
+                    fill="none"
+                    stroke="#8b5cf6"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                )}
 
-              {/* MIÉ */}
-              <rect x="220" y="55" width="32" height="145" rx="8" fill="#8b5cf6" opacity="0.9" />
-              <rect x="220" y="145" width="32" height="55" rx="8" fill="#ec4899" opacity="0.3" />
+                {/* Puntos destacados sobre la curva */}
+                {chartData.map((d, i) => {
+                  const x = chartData.length > 1 ? (i / (chartData.length - 1)) * 520 + 40 : 280
+                  const y = 175 - (d.created / maxVal) * 125
+                  return (
+                    <circle
+                      key={i}
+                      cx={x}
+                      cy={y}
+                      r="4"
+                      fill="#ffffff"
+                      stroke="#8b5cf6"
+                      strokeWidth="2.5"
+                    >
+                      <title>{`${d.label}: ${d.created} solicitudes`}</title>
+                    </circle>
+                  )
+                })}
+              </svg>
+            )}
 
-              {/* JUE */}
-              <rect x="295" y="80" width="32" height="120" rx="8" fill="#8b5cf6" opacity="0.5" />
-              <rect x="295" y="145" width="32" height="55" rx="8" fill="#ec4899" opacity="0.3" />
-
-              {/* VIE */}
-              <rect x="370" y="90" width="32" height="110" rx="8" fill="#8b5cf6" opacity="0.6" />
-              <rect x="370" y="145" width="32" height="55" rx="8" fill="#ec4899" opacity="0.3" />
-
-              {/* SÁB */}
-              <rect x="445" y="105" width="32" height="95" rx="8" fill="#8b5cf6" opacity="0.5" />
-              <rect x="445" y="145" width="32" height="55" rx="8" fill="#ec4899" opacity="0.3" />
-
-              {/* DOM */}
-              <rect x="520" y="125" width="32" height="75" rx="8" fill="#8b5cf6" opacity="0.45" />
-              <rect x="520" y="145" width="32" height="55" rx="8" fill="#ec4899" opacity="0.3" />
-
-              {/* Curva de área degradada */}
-              <path
-                d="M 86 75 C 120 115, 175 105, 236 45 C 295 95, 335 85, 386 100 C 430 115, 480 85, 536 120 L 536 200 L 86 200 Z"
-                fill="url(#purpleGrad)"
-              />
-
-              {/* Línea morada con puntos destacados (Imagen 1) */}
-              <path
-                d="M 86 75 C 120 115, 175 105, 236 45 C 295 95, 335 85, 386 100 C 430 115, 480 85, 536 120"
-                fill="none"
-                stroke="#6366f1"
-                strokeWidth="3.2"
-                strokeLinecap="round"
-              />
-
-              {/* Nodos con borde morado y fondo blanco */}
-              <circle cx="86" cy="75" r="4.5" fill="#ffffff" stroke="#6366f1" strokeWidth="3" />
-              <circle cx="161" cy="98" r="4.5" fill="#ffffff" stroke="#6366f1" strokeWidth="3" />
-              <circle cx="236" cy="45" r="5" fill="#ffffff" stroke="#6366f1" strokeWidth="3" />
-              <circle cx="311" cy="85" r="4.5" fill="#ffffff" stroke="#6366f1" strokeWidth="3" />
-              <circle cx="386" cy="100" r="4.5" fill="#ffffff" stroke="#6366f1" strokeWidth="3" />
-              <circle cx="461" cy="90" r="4.5" fill="#ffffff" stroke="#6366f1" strokeWidth="3" />
-              <circle cx="536" cy="120" r="4.5" fill="#ffffff" stroke="#6366f1" strokeWidth="3" />
-            </svg>
-
-            {/* Días de la semana abajo */}
+            {/* Etiquetas del eje X */}
             <div className="rep-chart-days">
-              <span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span><span>DOM</span>
+              {chartData.map((d, i) => (
+                <span key={i} style={{ fontSize: 10.5, flex: 1, textAlign: 'center' }}>
+                  {d.label}
+                </span>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Columna Derecha: Reviews Mood y Distribución (Imagen 1) */}
+        {/* Columna Derecha: Estado de Solicitudes y Departamentos */}
         <div className="rep-side-column">
-          {/* Card: Reviews Mood / Estado de Solicitudes */}
+          {/* Card: Estado Operativo de Solicitudes */}
           <div className="rep-card">
             <div className="rep-card-header">
-              <div className="row" style={{ gap: 8, alignItems: 'center' }}>
-                <span style={{ fontSize: 16 }}>⭐</span>
-                <span className="rep-card-title">Reviews Mood</span>
-              </div>
+              <span className="rep-card-title">Estado Operativo de Trámites</span>
+              <span className="muted" style={{ fontSize: 12 }}>Total: {grandTotal}</span>
             </div>
 
-            {/* 3 Barras horizontales: Morado, Rosa, Turquesa */}
-            <div className="rep-mood-bars">
-              <div className="rep-mood-bar purple" style={{ flex: 1.2 }} title="Aprobadas / Positivas" />
-              <div className="rep-mood-bar rose" style={{ flex: 1.8 }} title="En proceso / Neutras" />
-              <div className="rep-mood-bar teal" style={{ flex: 2.2 }} title="Resueltas con éxito" />
-            </div>
+            {grandTotal === 0 ? (
+              <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>
+                Sin solicitudes registradas para evaluar estado.
+              </p>
+            ) : (
+              <>
+                <div className="rep-status-bars">
+                  {approvedPct > 0 && (
+                    <div className="rep-status-bar teal" style={{ flex: approvedPct }} title={`Aprobadas: ${approvedTotal} (${approvedPct}%)`} />
+                  )}
+                  {activePct > 0 && (
+                    <div className="rep-status-bar purple" style={{ flex: activePct }} title={`En trámite: ${activeTotal} (${activePct}%)`} />
+                  )}
+                  {rejectedPct > 0 && (
+                    <div className="rep-status-bar rose" style={{ flex: rejectedPct }} title={`Rechazadas: ${rejectedTotal} (${rejectedPct}%)`} />
+                  )}
+                </div>
 
-            <div className="rep-mood-legend">
-              <div className="rep-mood-item">
-                <span className="rep-mood-lbl">Negativas</span>
-                <div className="rep-mood-val">
-                  <span>😟</span>
-                  <b>{s?.rejected ?? 8}</b>
+                <div className="rep-status-legend">
+                  <div className="rep-status-item">
+                    <span className="rep-status-lbl">Aprobadas</span>
+                    <b style={{ color: '#0891b2' }}>{approvedTotal}</b>
+                  </div>
+                  <div className="rep-status-item">
+                    <span className="rep-status-lbl">En Trámite</span>
+                    <b style={{ color: '#8b5cf6' }}>{activeTotal}</b>
+                  </div>
+                  <div className="rep-status-item">
+                    <span className="rep-status-lbl">Rechazadas</span>
+                    <b style={{ color: '#e11d48' }}>{rejectedTotal}</b>
+                  </div>
                 </div>
-              </div>
-              <div className="rep-mood-item">
-                <span className="rep-mood-lbl">Neutras</span>
-                <div className="rep-mood-val">
-                  <span>😐</span>
-                  <b>{s?.active ?? 12}</b>
-                </div>
-              </div>
-              <div className="rep-mood-item">
-                <span className="rep-mood-lbl">Positivas</span>
-                <div className="rep-mood-val">
-                  <span>😊</span>
-                  <b>{s?.total ? Math.max(1, s.total - (s.rejected || 0) - (s.active || 0)) : 48}</b>
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
 
-          {/* Card: Distribución de Personal (Venn Diagram Imagen 1) */}
+          {/* Card: Distribución Real por Departamento */}
           <div className="rep-card">
             <div className="rep-card-header">
-              <div className="row" style={{ gap: 8, alignItems: 'center' }}>
-                <div className="rep-mini-icon purple">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10" />
-                  </svg>
-                </div>
-                <span className="rep-card-title">Distribución de Personal</span>
-              </div>
+              <span className="rep-card-title">Distribución por Departamento</span>
             </div>
 
-            {/* Diagrama de círculos superpuestos estilo Imagen 1 */}
-            <div className="rep-venn-wrapper">
-              <div className="rep-venn-circle green-teal">
-                <span className="rep-venn-pct">70%</span>
+            {(!a.by_department || a.by_department.length === 0) ? (
+              <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>
+                Sin datos por departamento todavía.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {a.by_department.slice(0, 5).map((dept) => {
+                  const deptPct = grandTotal > 0 ? Math.round((dept.count / grandTotal) * 100) : 0
+                  return (
+                    <div key={dept.department}>
+                      <div className="row between" style={{ fontSize: 12, marginBottom: 3 }}>
+                        <span style={{ fontWeight: 600 }}>{dept.department}</span>
+                        <span className="muted">{dept.count} ({deptPct}%)</span>
+                      </div>
+                      <div style={{ height: 6, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${Math.min(100, Math.max(8, deptPct))}%`,
+                            background: '#06b6d4',
+                            borderRadius: 4,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
-              <div className="rep-venn-circle purple-circ">
-                <span className="rep-venn-pct">20%</span>
-              </div>
-              <div className="rep-venn-circle pink-circ">
-                <span className="rep-venn-pct">10%</span>
-              </div>
-            </div>
-
-            <div className="rep-venn-legend">
-              <span className="legend-item"><span className="dot" style={{ backgroundColor: '#06b6d4' }} /> Operativo</span>
-              <span className="legend-item"><span className="dot" style={{ backgroundColor: '#8b5cf6' }} /> Administrativo</span>
-              <span className="legend-item"><span className="dot" style={{ backgroundColor: '#ec4899' }} /> Directivo</span>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── Tabla Inferior: Top Score Hiring / Trámites Destacados ─── */}
+      {/* ── Tabla Inferior: Desglose Real de Trámites por Tipo ───────── */}
       <div className="rep-card" style={{ marginTop: 22 }}>
         <div className="rep-card-header">
           <div className="row" style={{ gap: 10, alignItems: 'center' }}>
@@ -299,61 +356,68 @@ export default function Reports() {
                 <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
               </svg>
             </div>
-            <span className="rep-card-title">Trámites y Solicitudes por Categoría</span>
+            <span className="rep-card-title">Desglose de Trámites por Tipo</span>
           </div>
-          <span className="rep-select-pill">2026 ▾</span>
+          <span className="muted" style={{ fontSize: 12 }}>{a.by_type?.length || 0} tipos con actividad</span>
         </div>
 
-        <table className="rep-table">
-          <thead>
-            <tr>
-              <th>Tipo de Solicitud</th>
-              <th style={{ textAlign: 'center' }}>Tasa de Atención</th>
-              <th>Estado</th>
-              <th style={{ textAlign: 'center' }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(a?.by_type?.length ? a.by_type : [
-              { type: 'VACATION', count: 18 },
-              { type: 'PERSONAL_LEAVE', count: 12 },
-              { type: 'CERTIFICATE_EMPLOYMENT', count: 9 },
-              { type: 'MEDICAL_LEAVE', count: 5 },
-            ]).map((item, idx) => {
-              const pct = idx === 0 ? 88 : idx === 1 ? 74 : idx === 2 ? 65 : 52
-              return (
-                <tr key={item.type}>
-                  <td>
-                    <div className="row" style={{ gap: 12, alignItems: 'center' }}>
-                      <div className="rep-avatar-circle" style={{ background: idx % 2 === 0 ? '#8b5cf6' : '#06b6d4' }}>
-                        {(TYPE[item.type] || item.type).slice(0, 2).toUpperCase()}
-                      </div>
-                      <div>
-                        <b>{TYPE[item.type] || item.type}</b>
-                        <div className="muted" style={{ fontSize: 11.5 }}>
-                          {item.count} solicitudes registradas
+        {(!a.by_type || a.by_type.length === 0) ? (
+          <p className="muted" style={{ padding: '24px 16px', textAlign: 'center', margin: 0 }}>
+            Sin trámites registrados todavía en el sistema.
+          </p>
+        ) : (
+          <table className="rep-table">
+            <thead>
+              <tr>
+                <th>Tipo de Solicitud</th>
+                <th style={{ textAlign: 'center' }}>Total Solicitudes</th>
+                <th>Proporción del Volumen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {a.by_type.map((item, idx) => {
+                const typePct = grandTotal > 0 ? Math.round((item.count / grandTotal) * 100) : 0
+                return (
+                  <tr key={item.type}>
+                    <td>
+                      <div className="row" style={{ gap: 12, alignItems: 'center' }}>
+                        <div
+                          className="rep-avatar-circle"
+                          style={{ background: idx % 2 === 0 ? '#8b5cf6' : '#06b6d4' }}
+                        >
+                          {(TYPE[item.type] || item.type).slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <b>{TYPE[item.type] || item.type}</b>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <div className="rep-match-circle" style={{ borderColor: idx % 2 === 0 ? '#8b5cf6' : '#06b6d4' }}>
-                      <span>{pct}%</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="rep-status-badge">Atendido</span>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <button type="button" className="invoices-menu-btn" title="Detalles">
-                      •••
-                    </button>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <b>{item.count}</b>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, maxWidth: 220 }}>
+                        <div style={{ flex: 1, height: 6, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              height: '100%',
+                              width: `${Math.min(100, Math.max(6, typePct))}%`,
+                              background: idx % 2 === 0 ? '#8b5cf6' : '#06b6d4',
+                              borderRadius: 4,
+                            }}
+                          />
+                        </div>
+                        <span className="muted" style={{ fontSize: 12, minWidth: 38 }}>
+                          {typePct}%
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* ── Tablero de Power BI Integrado ─────────────────────────── */}

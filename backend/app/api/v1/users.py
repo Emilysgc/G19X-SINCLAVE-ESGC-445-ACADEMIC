@@ -1,11 +1,15 @@
 """Usuarios y departamentos."""
 import csv
 import io
+import os
+import uuid
 from datetime import date
+from pathlib import Path
 
 import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request as HttpRequest, UploadFile
 from sqlalchemy import func, or_, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import HR_ROLES, client_ip, get_current_user, require_hr
@@ -330,10 +334,6 @@ _IMAGE_EXT_MAP = {
 
 @router.post("/me/avatar", summary="Subir imagen de perfil")
 async def upload_avatar(file: UploadFile = File(...), actor: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    import os
-    import uuid
-    from pathlib import Path
-
     ext = Path(file.filename or "").suffix.lower()
     if ext not in _IMAGE_EXT_MAP:
         raise HTTPException(400, "Formato no permitido. Usa JPG, PNG, WEBP o GIF.")
@@ -342,7 +342,6 @@ async def upload_avatar(file: UploadFile = File(...), actor: User = Depends(get_
     if len(content) > 2_097_152:
         raise HTTPException(413, "La imagen no debe pesar más de 2 MB.")
 
-    # Validar firma del archivo (número mágico) contra contenido real
     valid = False
     if ext in (".jpg", ".jpeg") and content.startswith(b"\xff\xd8\xff"):
         valid = True
@@ -375,16 +374,21 @@ async def upload_avatar(file: UploadFile = File(...), actor: User = Depends(get_
     return {"avatar_url": avatar_url, "user": user_public(u, full=True)}
 
 
-
-
-
 # ── Notas y Actividades de Calendario ───────────────────────────────────────
-@router.get("/me/calendar-notes", summary="Listar notas y actividades de calendario del usuario")
+@router.get("/me/calendar-notes", summary="Listar notas y actividades de calendario del usuario o departamento")
 async def list_calendar_notes(actor: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    query_filters = [CalendarNote.user_id == actor.id]
+    if actor.department_id:
+        query_filters.append(
+            (CalendarNote.department_id == actor.department_id) & (CalendarNote.visibility == "DEPARTMENT")
+        )
+    query_filters.append(CalendarNote.visibility == "GLOBAL")
+
     notes = (
         await db.execute(
             select(CalendarNote)
-            .where(CalendarNote.user_id == actor.id)
+            .options(selectinload(CalendarNote.user), selectinload(CalendarNote.department))
+            .where(or_(*query_filters))
             .order_by(CalendarNote.date.desc(), CalendarNote.created_at.desc())
         )
     ).scalars().all()
@@ -396,9 +400,13 @@ async def list_calendar_notes(actor: User = Depends(get_current_user), db: Async
             "start_date": str(n.date),
             "end_date": str(n.date),
             "type": n.type,
+            "visibility": n.visibility or "PERSONAL",
+            "department_id": n.department_id,
+            "department_name": n.department.name if n.department else None,
             "description": n.description or "",
             "isCustomActivity": True,
-            "requester": {"full_name": actor.full_name},
+            "is_owner": n.user_id == actor.id,
+            "requester": {"full_name": n.user.full_name if n.user else actor.full_name},
             "created_at": n.created_at.isoformat() if n.created_at else None,
         }
         for n in notes
@@ -411,8 +419,15 @@ async def create_calendar_note(
     actor: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    vis = (body.visibility or "PERSONAL").upper()
+    if vis not in ("PERSONAL", "DEPARTMENT", "GLOBAL"):
+        vis = "PERSONAL"
+    dept_id = (body.department_id or actor.department_id) if vis == "DEPARTMENT" else None
+
     note = CalendarNote(
         user_id=actor.id,
+        department_id=dept_id,
+        visibility=vis,
         title=body.title.strip(),
         date=body.date,
         type=body.type.strip() if body.type else "Actividad",
@@ -427,8 +442,11 @@ async def create_calendar_note(
         "start_date": str(note.date),
         "end_date": str(note.date),
         "type": note.type,
+        "visibility": note.visibility,
+        "department_id": note.department_id,
         "description": note.description or "",
         "isCustomActivity": True,
+        "is_owner": True,
         "requester": {"full_name": actor.full_name},
         "created_at": note.created_at.isoformat() if note.created_at else None,
     }
@@ -448,13 +466,28 @@ async def update_calendar_note(
         raise HTTPException(400, "ID de nota inválido")
 
     note = await db.get(CalendarNote, numeric_id)
-    if not note or note.user_id != actor.id:
+    if not note:
         raise HTTPException(404, "Nota o actividad no encontrada")
+
+    is_owner = note.user_id == actor.id
+    is_admin = actor.role in (UserRole.HR_ADMIN, UserRole.SYSTEM_ADMIN)
+    if not is_owner and not is_admin:
+        raise HTTPException(403, "No tienes permisos para editar esta actividad")
+
+    vis = (body.visibility or note.visibility or "PERSONAL").upper()
+    if vis not in ("PERSONAL", "DEPARTMENT", "GLOBAL"):
+        vis = note.visibility
 
     note.title = body.title.strip()
     note.date = body.date
     note.type = body.type.strip() if body.type else "Actividad"
     note.description = body.description.strip() if body.description else None
+    note.visibility = vis
+    if vis == "DEPARTMENT":
+        note.department_id = body.department_id or note.department_id or actor.department_id
+    elif vis == "PERSONAL":
+        note.department_id = None
+
     await db.flush()
     return {
         "id": f"act_{note.id}",
@@ -463,8 +496,11 @@ async def update_calendar_note(
         "start_date": str(note.date),
         "end_date": str(note.date),
         "type": note.type,
+        "visibility": note.visibility,
+        "department_id": note.department_id,
         "description": note.description or "",
         "isCustomActivity": True,
+        "is_owner": note.user_id == actor.id,
         "requester": {"full_name": actor.full_name},
         "created_at": note.created_at.isoformat() if note.created_at else None,
     }
@@ -483,9 +519,12 @@ async def delete_calendar_note(
         raise HTTPException(400, "ID de nota inválido")
 
     note = await db.get(CalendarNote, numeric_id)
-    if not note or note.user_id != actor.id:
+    if not note:
         raise HTTPException(404, "Nota o actividad no encontrada")
+
+    if note.user_id != actor.id and actor.role not in (UserRole.HR_ADMIN, UserRole.SYSTEM_ADMIN):
+        raise HTTPException(403, "No tienes permisos para eliminar esta actividad")
 
     await db.delete(note)
     await db.flush()
-    return {"ok": True}
+    return {"ok": True, "deleted_id": note_id}

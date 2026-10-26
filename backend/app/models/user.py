@@ -69,7 +69,7 @@ class User(Base):
 
     department: Mapped[Optional[Department]] = relationship("Department", back_populates="users", foreign_keys=[department_id])
     direct_supervisor: Mapped[Optional["User"]] = relationship("User", remote_side="User.id", foreign_keys=[direct_supervisor_id])
-    calendar_notes: Mapped[List["CalendarNote"]] = relationship("CalendarNote", back_populates="user", cascade="all, delete-orphan")
+    calendar_notes: Mapped[List["CalendarNote"]] = relationship("CalendarNote", back_populates="user", cascade="all, delete-orphan", foreign_keys="CalendarNote.user_id")
 
 
 class CalendarNote(Base):
@@ -77,10 +77,13 @@ class CalendarNote(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    department_id: Mapped[Optional[int]] = mapped_column(ForeignKey("departments.id", ondelete="SET NULL"), nullable=True, index=True)
+    visibility: Mapped[str] = mapped_column(String(20), default="PERSONAL")  # PERSONAL, DEPARTMENT, GLOBAL
     title: Mapped[str] = mapped_column(String(200))
     date: Mapped[date] = mapped_column(Date)
     type: Mapped[str] = mapped_column(String(50), default="Actividad")
-    description: Mapped[Optional[str]] = mapped_column(String(1000))
+    description: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    user: Mapped["User"] = relationship("User", back_populates="calendar_notes")
+    user: Mapped["User"] = relationship("User", back_populates="calendar_notes", foreign_keys=[user_id])
+    department: Mapped[Optional[Department]] = relationship("Department", foreign_keys=[department_id])

@@ -3,14 +3,44 @@ from datetime import date, timedelta
 from typing import Optional
 
 
+def is_lft_mandatory_holiday(d: date) -> bool:
+    """Verifica si una fecha corresponde a un día de descanso obligatorio según el Art. 74 de la LFT:
+    I. 1 de enero (Año Nuevo)
+    II. Primer lunes de febrero en conmemoración del 5 de febrero (Día de la Constitución)
+    III. Tercer lunes de marzo en conmemoración del 21 de marzo (Natalicio de Benito Juárez)
+    IV. 1 de mayo (Día del Trabajo)
+    V. 16 de septiembre (Día de la Independencia)
+    VI. Tercer lunes de noviembre en conmemoración del 20 de noviembre (Revolución Mexicana)
+    VII. 1 de octubre cada 6 años (Transmisión del Poder Ejecutivo Federal, reforma 2024)
+    VIII. 25 de diciembre (Navidad)
+    """
+    m, day = d.month, d.day
+    # Días fijos
+    if (m, day) in {(1, 1), (5, 1), (9, 16), (12, 25)}:
+        return True
+    # 1 de octubre cada 6 años (a partir de 2024)
+    if m == 10 and day == 1 and (d.year - 2024) % 6 == 0:
+        return True
+    # Primer lunes de febrero
+    if m == 2 and d.weekday() == 0 and 1 <= day <= 7:
+        return True
+    # Tercer lunes de marzo
+    if m == 3 and d.weekday() == 0 and 15 <= day <= 21:
+        return True
+    # Tercer lunes de noviembre
+    if m == 11 and d.weekday() == 0 and 15 <= day <= 21:
+        return True
+    return False
+
+
 def working_days(start: date, end: date) -> float:
-    """Días hábiles (lunes a viernes) entre dos fechas, ambas inclusivas."""
+    """Días hábiles (lunes a viernes excluyendo descansos obligatorios de la LFT) entre dos fechas, ambas inclusivas."""
     if end < start:
         return 0.0
     total = 0
     cur = start
     while cur <= end:
-        if cur.weekday() < 5:
+        if cur.weekday() < 5 and not is_lft_mandatory_holiday(cur):
             total += 1
         cur += timedelta(days=1)
     return float(total)

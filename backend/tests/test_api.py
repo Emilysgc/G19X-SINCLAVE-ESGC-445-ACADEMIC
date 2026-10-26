@@ -96,7 +96,7 @@ async def test_vacation_happy_path_with_balance_deduction(api):
 
 
 async def test_long_vacation_needs_supervisor_then_hr(api):
-    s, e = api.window(days=14)  # 2 semanas = 10 días hábiles
+    s, e = api.window(days=14)  # >= 10 días hábiles (considerando días festivos LFT)
     req = (await api.request("emp2", "VACATION", s, e, "Descanso")).json()
     assert [st["label"] for st in req["steps"]] == ["Supervisor", "Recursos Humanos"]
     mid = (await api.post("mgr", f"{V}/approvals/{req['id']}/approve", json={})).json()
@@ -438,12 +438,13 @@ async def test_calendar_notes_crud_for_user(api):
     assert r.status_code == 200
     assert r.json() == []
 
-    # 2. Crear una nota de calendario
+    # 2. Crear una nota de calendario personal
     payload = {
         "title": "Entrega de Sprint y Revisión",
         "date": "2026-11-05",
         "type": "Entrega",
         "description": "Revisión final de métricas de desempeño.",
+        "visibility": "PERSONAL",
     }
     create_res = await api.post("emp1", f"{V}/users/me/calendar-notes", json=payload)
     assert create_res.status_code == 201
@@ -454,24 +455,41 @@ async def test_calendar_notes_crud_for_user(api):
     assert note["isCustomActivity"] is True
     note_id = note["id"]
 
-    # 3. Listar notas: debe contener la nota creada
-    list_res = await api.get("emp1", f"{V}/users/me/calendar-notes")
-    assert list_res.status_code == 200
-    items = list_res.json()
-    assert len(items) == 1
-    assert items[0]["id"] == note_id
+    # 3. Editar nota (PUT): actualizar título, fecha y cambiar visibilidad a DEPARTMENT
+    update_res = await api.c.put(
+        f"{V}/users/me/calendar-notes/{note_id}",
+        headers=api.h("emp1"),
+        json={
+            "title": "Entrega de Sprint y Retrospectiva",
+            "date": "2026-11-06",
+            "type": "Reunión",
+            "description": "Notas actualizadas con retro de equipo.",
+            "visibility": "DEPARTMENT",
+        },
+    )
+    assert update_res.status_code == 200
+    updated_note = update_res.json()
+    assert updated_note["title"] == "Entrega de Sprint y Retrospectiva"
+    assert updated_note["start_date"] == "2026-11-06"
+    assert updated_note["visibility"] == "DEPARTMENT"
 
-    # 4. Otro usuario (mgr) no debe ver la nota privada de emp1
+    # 4. Ahora que es DEPARTMENT, mgr (mismo departamento) puede verla
     mgr_list = await api.get("mgr", f"{V}/users/me/calendar-notes")
     assert mgr_list.status_code == 200
-    assert len(mgr_list.json()) == 0
+    assert len(mgr_list.json()) == 1
+    assert mgr_list.json()[0]["id"] == note_id
 
-    # 5. Eliminar la nota
+    # 5. Usuario sin departamento (solo) no debe verla
+    solo_list = await api.get("solo", f"{V}/users/me/calendar-notes")
+    assert solo_list.status_code == 200
+    assert len(solo_list.json()) == 0
+
+    # 6. Eliminar la nota
     del_res = await api.c.delete(f"{V}/users/me/calendar-notes/{note_id}", headers=api.h("emp1"))
     assert del_res.status_code == 200
     assert del_res.json()["ok"] is True
 
-    # 6. Confirmar eliminación
+    # 7. Confirmar eliminación
     list_after = await api.get("emp1", f"{V}/users/me/calendar-notes")
     assert list_after.status_code == 200
     assert len(list_after.json()) == 0

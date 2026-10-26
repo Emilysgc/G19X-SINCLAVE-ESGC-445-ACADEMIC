@@ -31,7 +31,7 @@ Automatización integral de trámites laborales (vacaciones, permisos personales
 | **Orquestación** | Docker & Docker Compose | Contenerización completa de microservicios | Operativo |
 | **CI/CD** | GitHub Actions | Pipeline automatizado de pruebas, análisis y empaquetado | Operativo |
 
-> 📄 **Documentación Oficial del Proyecto:** Consulta la definición técnica y funcional completa en el [Documento del MVP (v2.4.0)](docs/MVP.md) y el [Documento de Requisitos de Producto (PRD)](PRD.md).
+> 📄 **Documentación Oficial del Proyecto:** Consulta la definición técnica y funcional completa en el [Documento del MVP (v2.5.0)](docs/MVP.md) y el [Documento de Requisitos de Producto (PRD)](PRD.md).
 
 ---
 
@@ -76,6 +76,13 @@ docker compose up -d --build
 ```
 
 > **Tiempo de espera estimado:** Aguarda entre **30 y 60 segundos** en el primer arranque para que PostgreSQL, Redis y Keycloak inicialicen e importen automáticamente el realm `rrhh`.
+>
+> 💡 **Nota para evaluadores con base de datos preexistente:**
+> El sistema inicializa automáticamente su esquema relacional mediante `Base.metadata.create_all()` al iniciar el backend (sin herramientas de migración pesadas como Alembic para simplificar la evaluación). Si ya contabas con volúmenes locales previos de una ejecución anterior y deseas reiniciar la base de datos limpia con todas las tablas y datos semilla actualizados, ejecuta:
+> ```bash
+> docker compose down -v
+> docker compose up -d --build
+> ```
 
 ---
 
@@ -168,15 +175,15 @@ El sistema genera automáticamente el esquema analítico para reportes de Busine
 
 ## Pruebas Automatizadas (Pytest)
 
-Para ejecutar la suite completa de 52 pruebas unitarias y de integración:
+Para ejecutar la suite completa de pruebas unitarias y de integración:
 
 ```bash
 docker compose exec backend pytest tests/ -v
 ```
 
-> **Resultado:** **52 pruebas registradas (51 aprobadas, 1 omitida en SQLite por depender de PostgreSQL) (100% PASSED)** cubriendo:
-> - **Pruebas unitarias (`test_units.py` - 3 pruebas):** Cálculo de días hábiles LFT, tabla de antigüedad y validación matemática de CLABE (estándar Banxico módulo-10).
-> - **API y reglas de negocio (`test_api.py` - 33 pruebas):** Autenticación, creación de solicitudes, prevención de empalmes, permisos con auto-aprobación, aprobación multinivel de vacaciones, cifrado de datos sensibles, persistencia de notas de calendario, descargas seguras y vistas analíticas.
+> **Resultado:** **53 pruebas registradas (52 aprobadas, 1 omitida en SQLite por depender de PostgreSQL) (100% PASSED)** cubriendo:
+> - **Pruebas unitarias (`test_units.py` - 4 pruebas):** Cálculo de días hábiles laborables excluyendo fines de semana y descansos obligatorios de la LFT (Art. 74), tabla de antigüedad y validación matemática de CLABE (estándar Banxico módulo-10).
+> - **API y reglas de negocio (`test_api.py` - 33 pruebas):** Autenticación, creación de solicitudes, prevención de empalmes, permisos con auto-aprobación, aprobación multinivel de vacaciones, cifrado de datos sensibles, CRUD y visibilidad departamental de notas de calendario, descargas seguras y vistas analíticas.
 > - **Integraciones y resiliencia (`test_integrations.py` - 11 pruebas):** Keycloak OIDC, linking de usuarios SSO, alternancia automática de proveedores de IA y degradación elegante al motor de reglas.
 > - **Comportamiento del Agente de IA (`test_ai_agent_behavior.py` - 5 pruebas):** Inyección de fecha Ciudad de México, system prompt estructurado con alcance/reglas/ejemplos, filtro de solicitudes fuera de alcance y parámetros de inferencia.
 
@@ -202,7 +209,7 @@ docker compose exec backend pytest tests/ -v
 Durante el ciclo de desarrollo de esta solución se utilizó Inteligencia Artificial Generativa bajo la metodología de **programación en pareja asistida por IA (Pair Programming con agentes autónomos)**:
 1. **Modelado y Arquitectura:** Asistencia en el diseño del modelo entidad-relación relacional en SQLAlchemy, esquemas estrictos de validación con Pydantic (`extra="forbid"`) y diseño de máquinas de estado para los flujos de aprobación.
 2. **Políticas Laborales Corporativas:** Generación, adaptación y calibración de las 21 políticas laborales oficiales de **PluriOne S.A. de C.V.**, fundamentadas en la Ley Federal del Trabajo de México (LFT).
-3. **Generación y Cobertura de Pruebas:** Redacción colaborativa de los 52 casos de prueba con Pytest, incluyendo la validación algorítmica de CLABE interbancaria, escenarios de escalamiento de SLA y mitigación de vectores de ataque como inyección de scripts (XSS).
+3. **Generación y Cobertura de Pruebas:** Redacción colaborativa de los casos de prueba con Pytest, incluyendo la validación algorítmica de CLABE interbancaria, escenarios de escalamiento de SLA y mitigación de vectores de ataque como inyección de scripts (XSS).
 4. **Auditoría de Seguridad:** Detección y corrección de riesgos de seguridad, tales como el aislamiento estricto del almacenamiento de adjuntos, validación binaria de firmas de archivos (números mágicos) para avatares y cifrado simétrico Fernet para datos financieros.
 
 ---

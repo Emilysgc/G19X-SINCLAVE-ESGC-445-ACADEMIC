@@ -1,8 +1,8 @@
 """Esquemas Pydantic de entrada."""
 from datetime import date
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.models import RequestType, UserRole, UserStatus
 from app.services.utils import clabe_is_valid
@@ -29,28 +29,14 @@ class PasswordChangeIn(BaseModel):
     new_password: str = Field(min_length=10, max_length=128)
 
 
-
-
-
 class ForgotPasswordIn(BaseModel):
-
     email: str = Field(min_length=3, max_length=120)
-
-
-
 
 
 class ResetPasswordCodeIn(BaseModel):
-
     email: str = Field(min_length=3, max_length=120)
-
     code: str = Field(min_length=6, max_length=6)
-
     new_password: str = Field(min_length=10, max_length=128)
-
-
-from typing import Any, Literal, Optional
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, ValidationError, field_validator, model_validator
 
 
 class EmptyRequestData(BaseModel):
@@ -230,3 +216,5 @@ class CalendarNoteIn(BaseModel):
     date: date
     type: str = Field(default="Actividad", max_length=50)
     description: Optional[str] = Field(default=None, max_length=1000)
+    visibility: Optional[str] = Field(default="PERSONAL", max_length=20)  # PERSONAL, DEPARTMENT, GLOBAL
+    department_id: Optional[int] = None

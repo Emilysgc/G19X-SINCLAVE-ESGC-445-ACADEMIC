@@ -2,7 +2,7 @@
 ## Sistema Inteligente de Solicitudes Internas de Personal (RRHH)
 **Organización:** PluriOne S.A. de C.V. — Develop Talent & Technology  
 **Código del Proyecto:** G19X-SINCLAVE-ESGC-445-ACADEMIC  
-**Versión del MVP:** 2.4.0 (Actualizado al 22 de Octubre de 2026)  
+**Versión del MVP:** 2.5.0 (Actualizado al 23 de Octubre de 2026)  
 **Versión Inicial:** 1.0.0 (9 de Octubre de 2026)  
 
 ---
@@ -39,12 +39,12 @@ El presente documento describe el alcance funcional, técnico y operativo del **
   * Año 4: 18 días laborables.
   * Año 5: 20 días laborables.
   * De 6 a 10 años: 22 días laborables (y progresión de +2 días por cada lustro subsecuente).
-* **Deducción de Días Hábiles:** El motor calcula los días solicitados excluyendo fines de semana (sábados y domingos de descanso laboral).
+* **Deducción de Días Hábiles:** El motor calcula los días solicitados excluyendo fines de semana (sábados y domingos) y días de descanso obligatorio oficiales según el artículo 74 de la Ley Federal del Trabajo (1 de enero, primer lunes de febrero, tercer lunes de marzo, 1 de mayo, 16 de septiembre, tercer lunes de noviembre, 1 de octubre sexenal y 25 de diciembre).
 * **Prima Vacacional:** Cálculo y proyección automática del 25% de prima vacacional legalmente exigible (artículo 80 LFT).
 
 ### 2.4. Calendario Laboral y Actividades Persistentes
 * **Visualización de Ausencias:** Calendario interactivo mensual que refleja en tiempo real las solicitudes aprobadas (vacaciones, incapacidades, permisos y días de paternidad/maternidad).
-* **Persistencia en Backend:** Módulo de notas y actividades personales respaldadas en base de datos relacional (`calendar_notes`), permitiendo crear, consultar, editar y eliminar recordatorios y notas propias del colaborador, integradas con el calendario de solicitudes aprobadas del equipo.
+* **Persistencia en Backend y Visibilidad Departamental:** Módulo de notas y actividades respaldadas en base de datos relacional (`calendar_notes`), permitiendo crear, consultar, editar (`PUT /users/me/calendar-notes/{id}`) y eliminar recordatorios propios del colaborador o compartidos a nivel departamental (`visibility: 'PERSONAL' | 'DEPARTMENT' | 'GLOBAL'`), integradas con el calendario de solicitudes aprobadas del equipo.
 * **Resiliencia Local:** Caché en cliente y sincronización asíncrona que garantiza la disponibilidad de consulta incluso ante desconexiones momentáneas.
 
 ### 2.5. Flujos de Aprobación y Matriz de Autorización
@@ -84,9 +84,9 @@ El presente documento describe el alcance funcional, técnico y operativo del **
 
 ## 4. Estrategia de Pruebas y Aseguramiento de Calidad
 
-El MVP cuenta con una suite completa de **52 pruebas automatizadas con Pytest**, logrando una tasa de aprobación del 100%:
-* **Cálculos y Algoritmos Matemáticos (3 pruebas):** Verificación del dígito de Banxico, cálculo de años de servicio y días hábiles laborables LFT.
-* **Endpoints y Reglas de Negocio (33 pruebas):** Ciclo de vida completo de solicitudes, aprobación multinivel, auto-aprobación, cambio de CLABE bancaria cifrada, persistencia de calendario y recuperación de contraseña vía OTP.
+El MVP cuenta con una suite completa de **pruebas automatizadas con Pytest**, logrando una tasa de aprobación del 100%:
+* **Cálculos y Algoritmos Matemáticos (4 pruebas):** Verificación del dígito de Banxico, cálculo de años de servicio, tabla LFT de vacaciones y días hábiles laborables excluyendo fines de semana y descansos obligatorios de la LFT.
+* **Endpoints y Reglas de Negocio (33 pruebas):** Ciclo de vida completo de solicitudes, aprobación multinivel, auto-aprobación, cambio de CLABE bancaria cifrada, CRUD y visibilidad departamental de calendario y recuperación de contraseña vía OTP.
 * **Integraciones y Resiliencia (11 pruebas):** Keycloak SSO, revocación en Redis, degradación elegante de IA hacia el motor de reglas y compatibilidad de base de datos.
 * **Validación de IA (5 pruebas):** Verificación de system prompts corporativos, inyección de fecha y contención de solicitudes fuera de alcance.
 
@@ -103,3 +103,4 @@ El MVP cuenta con una suite completa de **52 pruebas automatizadas con Pytest**,
 | **20-Oct-2026** | 2.2.0 | Motor de vacaciones LFT (Reforma 2023), cálculo automático de antigüedad y prima vacacional del 25%. |
 | **21-Oct-2026** | 2.3.0 | Módulo de calendario con persistencia en backend (`calendar_notes`), sincronización local y suite ampliada a 52 pruebas. |
 | **22-Oct-2026** | 2.4.0 | Recuperación de contraseñas con OTP (Redis, 3 intentos, 10 min), logging seguro en producción, codificación UTF-8 estricta y rediseño de interfaz con nomenclatura semántica. |
+| **23-Oct-2026** | 2.5.0 | Exclusión algorítmica de descansos obligatorios de la LFT en días hábiles (`utils.py`), edición y visibilidad departamental en notas de calendario (`calendar_notes`), eliminación total de datos simulados en analítica y extracción completa de estilos inline a CSS semántico. |

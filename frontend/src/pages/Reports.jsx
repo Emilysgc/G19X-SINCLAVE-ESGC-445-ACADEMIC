@@ -1,51 +1,35 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState } from 'react'
 import { api } from '../services/api'
-import { Loading } from '../components/ui.jsx'
+import { Loading, Alert } from '../components/ui.jsx'
 import { TYPE } from '../services/labels'
 
 export default function Reports() {
   const [a, setA] = useState(null)
-  const [viewPeriod, setViewPeriod] = useState('months') // 'months' o 'days'
+  const [err, setErr] = useState('')
+  const [viewPeriod, setViewPeriod] = useState('months') // 'months' | 'days'
 
   useEffect(() => {
-    api.get('/analytics/overview').then(setA).catch(() => setA(null))
+    api.get('/analytics/overview')
+      .then(setA)
+      .catch((e) => setErr(e.message))
   }, [])
+
+  if (!a && !err) return <Loading />
+  if (err) return <Alert kind="err">{err}</Alert>
 
   const s = a?.summary
 
-  // Datos de tendencia según el período seleccionado
-  const chartData = useMemo(() => {
-    if (!a) return []
-    if (viewPeriod === 'days') {
-      return (a.trend || []).map((t) => ({
+  // Datos para la gráfica según el selector de período real
+  const chartData = viewPeriod === 'months'
+    ? (a.monthly_trend || [])
+    : (a.trend || []).map((t) => ({
         label: t.date.slice(5),
-        created: t.created || 0,
-        resolved: t.resolved || 0,
+        created: t.created || t.count || 0,
+        resolved: t.completed || t.resolved || 0,
       }))
-    }
-    return (a.monthly_trend || []).map((t) => ({
-      label: t.label,
-      created: t.created || 0,
-      resolved: t.resolved || 0,
-    }))
-  }, [a, viewPeriod])
 
-  if (!a) return <Loading />
-
-  // Cálculo de coordenadas dinámicas para el gráfico SVG real
-  const maxVal = Math.max(1, ...chartData.map((d) => Math.max(d.created, d.resolved)))
-  const totalChartActivity = chartData.reduce((acc, d) => acc + d.created + d.resolved, 0)
-
-  const points = chartData.map((d, i) => {
-    const x = chartData.length > 1 ? (i / (chartData.length - 1)) * 520 + 40 : 280
-    const y = 175 - (d.created / maxVal) * 125
-    return `${x},${y}`
-  })
-  const curvePath = points.length > 1 ? `M ${points.join(' L ')}` : ''
-  const areaPath =
-    points.length > 1
-      ? `M ${points[0]} L ${points.join(' L ')} L ${chartData.length > 1 ? (chartData.length - 1) / (chartData.length - 1) * 520 + 40 : 540},180 L 40,180 Z`
-      : ''
+  const maxVal = Math.max(1, ...chartData.map((d) => Math.max(d.created || 0, d.resolved || 0)))
+  const totalChartActivity = chartData.reduce((acc, d) => acc + (d.created || 0) + (d.resolved || 0), 0)
 
   // Desglose de estado para la barra de estado operativa
   const approvedTotal = (s?.approved || 0) + (s?.completed || 0)
@@ -60,11 +44,11 @@ export default function Reports() {
   return (
     <div className="rep-container">
       {/* ── Encabezado de la Sección ─────────────────────────────────── */}
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>
+      <div className="rep-header-block">
+        <h1 className="rep-main-title">
           Reportes y Power BI
         </h1>
-        <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>
+        <p className="rep-main-subtitle">
           Indicadores analíticos oficiales obtenidos en tiempo real de la base de datos de Recursos Humanos.
         </p>
       </div>
@@ -152,7 +136,7 @@ export default function Reports() {
         {/* Gráfica Real de Tendencia de Trámites */}
         <div className="rep-card rep-chart-card">
           <div className="rep-card-header">
-            <div className="row" style={{ gap: 10, alignItems: 'center' }}>
+            <div className="rep-title-group">
               <div className="rep-mini-icon purple">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
@@ -170,10 +154,10 @@ export default function Reports() {
             </select>
           </div>
 
-          {/* Gráfico SVG generado 100% dinámicamente con los datos reales */}
+          {/* Gráfico SVG generado dinámicamente con datos reales */}
           <div className="rep-attendance-chart">
             {totalChartActivity === 0 ? (
-              <div style={{ padding: '48px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+              <div className="rep-empty-notice">
                 Sin solicitudes registradas en este período de análisis.
               </div>
             ) : (
@@ -218,32 +202,31 @@ export default function Reports() {
                 })}
 
                 {/* Curva de área dinámica */}
-                {areaPath && <path d={areaPath} fill="url(#realPurpleGrad)" />}
-                {curvePath && (
-                  <path
-                    d={curvePath}
-                    fill="none"
-                    stroke="#8b5cf6"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                )}
-
-                {/* Puntos destacados sobre la curva */}
-                {chartData.map((d, i) => {
-                  const x = chartData.length > 1 ? (i / (chartData.length - 1)) * 520 + 40 : 280
-                  const y = 175 - (d.created / maxVal) * 125
+                {(() => {
+                  if (chartData.length < 2) return null
+                  const pts = chartData.map((d, i) => {
+                    const x = (i / (chartData.length - 1)) * 520 + 39
+                    const y = 180 - (d.created / maxVal) * 125
+                    return `${x},${y}`
+                  })
+                  const firstX = 39
+                  const lastX = 559
+                  const areaD = `M ${pts.join(' L ')} L ${lastX},180 L ${firstX},180 Z`
+                  const lineD = `M ${pts.join(' L ')}`
                   return (
-                    <circle
-                      key={i}
-                      cx={x}
-                      cy={y}
-                      r="4"
-                      fill="#ffffff"
-                      stroke="#8b5cf6"
-                      strokeWidth="2.5"
-                    >
+                    <>
+                      <path d={areaD} fill="url(#realPurpleGrad)" />
+                      <path d={lineD} fill="none" stroke="#8b5cf6" strokeWidth="2.5" strokeLinecap="round" />
+                    </>
+                  )
+                })()}
+
+                {/* Puntos y tooltips nativos en SVG */}
+                {chartData.map((d, i) => {
+                  const cx = chartData.length > 1 ? (i / (chartData.length - 1)) * 520 + 39 : 270
+                  const cy = 180 - (d.created / maxVal) * 125
+                  return (
+                    <circle key={i} cx={cx} cy={cy} r="4" fill="#8b5cf6" stroke="#ffffff" strokeWidth="2">
                       <title>{`${d.label}: ${d.created} solicitudes`}</title>
                     </circle>
                   )
@@ -251,10 +234,10 @@ export default function Reports() {
               </svg>
             )}
 
-            {/* Etiquetas del eje X */}
+            {/* Eje X con etiquetas de períodos */}
             <div className="rep-chart-days">
               {chartData.map((d, i) => (
-                <span key={i} style={{ fontSize: 10.5, flex: 1, textAlign: 'center' }}>
+                <span key={i} className="rep-chart-col-label">
                   {d.label}
                 </span>
               ))}
@@ -268,11 +251,11 @@ export default function Reports() {
           <div className="rep-card">
             <div className="rep-card-header">
               <span className="rep-card-title">Estado Operativo de Trámites</span>
-              <span className="muted" style={{ fontSize: 12 }}>Total: {grandTotal}</span>
+              <span className="rep-header-meta">Total: {grandTotal}</span>
             </div>
 
             {grandTotal === 0 ? (
-              <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>
+              <p className="rep-empty-text">
                 Sin solicitudes registradas para evaluar estado.
               </p>
             ) : (
@@ -292,15 +275,15 @@ export default function Reports() {
                 <div className="rep-status-legend">
                   <div className="rep-status-item">
                     <span className="rep-status-lbl">Aprobadas</span>
-                    <b style={{ color: '#0891b2' }}>{approvedTotal}</b>
+                    <b className="rep-color-teal">{approvedTotal}</b>
                   </div>
                   <div className="rep-status-item">
                     <span className="rep-status-lbl">En Trámite</span>
-                    <b style={{ color: '#8b5cf6' }}>{activeTotal}</b>
+                    <b className="rep-color-purple">{activeTotal}</b>
                   </div>
                   <div className="rep-status-item">
                     <span className="rep-status-lbl">Rechazadas</span>
-                    <b style={{ color: '#e11d48' }}>{rejectedTotal}</b>
+                    <b className="rep-color-rose">{rejectedTotal}</b>
                   </div>
                 </div>
               </>
@@ -314,26 +297,24 @@ export default function Reports() {
             </div>
 
             {(!a.by_department || a.by_department.length === 0) ? (
-              <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>
+              <p className="rep-empty-text">
                 Sin datos por departamento todavía.
               </p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="rep-dept-list">
                 {a.by_department.slice(0, 5).map((dept) => {
                   const deptPct = grandTotal > 0 ? Math.round((dept.count / grandTotal) * 100) : 0
                   return (
                     <div key={dept.department}>
-                      <div className="row between" style={{ fontSize: 12, marginBottom: 3 }}>
-                        <span style={{ fontWeight: 600 }}>{dept.department}</span>
-                        <span className="muted">{dept.count} ({deptPct}%)</span>
+                      <div className="rep-dept-row">
+                        <span className="rep-dept-name">{dept.department}</span>
+                        <span className="rep-header-meta">{dept.count} ({deptPct}%)</span>
                       </div>
-                      <div style={{ height: 6, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
+                      <div className="rep-bar-track">
                         <div
+                          className="rep-bar-fill teal-bg"
                           style={{
-                            height: '100%',
                             width: `${Math.min(100, Math.max(8, deptPct))}%`,
-                            background: '#06b6d4',
-                            borderRadius: 4,
                           }}
                         />
                       </div>
@@ -347,9 +328,9 @@ export default function Reports() {
       </div>
 
       {/* ── Tabla Inferior: Desglose Real de Trámites por Tipo ───────── */}
-      <div className="rep-card" style={{ marginTop: 22 }}>
+      <div className="rep-card rep-card-spaced">
         <div className="rep-card-header">
-          <div className="row" style={{ gap: 10, alignItems: 'center' }}>
+          <div className="rep-title-group">
             <div className="rep-mini-icon purple">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
@@ -358,11 +339,11 @@ export default function Reports() {
             </div>
             <span className="rep-card-title">Desglose de Trámites por Tipo</span>
           </div>
-          <span className="muted" style={{ fontSize: 12 }}>{a.by_type?.length || 0} tipos con actividad</span>
+          <span className="rep-header-meta">{a.by_type?.length || 0} tipos con actividad</span>
         </div>
 
         {(!a.by_type || a.by_type.length === 0) ? (
-          <p className="muted" style={{ padding: '24px 16px', textAlign: 'center', margin: 0 }}>
+          <p className="rep-empty-notice">
             Sin trámites registrados todavía en el sistema.
           </p>
         ) : (
@@ -370,7 +351,7 @@ export default function Reports() {
             <thead>
               <tr>
                 <th>Tipo de Solicitud</th>
-                <th style={{ textAlign: 'center' }}>Total Solicitudes</th>
+                <th className="rep-th-center">Total Solicitudes</th>
                 <th>Proporción del Volumen</th>
               </tr>
             </thead>
@@ -380,11 +361,8 @@ export default function Reports() {
                 return (
                   <tr key={item.type}>
                     <td>
-                      <div className="row" style={{ gap: 12, alignItems: 'center' }}>
-                        <div
-                          className="rep-avatar-circle"
-                          style={{ background: idx % 2 === 0 ? '#8b5cf6' : '#06b6d4' }}
-                        >
+                      <div className="rep-type-cell">
+                        <div className={`rep-avatar-circle ${idx % 2 === 0 ? 'purple-bg' : 'teal-bg'}`}>
                           {(TYPE[item.type] || item.type).slice(0, 2).toUpperCase()}
                         </div>
                         <div>
@@ -392,22 +370,20 @@ export default function Reports() {
                         </div>
                       </div>
                     </td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td className="rep-td-center">
                       <b>{item.count}</b>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, maxWidth: 220 }}>
-                        <div style={{ flex: 1, height: 6, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
+                      <div className="rep-table-metric-group">
+                        <div className="rep-bar-track">
                           <div
+                            className={`rep-bar-fill ${idx % 2 === 0 ? 'purple-bg' : 'teal-bg'}`}
                             style={{
-                              height: '100%',
                               width: `${Math.min(100, Math.max(6, typePct))}%`,
-                              background: idx % 2 === 0 ? '#8b5cf6' : '#06b6d4',
-                              borderRadius: 4,
                             }}
                           />
                         </div>
-                        <span className="muted" style={{ fontSize: 12, minWidth: 38 }}>
+                        <span className="rep-table-pct">
                           {typePct}%
                         </span>
                       </div>
@@ -422,9 +398,9 @@ export default function Reports() {
 
       {/* ── Tablero de Power BI Integrado ─────────────────────────── */}
       {a.powerbi_report_url && (
-        <div className="rep-card" style={{ marginTop: 22 }}>
+        <div className="rep-card rep-card-spaced">
           <div className="rep-card-header">
-            <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+            <div className="rep-title-group">
               <div className="rep-mini-icon teal">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
@@ -436,7 +412,7 @@ export default function Reports() {
           <iframe
             title="Power BI"
             src={a.powerbi_report_url}
-            style={{ width: '100%', height: 560, border: 0, borderRadius: 12 }}
+            className="rep-powerbi-iframe"
             allowFullScreen
           />
         </div>

@@ -42,9 +42,23 @@ class Api:
 
     def window(self, days: int = 3) -> tuple[str, str]:
         """Ventana de fechas (lunes→) que nunca se traslapa con otra pedida antes, sin importar su duración."""
-        start = next_monday(self._week)
+        from app.services.utils import is_lft_mandatory_holiday
+        while True:
+            start = next_monday(self._week)
+            end = start + timedelta(days=days - 1)
+            has_holiday = False
+            cur = start
+            while cur <= end:
+                if is_lft_mandatory_holiday(cur):
+                    has_holiday = True
+                    break
+                cur += timedelta(days=1)
+            if not has_holiday:
+                break
+            self._week += 1
+
         self._week += max(1, (days + 6) // 7)
-        return start.isoformat(), (start + timedelta(days=days - 1)).isoformat()
+        return start.isoformat(), end.isoformat()
 
     async def login(self, email: str, password: str = PWD) -> str:
         r = await self.c.post("/api/v1/auth/login", json={"email": email, "password": password})

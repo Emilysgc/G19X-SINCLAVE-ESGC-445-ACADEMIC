@@ -2,20 +2,6 @@
 ## Sistema Inteligente de Solicitudes Internas de Personal (RRHH)
 **PluriOne S.A. de C.V. — Develop Talent & Technology** · *Proyecto Académico TODO Academy*
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
-  <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis" />
-  <img src="https://img.shields.io/badge/Keycloak-1A2433?style=for-the-badge&logo=keycloak&logoColor=white" alt="Keycloak" />
-  <img src="https://img.shields.io/badge/Groq-F55036?style=for-the-badge&logo=groq&logoColor=white" alt="Groq" />
-  <img src="https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white" alt="Ollama" />
-  <img src="https://img.shields.io/badge/Power_BI-F2C811?style=for-the-badge&logo=powerbi&logoColor=black" alt="Power BI" />
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
-  <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white" alt="GitHub Actions" />
-</p>
-
 Automatización integral de trámites laborales (vacaciones, permisos personales, incapacidades médicas, constancias de sueldo y trabajo, cambios de datos bancarios e incidencias de nómina) con flujos de aprobación multinivel, motor de reglas de negocio, cálculo de SLA, auditoría, inicio de sesión unificado con Keycloak (OIDC), integración con Power BI y agentes inteligentes con Groq y Ollama.
 
 | Componente | Tecnología | Rol en la Arquitectura | Estado |

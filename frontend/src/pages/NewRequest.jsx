@@ -96,6 +96,7 @@ export default function NewRequest() {
   const [check, setCheck] = useState(null)
   const [errs, setErrs] = useState([])
   const [busy, setBusy] = useState(false)
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false)
 
   useEffect(() => {
     api.get('/requests/types').then(setTypes)
@@ -114,7 +115,7 @@ export default function NewRequest() {
     request_data: f.data,
   })
 
-  // Pre-validación en vivo (reglas + agente de IA) mientras el usuario llena el formulario
+  // Pre-validación en vivo (reglas + agente de IA) para obtener cálculo de días hábiles
   useEffect(() => {
     if (!type) return
     if (DATED.includes(type) && !(f.start_date && (f.end_date || f.start_date))) {
@@ -127,7 +128,7 @@ export default function NewRequest() {
           .post('/ai/validate', body())
           .then(setCheck)
           .catch(() => setCheck(null)),
-      600
+      500
     )
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -143,12 +144,21 @@ export default function NewRequest() {
     })
     setCheck(null)
     setErrs([])
+    setAttemptedSubmit(false)
   }
 
   const submit = async (e) => {
     e.preventDefault()
-    setBusy(true)
+    setAttemptedSubmit(true)
     setErrs([])
+
+    // Si la prevalidación reporta errores obligatorios de política, mostrarlos al enviar
+    if (check && check.errors && check.errors.length > 0) {
+      setErrs(check.errors)
+      return
+    }
+
+    setBusy(true)
     try {
       const r = await api.post('/requests', body())
       await refreshUser()
@@ -162,14 +172,16 @@ export default function NewRequest() {
 
   if (!types) return <Loading />
 
+  const selectedTypeObj = types.find((t) => t.type === type)
+
   return (
-    <>
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: '0 0 6px' }}>
+    <div className="newreq-page-wrapper">
+      <div className="newreq-header-row">
+        <h1 className="newreq-page-title">
           Nueva Solicitud
         </h1>
-        <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>
-          Selecciona el trámite que deseas realizar. Los contenedores validan tus políticas antes de enviar.
+        <p className="newreq-page-subtitle">
+          Selecciona el trámite que deseas realizar. Cada contenedor valida tus políticas laborales antes de enviar.
         </p>
       </div>
 
@@ -204,234 +216,272 @@ export default function NewRequest() {
         })}
       </div>
 
-      {/* ── Formulario desplegado tras elegir un trámite ──────────────── */}
+      {/* ── Modal Flotante estilo Imagen 1 (Add New...) ─────────────────── */}
       {type && (
-        <form className="card" onSubmit={submit} style={{ marginTop: 24, borderRadius: 16 }}>
-          <h2 style={{ fontSize: 18, marginBottom: 16 }}>{TYPE[type]}</h2>
-
-          {type === 'VACATION' && (
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>
-              <div style={{ fontWeight: 700, fontSize: 13.5, color: '#166534', marginBottom: 6 }}>
-                🌴 Tu información de vacaciones (Ley Federal del Trabajo)
+        <div className="newreq-modal-overlay" onClick={() => setType(null)}>
+          <div
+            className="newreq-modal-card"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            {/* Header del Modal */}
+            <div className="newreq-modal-header">
+              <div>
+                <h2 className="newreq-modal-title">{selectedTypeObj?.name || TYPE[type]}</h2>
+                <p className="newreq-modal-desc">
+                  {selectedTypeObj?.description || 'Ingresa los datos del trámite para procesar tu solicitud.'}
+                </p>
               </div>
-              <div style={{ fontSize: 12.5, color: '#15803d', display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-                <span>Saldo disponible actual: <b>{user?.vacation_balance ?? 0} días</b></span>
-                <span>Días por ley al año: <b>{user?.vacation_entitlement ?? 0} días</b></span>
-                <span>Antigüedad acumulada: <b>{user?.years_of_service ?? 0} {user?.years_of_service === 1 ? 'año' : 'años'}</b></span>
-              </div>
-              <div style={{ fontSize: 11.5, color: '#14532d', marginTop: 8 }}>
-                💡 <b>Regla LFT (Vacaciones Dignas):</b> La ley exige disfrutar de al menos 12 días continuos de descanso. Cuentas además con derecho a una prima vacacional mínima del 25% sobre tu salario diario.
-              </div>
+              <button
+                type="button"
+                className="newreq-modal-close-btn"
+                onClick={() => setType(null)}
+                title="Cerrar"
+              >
+                ✕
+              </button>
             </div>
-          )}
 
-          {DATED.includes(type) && (
-            <div className="row">
-              <div className="f1">
-                <Field label="Desde">
-                  <input
-                    type="date"
-                    required
-                    min={type === 'MEDICAL_LEAVE' ? undefined : today()}
-                    value={f.start_date}
-                    onChange={set('start_date')}
-                  />
-                </Field>
-              </div>
-              <div className="f1">
-                <Field label="Hasta">
-                  <input
-                    type="date"
-                    required
-                    min={f.start_date || undefined}
-                    value={f.end_date}
-                    onChange={set('end_date')}
-                  />
-                </Field>
-              </div>
-            </div>
-          )}
+            {/* Formulario dentro del Modal */}
+            <form onSubmit={submit} className="newreq-modal-body">
+              {type === 'VACATION' && (
+                <div className="newreq-vacation-box">
+                  <div className="newreq-vacation-badge-title">
+                    🌴 Vacaciones Dignas (Ley Federal del Trabajo)
+                  </div>
+                  <div className="newreq-vacation-stats-row">
+                    <span>Saldo actual: <b>{user?.vacation_balance ?? 0} días</b></span>
+                    <span>Días por ley: <b>{user?.vacation_entitlement ?? 0} días</b></span>
+                    <span>Antigüedad: <b>{user?.years_of_service ?? 0} {user?.years_of_service === 1 ? 'año' : 'años'}</b></span>
+                  </div>
+                </div>
+              )}
 
-          {type === 'MATERNITY_PATERNITY' && (
-            <Field label="Tipo de licencia">
-              <select value={f.data.kind} onChange={setData('kind')}>
-                <option value="maternity">Maternidad (84 días naturales)</option>
-                <option value="paternity">Paternidad (5 días laborables)</option>
-              </select>
-            </Field>
-          )}
-
-          {type === 'MEDICAL_LEAVE' && (
-            <Alert kind="info">
-              Podrás adjuntar tu comprobante o receta médica (PDF, PNG o JPG) en el detalle de la solicitud una vez enviada. Solo RRHH tendrá acceso al documento y motivo médico.
-            </Alert>
-          )}
-
-          {['CERTIFICATE_EMPLOYMENT', 'CERTIFICATE_SALARY'].includes(type) && (
-            <div className="row">
-              <div className="f1">
-                <Field label="Dirigida a">
-                  <input
-                    maxLength={120}
-                    placeholder="A quien corresponda"
-                    value={f.data.addressed_to || ''}
-                    onChange={setData('addressed_to')}
-                  />
-                </Field>
-              </div>
-              <div className="f1">
-                <Field label="Motivo">
-                  <input
-                    maxLength={120}
-                    placeholder="Trámite bancario, visa…"
-                    value={f.data.purpose || ''}
-                    onChange={setData('purpose')}
-                  />
-                </Field>
-              </div>
-            </div>
-          )}
-
-          {type === 'ADDRESS_CHANGE' && (
-            <>
-              <Field label="Nuevo domicilio completo">
-                <textarea
-                  required
-                  value={f.data.new_address || ''}
-                  onChange={setData('new_address')}
-                  placeholder="Calle, número, colonia, ciudad, C.P."
-                />
-              </Field>
-              <Field label="Teléfono (opcional)">
-                <input value={f.data.phone || ''} onChange={setData('phone')} />
-              </Field>
-            </>
-          )}
-
-          {type === 'BANK_ACCOUNT_CHANGE' && (
-            <>
-              <div className="row">
-                <div className="f1">
-                  <Field label="Banco">
+              {DATED.includes(type) && (
+                <div className="newreq-form-grid-2">
+                  <Field label="Fecha de Inicio">
                     <input
+                      type="date"
                       required
-                      placeholder="Ej. BBVA México, Banorte, Santander"
-                      value={f.data.bank_name || ''}
-                      onChange={setData('bank_name')}
+                      min={type === 'MEDICAL_LEAVE' ? undefined : today()}
+                      value={f.start_date}
+                      onChange={set('start_date')}
+                      className="newreq-modal-input"
+                    />
+                  </Field>
+                  <Field label="Fecha de Término">
+                    <input
+                      type="date"
+                      required
+                      min={f.start_date || undefined}
+                      value={f.end_date}
+                      onChange={set('end_date')}
+                      className="newreq-modal-input"
                     />
                   </Field>
                 </div>
-                <div className="f1">
-                  <Field label={`CLABE (18 dígitos · ${(f.data.clabe || '').length}/18)`}>
+              )}
+
+              {check?.days != null && (
+                <div className="newreq-days-badge">
+                  <span>📅 <b>{check.days}</b> día(s) hábil(es) calculado(s) según calendario laboral LFT</span>
+                  {check.auto_approve && <span style={{ marginLeft: 8, color: '#059669', fontWeight: 600 }}>• Auto-aprobable</span>}
+                </div>
+              )}
+
+              {type === 'MATERNITY_PATERNITY' && (
+                <Field label="Tipo de licencia">
+                  <select
+                    className="newreq-modal-input"
+                    value={f.data.kind}
+                    onChange={setData('kind')}
+                  >
+                    <option value="maternity">Maternidad (84 días naturales)</option>
+                    <option value="paternity">Paternidad (5 días laborables)</option>
+                  </select>
+                </Field>
+              )}
+
+              {type === 'MEDICAL_LEAVE' && (
+                <div className="newreq-info-note">
+                  ℹ️ Podrás adjuntar tu comprobante o receta médica (PDF, PNG o JPG) en el detalle de la solicitud una vez enviada.
+                </div>
+              )}
+
+              {['CERTIFICATE_EMPLOYMENT', 'CERTIFICATE_SALARY'].includes(type) && (
+                <div className="newreq-form-grid-2">
+                  <Field label="Dirigida a">
                     <input
+                      maxLength={120}
+                      placeholder="Ej. A quien corresponda"
+                      value={f.data.addressed_to || ''}
+                      onChange={setData('addressed_to')}
+                      className="newreq-modal-input"
+                    />
+                  </Field>
+                  <Field label="Motivo de la solicitud">
+                    <input
+                      maxLength={120}
+                      placeholder="Ej. Trámite bancario, visa…"
+                      value={f.data.purpose || ''}
+                      onChange={setData('purpose')}
+                      className="newreq-modal-input"
+                    />
+                  </Field>
+                </div>
+              )}
+
+              {type === 'ADDRESS_CHANGE' && (
+                <>
+                  <Field label="Nuevo domicilio completo">
+                    <textarea
                       required
-                      inputMode="numeric"
-                      maxLength={18}
-                      placeholder="18 dígitos numéricos"
-                      value={f.data.clabe || ''}
-                      onChange={(e) =>
+                      rows={3}
+                      value={f.data.new_address || ''}
+                      onChange={setData('new_address')}
+                      placeholder="Calle, número, colonia, ciudad, C.P."
+                      className="newreq-modal-input"
+                    />
+                  </Field>
+                  <Field label="Teléfono de contacto (opcional)">
+                    <input
+                      value={f.data.phone || ''}
+                      onChange={setData('phone')}
+                      placeholder="Ej. (55) 5555-0128"
+                      className="newreq-modal-input"
+                    />
+                  </Field>
+                </>
+              )}
+
+              {type === 'BANK_ACCOUNT_CHANGE' && (
+                <>
+                  <div className="newreq-form-grid-2">
+                    <Field label="Institución Bancaria">
+                      <input
+                        required
+                        placeholder="Ej. BBVA México, Banorte, Santander"
+                        value={f.data.bank_name || ''}
+                        onChange={setData('bank_name')}
+                        className="newreq-modal-input"
+                      />
+                    </Field>
+                    <Field label={`CLABE Interbancaria (${(f.data.clabe || '').length}/18)`}>
+                      <input
+                        required
+                        inputMode="numeric"
+                        maxLength={18}
+                        placeholder="18 dígitos numéricos"
+                        value={f.data.clabe || ''}
+                        onChange={(e) =>
+                          setF({
+                            ...f,
+                            data: { ...f.data, clabe: e.target.value.replace(/\D/g, '').slice(0, 18) },
+                          })
+                        }
+                        className="newreq-modal-input"
+                      />
+                    </Field>
+                  </div>
+                  <div className="newreq-clabe-helper">
+                    <span className="muted" style={{ fontSize: 12 }}>Ejemplo:</span>
+                    <button
+                      type="button"
+                      className="btn sm"
+                      style={{ padding: '2px 8px', fontSize: 11 }}
+                      onClick={() =>
                         setF({
                           ...f,
-                          data: { ...f.data, clabe: e.target.value.replace(/\D/g, '').slice(0, 18) },
+                          data: {
+                            ...f.data,
+                            bank_name: f.data.bank_name || 'BBVA México',
+                            clabe: '012180001234567899',
+                          },
                         })
                       }
-                    />
-                  </Field>
+                    >
+                      Usar CLABE válida de prueba
+                    </button>
+                    {(f.data.clabe || '').length >= 17 &&
+                      (() => {
+                        const clean = (f.data.clabe || '').replace(/\D/g, '').slice(0, 17)
+                        const w = [3, 7, 1, 3, 7, 1, 3, 7, 1, 3, 7, 1, 3, 7, 1, 3, 7]
+                        const s = clean.split('').reduce((acc, d, i) => acc + ((parseInt(d, 10) * w[i]) % 10), 0)
+                        const valid18 = clean + String((10 - (s % 10)) % 10)
+                        if (valid18 !== f.data.clabe) {
+                          return (
+                            <button
+                              type="button"
+                              className="btn sm primary"
+                              style={{ padding: '2px 8px', fontSize: 11 }}
+                              onClick={() => setF({ ...f, data: { ...f.data, clabe: valid18 } })}
+                            >
+                              Corregir dígito verificador a {valid18}
+                            </button>
+                          )
+                        }
+                        return null
+                      })()}
+                  </div>
+                </>
+              )}
+
+              {type === 'PAYROLL_INCIDENT' && (
+                <Field label="Periodo de nómina afectado">
+                  <input
+                    required
+                    placeholder="Ej. 1ª quincena de marzo 2026"
+                    value={f.data.period || ''}
+                    onChange={setData('period')}
+                    className="newreq-modal-input"
+                  />
+                </Field>
+              )}
+
+              {!['CERTIFICATE_EMPLOYMENT', 'CERTIFICATE_SALARY'].includes(type) && (
+                <Field label={['PAYROLL_INCIDENT', 'OTHER'].includes(type) ? 'Descripción del caso' : 'Comentarios adicionales (opcional)'}>
+                  <textarea
+                    rows={3}
+                    maxLength={2000}
+                    required={['PAYROLL_INCIDENT', 'OTHER'].includes(type)}
+                    value={f.description}
+                    onChange={set('description')}
+                    placeholder="Explica cualquier detalle relevante para la revisión de RRHH…"
+                    className="newreq-modal-input"
+                  />
+                </Field>
+              )}
+
+              {/* Errores sólo visibles al intentar enviar si no cumple requisitos */}
+              {attemptedSubmit && errs.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  <Alert kind="err" title="No se puede enviar todavía:" items={errs} />
                 </div>
-              </div>
-              <div style={{ marginTop: -8, marginBottom: 12, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, fontSize: 12 }}>
-                <span className="muted">Ejemplo para evaluación:</span>
+              )}
+
+              {/* Botones estilo Imagen 1 (Cancel + Save Employee) */}
+              <div className="newreq-modal-footer">
                 <button
                   type="button"
-                  className="btn sm"
-                  style={{ padding: '2px 8px', fontSize: 11 }}
-                  onClick={() =>
-                    setF({
-                      ...f,
-                      data: {
-                        ...f.data,
-                        bank_name: f.data.bank_name || 'BBVA México',
-                        clabe: '012180001234567899',
-                      },
-                    })
-                  }
+                  className="newreq-modal-btn-cancel"
+                  onClick={() => setType(null)}
+                  disabled={busy}
                 >
-                  Usar CLABE válida (012180001234567899)
+                  Cancelar
                 </button>
-                {(f.data.clabe || '').length >= 17 &&
-                  (() => {
-                    const clean = (f.data.clabe || '').replace(/\D/g, '').slice(0, 17)
-                    const w = [3, 7, 1, 3, 7, 1, 3, 7, 1, 3, 7, 1, 3, 7, 1, 3, 7]
-                    const s = clean.split('').reduce((acc, d, i) => acc + ((parseInt(d, 10) * w[i]) % 10), 0)
-                    const valid18 = clean + String((10 - (s % 10)) % 10)
-                    if (valid18 !== f.data.clabe) {
-                      return (
-                        <button
-                          type="button"
-                          className="btn sm primary"
-                          style={{ padding: '2px 8px', fontSize: 11 }}
-                          onClick={() => setF({ ...f, data: { ...f.data, clabe: valid18 } })}
-                        >
-                          Corregir dígito verificador a: {valid18}
-                        </button>
-                      )
-                    }
-                    return null
-                  })()}
+                <button
+                  type="submit"
+                  className="newreq-modal-btn-save"
+                  disabled={busy}
+                >
+                  {busy ? 'Enviando…' : 'Enviar Solicitud'}
+                </button>
               </div>
-            </>
-          )}
-
-          {type === 'PAYROLL_INCIDENT' && (
-            <Field label="Periodo de nómina afectado">
-              <input
-                required
-                placeholder="Ej. 1ª quincena de marzo 2026"
-                value={f.data.period || ''}
-                onChange={setData('period')}
-              />
-            </Field>
-          )}
-
-          {!['CERTIFICATE_EMPLOYMENT', 'CERTIFICATE_SALARY'].includes(type) && (
-            <Field label={['PAYROLL_INCIDENT', 'OTHER'].includes(type) ? 'Describe el caso' : 'Comentarios (opcional)'}>
-              <textarea
-                maxLength={2000}
-                required={['PAYROLL_INCIDENT', 'OTHER'].includes(type)}
-                value={f.description}
-                onChange={set('description')}
-              />
-            </Field>
-          )}
-
-          {check && (
-            <div style={{ marginTop: 14 }}>
-              {check.days != null && (
-                <Alert kind="info">
-                  Se solicitan <b>{check.days}</b> día(s) hábil(es).{check.auto_approve && ' Esta solicitud puede aprobarse automáticamente.'}
-                </Alert>
-              )}
-              {check.errors.length > 0 && <Alert kind="err" title="No se puede enviar todavía:" items={check.errors} />}
-              {check.warnings.length > 0 && <Alert kind="warn" title="Observaciones para el aprobador:" items={check.warnings} />}
-              {check.recommendations.length > 0 && <Alert kind="info" items={check.recommendations} />}
-              {check.errors.length === 0 && check.warnings.length === 0 && (
-                <Alert kind="ok">Cumple con las políticas vigentes.{check.used_ai && ' (Validación normativa)'}</Alert>
-              )}
-            </div>
-          )}
-
-          {errs.length > 0 && <Alert kind="err" items={errs} />}
-
-          <div className="row" style={{ marginTop: 18, gap: 10 }}>
-            <button className="btn primary" disabled={busy || (check && !check.is_valid)}>
-              {busy ? 'Enviando…' : 'Enviar solicitud'}
-            </button>
-            <button type="button" className="btn" onClick={() => nav(-1)}>
-              Cancelar
-            </button>
+            </form>
           </div>
-        </form>
+        </div>
       )}
-    </>
+    </div>
   )
 }

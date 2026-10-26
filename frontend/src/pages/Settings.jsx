@@ -6,22 +6,21 @@ import { ROLE } from '../services/labels'
 
 export default function Settings() {
   const { user, refreshUser, logout } = useAuth()
-  const [activeTab, setActiveTab] = useState('personal') // 'personal' | 'security' | 'vacations'
 
-  // Dividir nombre completo en nombre(s) y apellidos para el diseño de 2 columnas de la Imagen 1
+  // Dividir nombre completo en nombre(s) y apellidos
   const nameParts = (user?.full_name || '').trim().split(' ')
   const defaultFirst = nameParts.slice(0, Math.max(1, nameParts.length - 1)).join(' ')
   const defaultLast = nameParts.length > 1 ? nameParts[nameParts.length - 1] : ''
 
+  const [isEditingPersonal, setIsEditingPersonal] = useState(false)
   const [firstName, setFirstName] = useState(defaultFirst)
   const [lastName, setLastName] = useState(defaultLast)
-  const [gender, setGender] = useState('male') // 'male' | 'female' | 'other'
   const [phone, setPhone] = useState(user?.phone || '')
   const [address, setAddress] = useState(user?.address || '')
   const [location, setLocation] = useState(user?.department?.name || 'Ciudad de México, México')
   const [postalCode, setPostalCode] = useState('06000')
 
-  // Seguridad
+  // Seguridad y contraseñas
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -36,7 +35,7 @@ export default function Settings() {
   const [busy, setBusy] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
 
-  const handleAvatarSelect = (e) => {
+  const handleAvatarSelect = async (e) => {
     const file = e.target.files[0]
     if (!file) return
     if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
@@ -50,64 +49,15 @@ export default function Settings() {
     setAvatarFile(file)
     setAvatarPreview(URL.createObjectURL(file))
     setErr([])
-  }
 
-  const handleDiscard = () => {
-    setFirstName(defaultFirst)
-    setLastName(defaultLast)
-    setPhone(user?.phone || '')
-    setAddress(user?.address || '')
-    setCurrentPassword('')
-    setNewPassword('')
-    setConfirmPassword('')
-    setAvatarFile(null)
-    setAvatarPreview(user?.avatar_url || null)
-    setErr([])
-    setMsg('Cambios descartados.')
-  }
-
-  const handleSave = async (e) => {
-    e.preventDefault()
-    setMsg('')
-    setErr([])
-
-    if (newPassword && newPassword !== confirmPassword) {
-      setErr(['La confirmación de la contraseña no coincide.'])
-      return
-    }
-    if (newPassword && newPassword.length < 10) {
-      setErr(['La nueva contraseña debe tener al menos 10 caracteres.'])
-      return
-    }
-
-    setBusy(true)
+    // Subir de inmediato el avatar
     try {
-      // 1. Subir avatar si hay un archivo seleccionado
-      if (avatarFile) {
-        const res = await api.upload('/users/me/avatar', avatarFile)
-        if (res.avatar_url) {
-          setAvatarPreview(res.avatar_url)
-        }
+      setBusy(true)
+      const res = await api.upload('/users/me/avatar', file)
+      if (res.avatar_url) {
+        setAvatarPreview(res.avatar_url)
       }
-
-      // 2. Actualizar perfil y/o contraseña
-      const fullCombinedName = `${firstName.trim()} ${lastName.trim()}`.trim()
-      const body = {
-        full_name: fullCombinedName || user?.full_name,
-        phone: phone.trim() || null,
-        address: address.trim() || null,
-      }
-      if (newPassword) {
-        body.new_password = newPassword
-        body.current_password = currentPassword || undefined
-      }
-
-      await api.patch('/users/me/profile', body)
-      setMsg('Información y cambios guardados correctamente.')
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmPassword('')
-      setAvatarFile(null)
+      setMsg('Foto de perfil actualizada correctamente.')
       if (refreshUser) refreshUser()
     } catch (x) {
       setErr(errorList(x))
@@ -116,336 +66,394 @@ export default function Settings() {
     }
   }
 
+  const handleDiscardPersonal = () => {
+    setFirstName(defaultFirst)
+    setLastName(defaultLast)
+    setPhone(user?.phone || '')
+    setAddress(user?.address || '')
+    setIsEditingPersonal(false)
+    setErr([])
+  }
+
+  const handleSavePersonal = async (e) => {
+    e.preventDefault()
+    setMsg('')
+    setErr([])
+    setBusy(true)
+
+    try {
+      const fullCombinedName = `${firstName.trim()} ${lastName.trim()}`.trim()
+      const body = {
+        full_name: fullCombinedName || user?.full_name,
+        phone: phone.trim() || null,
+        address: address.trim() || null,
+      }
+
+      await api.patch('/users/me/profile', body)
+      setMsg('Información personal guardada con éxito.')
+      setIsEditingPersonal(false)
+      if (refreshUser) refreshUser()
+    } catch (x) {
+      setErr(errorList(x))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleSavePassword = async (e) => {
+    e.preventDefault()
+    setMsg('')
+    setErr([])
+
+    if (newPassword !== confirmPassword) {
+      setErr(['La confirmación de la nueva contraseña no coincide.'])
+      return
+    }
+    if (newPassword.length < 10) {
+      setErr(['La nueva contraseña debe contener al menos 10 caracteres.'])
+      return
+    }
+
+    setBusy(true)
+    try {
+      await api.patch('/users/me/profile', {
+        new_password: newPassword,
+        current_password: currentPassword || undefined,
+      })
+      setMsg('Contraseña actualizada correctamente.')
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (x) {
+      setErr(errorList(x))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto', paddingBottom: 40 }}>
+    <div className="prof5-page-container">
+      <div className="prof5-header-row">
+        <h1 className="prof5-page-title">Mi Perfil</h1>
+      </div>
+
       {msg && <Alert kind="ok">{msg}</Alert>}
       {err.length > 0 && <Alert kind="err" items={err} />}
 
-      <div className="settings-settings-container">
-        {/* ── Tarjeta Lateral Izquierda (Imagen 1) ────────────────────── */}
-        <aside className="settings-sidebar-card">
-          <div className="settings-avatar-wrapper">
-            {avatarPreview ? (
-              <img src={avatarPreview} alt={user?.full_name} className="settings-avatar-img" />
-            ) : (
-              <div className="settings-avatar-placeholder">
-                {initials(user?.full_name || 'U')}
+      {/* ── Tarjeta 1: Perfil Hero con Avatar Centrado (Imagen 5) ───── */}
+      <div className="prof5-card prof5-hero-card">
+        <div className="prof5-avatar-container">
+          {avatarPreview ? (
+            <img src={avatarPreview} alt={user?.full_name} className="prof5-avatar-img" />
+          ) : (
+            <div className="prof5-avatar-placeholder">
+              {initials(user?.full_name || 'U')}
+            </div>
+          )}
+          <label className="prof5-avatar-edit-badge" title="Cambiar foto de perfil">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
+            <input
+              type="file"
+              accept="image/png, image/jpeg, image/webp, image/gif"
+              hidden
+              onChange={handleAvatarSelect}
+            />
+          </label>
+        </div>
+
+        <h2 className="prof5-hero-name">{user?.full_name || 'Colaborador PluriOne'}</h2>
+        <div className="prof5-hero-role">{user?.job_title || ROLE[user?.role] || 'Recursos Humanos'}</div>
+        <div className="prof5-hero-location">{user?.department?.name || 'Corporativo · Ciudad de México, México'}</div>
+      </div>
+
+      {/* ── Tarjeta 2: Información Personal con Botón Edit (Imagen 5) ─── */}
+      <div className="prof5-card">
+        <div className="prof5-card-header">
+          <h3 className="prof5-card-title">Información Personal</h3>
+          {!isEditingPersonal ? (
+            <button
+              type="button"
+              className="prof5-btn-edit"
+              onClick={() => setIsEditingPersonal(true)}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+              <span>Editar</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="prof5-btn-cancel-edit"
+              onClick={handleDiscardPersonal}
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
+
+        {!isEditingPersonal ? (
+          /* Vista estilo Imagen 5 con pares Etiqueta / Valor */
+          <div className="prof5-info-grid">
+            <div className="prof5-info-col">
+              <span className="prof5-info-label">Nombre(s)</span>
+              <span className="prof5-info-val">{firstName || '—'}</span>
+            </div>
+            <div className="prof5-info-col">
+              <span className="prof5-info-label">Apellidos</span>
+              <span className="prof5-info-val">{lastName || '—'}</span>
+            </div>
+            <div className="prof5-info-col">
+              <span className="prof5-info-label">Ciudad / Sede</span>
+              <span className="prof5-info-val">{location || 'Ciudad de México'}</span>
+            </div>
+
+            <div className="prof5-info-col">
+              <span className="prof5-info-label">Correo electrónico</span>
+              <div className="prof5-email-verified-row">
+                <span className="prof5-info-val">{user?.email || '—'}</span>
+                <span className="prof5-verified-pill">✔ Verificado</span>
               </div>
-            )}
-            <label className="settings-avatar-badge" title="Cambiar foto de perfil">
-              ✎
-              <input
-                type="file"
-                accept="image/png, image/jpeg, image/webp, image/gif"
-                hidden
-                onChange={handleAvatarSelect}
-              />
-            </label>
+            </div>
+            <div className="prof5-info-col">
+              <span className="prof5-info-label">Teléfono</span>
+              <span className="prof5-info-val">{phone || '(55) 5555-0128'}</span>
+            </div>
+            <div className="prof5-info-col">
+              <span className="prof5-info-label">País</span>
+              <span className="prof5-info-val">México</span>
+            </div>
+
+            <div className="prof5-info-col full">
+              <span className="prof5-info-label">Dirección / Domicilio</span>
+              <span className="prof5-info-val">{address || 'No especificado'}</span>
+            </div>
           </div>
-
-          <h3 className="settings-user-name">{user?.full_name || 'Colaborador'}</h3>
-          <div className="settings-user-role">{user?.job_title || ROLE[user?.role] || 'Puesto en RRHH'}</div>
-
-          <nav className="settings-nav-list">
-            <button
-              type="button"
-              className={`settings-nav-item ${activeTab === 'personal' ? 'active' : ''}`}
-              onClick={() => setActiveTab('personal')}
-            >
-              <span>👤</span> Información Personal
-            </button>
-            <button
-              type="button"
-              className={`settings-nav-item ${activeTab === 'security' ? 'active' : ''}`}
-              onClick={() => setActiveTab('security')}
-            >
-              <span>🔒</span> Inicio de sesión y Contraseña
-            </button>
-            <button
-              type="button"
-              className={`settings-nav-item ${activeTab === 'vacations' ? 'active' : ''}`}
-              onClick={() => setActiveTab('vacations')}
-            >
-              <span>🌴</span> Mis Vacaciones (LFT)
-            </button>
-            <button
-              type="button"
-              className="settings-nav-item logout"
-              onClick={() => setShowLogoutModal(true)}
-            >
-              <span>🚪</span> Cerrar Sesión
-            </button>
-          </nav>
-        </aside>
-
-        {/* ── Tarjeta Principal Derecha (Imagen 1) ────────────────────── */}
-        <main className="settings-main-card">
-          {activeTab === 'personal' && (
-            <form onSubmit={handleSave}>
-              <h2 className="settings-section-title">Información Personal</h2>
-
-              {/* Selector de Género / Identidad */}
-              <div className="settings-radio-group">
-                <label className="settings-radio-label">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value="male"
-                    checked={gender === 'male'}
-                    onChange={() => setGender('male')}
-                  />
-                  Hombre
-                </label>
-                <label className="settings-radio-label">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value="female"
-                    checked={gender === 'female'}
-                    onChange={() => setGender('female')}
-                  />
-                  Mujer
-                </label>
-                <label className="settings-radio-label">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value="other"
-                    checked={gender === 'other'}
-                    onChange={() => setGender('other')}
-                  />
-                  Otro
-                </label>
-              </div>
-
-              {/* Nombre y Apellidos */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-                <div>
-                  <label className="settings-field-label">Nombre(s)</label>
-                  <input
-                    className="settings-input"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="settings-field-label">Apellidos</label>
-                  <input
-                    className="settings-input"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Correo Electrónico con Badge Verificado */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <label className="settings-field-label" style={{ margin: 0 }}>Correo electrónico</label>
-                  <span className="settings-verified-badge">✔ Verificado</span>
-                </div>
+        ) : (
+          /* Formulario de edición activa */
+          <form onSubmit={handleSavePersonal} className="prof5-edit-form">
+            <div className="prof5-form-grid-3">
+              <div>
+                <label className="prof5-field-label">Nombre(s)</label>
                 <input
-                  className="settings-input"
+                  className="prof5-input"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="prof5-field-label">Apellidos</label>
+                <input
+                  className="prof5-input"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="prof5-field-label">Ciudad / Sede</label>
+                <input
+                  className="prof5-input"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="prof5-form-grid-3" style={{ marginTop: 14 }}>
+              <div>
+                <label className="prof5-field-label">Correo electrónico</label>
+                <input
+                  className="prof5-input"
                   disabled
                   value={user?.email || ''}
                   title="Gestionado institucionalmente"
                 />
               </div>
-
-              {/* Dirección */}
-              <div style={{ marginBottom: 16 }}>
-                <label className="settings-field-label">Dirección / Domicilio</label>
+              <div>
+                <label className="prof5-field-label">Teléfono</label>
                 <input
-                  className="settings-input"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Ej. Av. Insurgentes Sur 1602, Col. Crédito Constructor"
+                  className="prof5-input"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(55) 5555-0128"
                 />
               </div>
-
-              {/* Teléfono y Fecha de Ingreso */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-                <div>
-                  <label className="settings-field-label">Número de Teléfono</label>
-                  <input
-                    className="settings-input"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="(55) 5555-0128"
-                  />
-                </div>
-                <div>
-                  <label className="settings-field-label">Fecha de Ingreso (Laboral)</label>
-                  <input
-                    className="settings-input"
-                    type="date"
-                    disabled
-                    value={user?.hire_date || ''}
-                  />
-                </div>
-              </div>
-
-              {/* Ubicación y Código Postal */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 }}>
-                <div>
-                  <label className="settings-field-label">Ubicación / Sede</label>
-                  <input
-                    className="settings-input"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="settings-field-label">Código Postal</label>
-                  <input
-                    className="settings-input"
-                    value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Botones de Acción (Imagen 1) */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 14 }}>
-                <button
-                  type="button"
-                  className="settings-btn-discard"
-                  onClick={handleDiscard}
-                  disabled={busy}
-                >
-                  Descartar Cambios
-                </button>
-                <button
-                  type="submit"
-                  className="settings-btn-save"
-                  disabled={busy}
-                >
-                  {busy ? 'Guardando…' : 'Guardar Cambios'}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {activeTab === 'security' && (
-            <form onSubmit={handleSave}>
-              <h2 className="settings-section-title">Inicio de sesión y Contraseña</h2>
-              {user?.auth_provider === 'local' ? (
-                <>
-                  <p className="muted" style={{ fontSize: 13, marginTop: -8, marginBottom: 20 }}>
-                    Para modificar tu contraseña actual, ingresa tus credenciales y confirma la nueva clave de acceso.
-                  </p>
-                  <div style={{ marginBottom: 16 }}>
-                    <label className="settings-field-label">Contraseña actual</label>
-                    <input
-                      type="password"
-                      className="settings-input"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="Ingresa tu contraseña actual"
-                      autoComplete="current-password"
-                    />
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 }}>
-                    <div>
-                      <label className="settings-field-label">Nueva contraseña</label>
-                      <input
-                        type="password"
-                        className="settings-input"
-                        minLength={10}
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Mínimo 10 caracteres"
-                        autoComplete="new-password"
-                      />
-                    </div>
-                    <div>
-                      <label className="settings-field-label">Confirmar nueva contraseña</label>
-                      <input
-                        type="password"
-                        className="settings-input"
-                        minLength={10}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Repite la contraseña"
-                        autoComplete="new-password"
-                      />
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 14 }}>
-                    <button
-                      type="button"
-                      className="settings-btn-discard"
-                      onClick={handleDiscard}
-                      disabled={busy}
-                    >
-                      Descartar Cambios
-                    </button>
-                    <button
-                      type="submit"
-                      className="settings-btn-save"
-                      disabled={busy || !newPassword}
-                    >
-                      {busy ? 'Guardando…' : 'Actualizar Contraseña'}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div style={{ background: '#eff6ff', padding: 18, borderRadius: 12, border: '1px solid #bfdbfe' }}>
-                  <h4 style={{ margin: '0 0 6px', color: '#1e40af' }}>Inicio de sesión federado (Keycloak SSO)</h4>
-                  <p className="muted" style={{ margin: 0, fontSize: 13, color: '#1e3a8a' }}>
-                    Tu cuenta utiliza autenticación corporativa única. Para actualizar tu clave, acude al portal de autoservicio de Keycloak o solicita un enlace de restablecimiento con tu administrador.
-                  </p>
-                </div>
-              )}
-            </form>
-          )}
-
-          {activeTab === 'vacations' && (
-            <div>
-              <h2 className="settings-section-title">Mis Vacaciones y Antigüedad Laboral (LFT)</h2>
-              <p className="muted" style={{ fontSize: 13, marginTop: -10, marginBottom: 20 }}>
-                Información oficial calculada automáticamente conforme a tu fecha de ingreso y la Ley Federal del Trabajo de México.
-              </p>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, marginBottom: 20 }}>
-                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                  <div className="muted" style={{ fontSize: 11.5 }}>Fecha de ingreso</div>
-                  <div style={{ fontWeight: 600, fontSize: 14, marginTop: 4 }}>{user?.hire_date || 'Pendiente'}</div>
-                </div>
-                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                  <div className="muted" style={{ fontSize: 11.5 }}>Antigüedad acumulada</div>
-                  <div style={{ fontWeight: 700, fontSize: 16, color: '#2563eb', marginTop: 4 }}>
-                    {user?.years_of_service ?? 0} {user?.years_of_service === 1 ? 'año' : 'años'}
-                  </div>
-                </div>
-                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                  <div className="muted" style={{ fontSize: 11.5 }}>Días por ley al año</div>
-                  <div style={{ fontWeight: 700, fontSize: 16, color: '#16a34a', marginTop: 4 }}>
-                    {user?.vacation_entitlement ?? 0} días
-                  </div>
-                </div>
-                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                  <div className="muted" style={{ fontSize: 11.5 }}>Saldo actual disponible</div>
-                  <div style={{ fontWeight: 700, fontSize: 16, color: '#ea580c', marginTop: 4 }}>
-                    {user?.vacation_balance ?? 0} días
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 16, fontSize: 13, color: '#1e3a8a', lineHeight: 1.5 }}>
-                🏖️ <b>Art. 78 LFT:</b> Los trabajadores deben disfrutar de al menos 12 días continuos de descanso. Además, la empresa debe cubrir una <b>prima vacacional mínima equivalente al 25%</b> sobre el salario ordinario correspondiente a dicho periodo de vacaciones.
+              <div>
+                <label className="prof5-field-label">Código Postal</label>
+                <input
+                  className="prof5-input"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                />
               </div>
             </div>
-          )}
-        </main>
+
+            <div style={{ marginTop: 14 }}>
+              <label className="prof5-field-label">Dirección / Domicilio</label>
+              <input
+                className="prof5-input"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Calle, número exterior/interior, colonia..."
+              />
+            </div>
+
+            <div className="prof5-actions-row">
+              <button
+                type="button"
+                className="prof5-btn-discard"
+                onClick={handleDiscardPersonal}
+                disabled={busy}
+              >
+                Descartar
+              </button>
+              <button
+                type="submit"
+                className="prof5-btn-save"
+                disabled={busy}
+              >
+                {busy ? 'Guardando…' : 'Guardar Cambios'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+
+      {/* ── Tarjeta 3: Información Laboral & Vacaciones LFT (Imagen 5) ─ */}
+      <div className="prof5-card">
+        <div className="prof5-card-header">
+          <h3 className="prof5-card-title">Información Laboral & Vacaciones (LFT)</h3>
+          <span className="prof5-law-badge">Ley Federal del Trabajo</span>
+        </div>
+
+        <div className="prof5-info-grid">
+          <div className="prof5-info-col">
+            <span className="prof5-info-label">Fecha de Ingreso</span>
+            <span className="prof5-info-val">{user?.hire_date || '01/06/2020'}</span>
+          </div>
+          <div className="prof5-info-col">
+            <span className="prof5-info-label">Antigüedad Acumulada</span>
+            <span className="prof5-info-val highlight-blue">
+              {user?.years_of_service ?? 0} {user?.years_of_service === 1 ? 'año' : 'años'}
+            </span>
+          </div>
+          <div className="prof5-info-col">
+            <span className="prof5-info-label">Días por Ley al Año</span>
+            <span className="prof5-info-val highlight-green">
+              {user?.vacation_entitlement ?? 0} días (Vacaciones Dignas)
+            </span>
+          </div>
+
+          <div className="prof5-info-col">
+            <span className="prof5-info-label">Saldo Disponible</span>
+            <span className="prof5-info-val highlight-orange">
+              {user?.vacation_balance ?? 0} días
+            </span>
+          </div>
+          <div className="prof5-info-col">
+            <span className="prof5-info-label">Prima Vacacional</span>
+            <span className="prof5-info-val">25% sobre salario (Art. 80 LFT)</span>
+          </div>
+          <div className="prof5-info-col">
+            <span className="prof5-info-label">Rol en el Sistema</span>
+            <span className="prof5-info-val">{ROLE[user?.role] || user?.role}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Tarjeta 4: Seguridad y Contraseña / Sesión Keycloak ──────── */}
+      <div className="prof5-card">
+        <div className="prof5-card-header">
+          <h3 className="prof5-card-title">Seguridad y Acceso</h3>
+          <span className="prof5-security-badge">
+            {user?.auth_provider === 'keycloak' ? 'Keycloak OIDC' : 'Autenticación Local'}
+          </span>
+        </div>
+
+        {user?.auth_provider === 'local' ? (
+          <form onSubmit={handleSavePassword} className="prof5-edit-form">
+            <p className="muted" style={{ margin: '0 0 14px', fontSize: 13 }}>
+              Cambia tu contraseña actual por una nueva clave de acceso seguro.
+            </p>
+            <div className="prof5-form-grid-3">
+              <div>
+                <label className="prof5-field-label">Contraseña Actual</label>
+                <input
+                  type="password"
+                  className="prof5-input"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="••••••••••"
+                  autoComplete="current-password"
+                />
+              </div>
+              <div>
+                <label className="prof5-field-label">Nueva Contraseña</label>
+                <input
+                  type="password"
+                  className="prof5-input"
+                  minLength={10}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Mínimo 10 caracteres"
+                  autoComplete="new-password"
+                />
+              </div>
+              <div>
+                <label className="prof5-field-label">Confirmar Contraseña</label>
+                <input
+                  type="password"
+                  className="prof5-input"
+                  minLength={10}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repite la contraseña"
+                  autoComplete="new-password"
+                />
+              </div>
+            </div>
+
+            <div className="prof5-actions-row">
+              <button
+                type="submit"
+                className="prof5-btn-save"
+                disabled={busy || !newPassword}
+              >
+                {busy ? 'Actualizando…' : 'Actualizar Contraseña'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="prof5-keycloak-box">
+            <div className="prof5-keycloak-icon">🔐</div>
+            <div>
+              <h4 className="prof5-keycloak-title">Inicio de sesión federado con Keycloak</h4>
+              <p className="prof5-keycloak-text">
+                Tu cuenta está protegida y autenticada centralmente mediante Keycloak SSO y tokens OIDC / PKCE. Para actualizar credenciales consulta al administrador institucional.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="prof5-logout-bar">
+          <button
+            type="button"
+            className="prof5-btn-logout"
+            onClick={() => setShowLogoutModal(true)}
+          >
+            <span>🚪 Cerrar Sesión</span>
+          </button>
+        </div>
       </div>
 
       {/* Modal de confirmación para cerrar sesión */}
       {showLogoutModal && (
         <Modal title="Confirmar cierre de sesión" onClose={() => setShowLogoutModal(false)}>
-          <p style={{ margin: '0 0 16px', fontSize: 14, color: '#334155' }}>
+          <p style={{ margin: '0 0 16px', fontSize: 14 }}>
             ¿Estás seguro de que deseas cerrar tu sesión en el sistema?
           </p>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>

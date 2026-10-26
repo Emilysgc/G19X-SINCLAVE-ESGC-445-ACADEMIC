@@ -182,7 +182,7 @@ async def forgot_password(body: ForgotPasswordIn, request: HttpRequest, db: Asyn
         "code": code,
         "attempts": 0,
         "max_attempts": 3,
-        "user_id": str(user.id),
+        "user_id": int(user.id),
         "email": user.email.lower(),
     }
     
@@ -251,7 +251,12 @@ async def reset_password_code(body: ResetPasswordCodeIn, request: HttpRequest, d
         raise HTTPException(400, f"Código incorrecto. Te quedan {attempts_label}.")
 
     # Código válido: buscar usuario y actualizar contraseña
-    user_id = data.get("user_id")
+    raw_user_id = data.get("user_id")
+    try:
+        user_id = int(raw_user_id) if raw_user_id is not None else None
+    except (ValueError, TypeError):
+        user_id = None
+
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user:
         raise HTTPException(404, "Usuario no encontrado.")

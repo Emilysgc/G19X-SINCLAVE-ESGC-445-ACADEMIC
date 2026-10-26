@@ -90,8 +90,8 @@ def send_recovery_code_email(to: str, code: str, minutes: int = 10, max_attempts
         <span style="font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #0f172a;">{code}</span>
       </div>
       <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 14px; border-radius: 4px; font-size: 12px; color: #92400e; margin: 20px 0;">
-        ⏱️ <b>Tiempo límite:</b> Válido por <b>{minutes} minutos</b>.<br>
-        🛡️ <b>Seguridad:</b> Cuentas con un máximo de <b>{max_attempts} intentos</b>. Tras superarlos, el código se invalidará automáticamente.
+        <b>Tiempo límite:</b> Válido por <b>{minutes} minutos</b>.<br>
+        <b>Seguridad:</b> Cuentas con un máximo de <b>{max_attempts} intentos</b>. Tras superarlos, el código se invalidará automáticamente.
       </div>
       <p style="font-size: 13px; color: #64748b; line-height: 1.5; margin: 24px 0 0;">
         Si no realizaste esta solicitud, puedes ignorar este mensaje de forma segura. Nadie puede acceder a tu cuenta sin este código.

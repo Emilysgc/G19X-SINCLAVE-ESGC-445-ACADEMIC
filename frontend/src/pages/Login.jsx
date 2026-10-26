@@ -17,10 +17,52 @@ export default function Login() {
   const [recoveryCode, setRecoveryCode] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [devCode, setDevCode] = useState('')
   const [recoveryErr, setRecoveryErr] = useState([])
   const [recoverySuccess, setRecoverySuccess] = useState('')
   const [recoveryBusy, setRecoveryBusy] = useState(false)
+
+  const getPasswordStrength = (pwd) => {
+    if (!pwd) return { score: 0, label: '', color: '#e2e8f0' }
+    let score = 0
+    if (pwd.length >= 8) score++
+    if (pwd.length >= 10) score++
+    if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++
+    if (/\d/.test(pwd) || /[^A-Za-z0-9]/.test(pwd)) score++
+
+    switch (score) {
+      case 1:
+        return { score: 1, label: 'Débil', color: '#ef4444' }
+      case 2:
+        return { score: 2, label: 'Media', color: '#f59e0b' }
+      case 3:
+        return { score: 3, label: 'Fuerte', color: '#10b981' }
+      case 4:
+        return { score: 4, label: 'Excelente', color: '#22c55e' }
+      default:
+        return { score: 0, label: '', color: '#e2e8f0' }
+    }
+  }
+
+  const MailboxGraphic = () => (
+    <svg width="120" height="90" viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="94" y="95" width="12" height="48" rx="2" fill="#334155" />
+      <path d="M94 110C80 110 70 120 70 135" stroke="#334155" strokeWidth="4" strokeLinecap="round" />
+      <path d="M50 45C50 25 70 15 105 15C140 15 155 30 155 55V95H50V45Z" fill="#1e293b" />
+      <path d="M50 45C50 25 70 15 105 15C140 15 155 30 155 55V95H50V45Z" stroke="#0f172a" strokeWidth="4" strokeLinejoin="round" />
+      <ellipse cx="50" cy="70" rx="14" ry="26" fill="#475569" stroke="#0f172a" strokeWidth="4" />
+      <path d="M155 60H175V40H155" stroke="#f97316" strokeWidth="4" fill="#ff5722" strokeLinejoin="round" />
+      <line x1="155" y1="60" x2="155" y2="80" stroke="#f97316" strokeWidth="4" />
+      <g transform="translate(18, 15) rotate(-8)">
+        <rect x="35" y="35" width="65" height="42" rx="4" fill="#ffffff" stroke="#0f172a" strokeWidth="3.5" />
+        <path d="M35 37L67.5 60L100 37" stroke="#0f172a" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M36 76L55 55" stroke="#cbd5e1" strokeWidth="2.5" />
+        <path d="M99 76L80 55" stroke="#cbd5e1" strokeWidth="2.5" />
+      </g>
+    </svg>
+  )
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -43,6 +85,8 @@ export default function Login() {
     setRecoveryCode('')
     setNewPassword('')
     setConfirmPassword('')
+    setShowNewPassword(false)
+    setShowConfirmPassword(false)
     setDevCode('')
     setRecoveryStep(1)
     setShowRecovery(true)
@@ -231,154 +275,301 @@ export default function Login() {
         </div>
       </div>
 
-      {/* ── Modal de Recuperación con Código OTP (10 min · 3 intentos) ── */}
+      {/* ── Modal de Restablecer Contraseña (Diseño Imagen 3: Kinety Mailbox) ── */}
       {showRecovery && (
-        <Modal
-          title={
-            recoveryStep === 1
-              ? 'Recuperación de contraseña'
-              : recoveryStep === 2
-              ? 'Verificación y nueva contraseña'
-              : '¡Contraseña restablecida!'
-          }
-          onClose={() => setShowRecovery(false)}
-        >
-          {recoveryErr.length > 0 && <Alert kind="err" items={recoveryErr} />}
-
-          {recoveryStep === 1 && (
-            <form onSubmit={handleSendCode} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-                Ingresa tu correo corporativo o número de empleado. Te enviaremos un código de seguridad de 6 dígitos con límite de 3 intentos y validez de 10 minutos.
-              </p>
-
-              <Field label="Correo o usuario">
-                <input
-                  type="text"
-                  placeholder="ej. nubec42@gmail.com o empleado2"
-                  value={recoveryEmail}
-                  onChange={(e) => setRecoveryEmail(e.target.value)}
-                  autoFocus
-                  required
-                />
-              </Field>
-
-              <div className="row end" style={{ marginTop: 8, gap: 8 }}>
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => setShowRecovery(false)}
-                  disabled={recoveryBusy}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="btn primary"
-                  disabled={recoveryBusy || !recoveryEmail.trim()}
-                >
-                  {recoveryBusy ? 'Enviando código…' : 'Enviar código al correo'}
-                </button>
+        <div className="pwd-modal-overlay" onClick={() => setShowRecovery(false)}>
+          <div
+            className="pwd-modal-card"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            {/* Barra superior con marca y botón cerrar */}
+            <div className="pwd-modal-top-bar">
+              <div className="pwd-brand-tag">
+                <span className="pwd-brand-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                </span>
+                <span>PluriOne</span>
               </div>
-            </form>
-          )}
+              <button
+                type="button"
+                className="pwd-close-btn"
+                onClick={() => setShowRecovery(false)}
+                title="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
 
-          {recoveryStep === 2 && (
-            <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {recoverySuccess && <Alert kind="info">{recoverySuccess}</Alert>}
+            {/* Ilustración de buzón con carta estilo Imagen 3 (sin emojis) */}
+            <div className="pwd-illustration-wrap">
+              <MailboxGraphic />
+            </div>
 
-              {devCode && (
-                <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', padding: '8px 12px', borderRadius: 6, fontSize: 13, color: '#92400e' }}>
-                  🔑 <b>Código generado por el servidor:</b> <span style={{ fontFamily: 'monospace', fontSize: 16, letterSpacing: 2, fontWeight: 'bold' }}>{devCode}</span> (Válido por 10 min · Máx. 3 intentos)
+            {/* Paso 1: Solicitar código al correo */}
+            {recoveryStep === 1 && (
+              <>
+                <div className="pwd-header-center">
+                  <h2 className="pwd-main-title">Recuperar contraseña</h2>
+                  <p className="pwd-main-subtitle">
+                    Ingresa tu correo institucional o usuario para enviarte tu código de recuperación.
+                  </p>
                 </div>
-              )}
 
-              <div style={{ background: '#f1f5f9', padding: '10px 12px', borderRadius: 6, fontSize: 12, color: '#475569' }}>
-                ⏱️ <b>Tiempo límite:</b> El código expira en <b>10 minutos</b>.<br />
-                🛡️ <b>Seguridad:</b> Cuentas con un máximo de <b>3 intentos</b> antes de que el código sea cancelado automáticamente.
-              </div>
+                {recoveryErr.length > 0 && <Alert kind="err" items={recoveryErr} />}
 
-              <Field label="Código de 6 dígitos" hint="Revisa tu bandeja de entrada o spam">
-                <input
-                  type="text"
-                  maxLength={6}
-                  placeholder="123456"
-                  value={recoveryCode}
-                  onChange={(e) => setRecoveryCode(e.target.value.replace(/\D/g, ''))}
-                  style={{ fontSize: '1.25rem', letterSpacing: 6, textAlign: 'center', fontWeight: 'bold' }}
-                  autoFocus
-                  required
-                />
-              </Field>
+                <form onSubmit={handleSendCode} className="pwd-form">
+                  <div className="pwd-field-group">
+                    <label className="pwd-field-label">Correo electrónico o usuario</label>
+                    <input
+                      type="text"
+                      className="pwd-input"
+                      placeholder="ej. usuario@plurione.com"
+                      value={recoveryEmail}
+                      onChange={(e) => setRecoveryEmail(e.target.value)}
+                      autoFocus
+                      required
+                    />
+                  </div>
 
-              <Field label="Nueva contraseña" hint="Mínimo 10 caracteres">
-                <input
-                  type="password"
-                  placeholder="••••••••••"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                />
-              </Field>
-
-              <Field label="Confirmar nueva contraseña">
-                <input
-                  type="password"
-                  placeholder="••••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-              </Field>
-
-              <div className="row between" style={{ marginTop: 8, alignItems: 'center' }}>
-                <button
-                  type="button"
-                  className="btn sm"
-                  onClick={handleSendCode}
-                  disabled={recoveryBusy}
-                  style={{ color: 'var(--brand)' }}
-                >
-                  🔄 Reenviar código
-                </button>
-
-                <div className="row" style={{ gap: 8 }}>
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={() => setRecoveryStep(1)}
-                    disabled={recoveryBusy}
-                  >
-                    Atrás
-                  </button>
                   <button
                     type="submit"
-                    className="btn primary"
-                    disabled={recoveryBusy || recoveryCode.length !== 6 || newPassword.length < 10}
+                    className="pwd-btn-submit-orange"
+                    disabled={recoveryBusy || !recoveryEmail.trim()}
+                  >
+                    {recoveryBusy ? 'Enviando código…' : 'Enviar código de recuperación'}
+                  </button>
+
+                  <div className="pwd-secondary-actions" style={{ justifyContent: 'center' }}>
+                    <button
+                      type="button"
+                      className="pwd-btn-link"
+                      onClick={() => setRecoveryStep(2)}
+                    >
+                      ¿Ya cuentas con un código de verificación? Ingrésalo aquí
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+
+            {/* Paso 2: Diseño Imagen 3 (Reset password + código + ver contraseña) */}
+            {recoveryStep === 2 && (
+              <>
+                <div className="pwd-header-center">
+                  <h2 className="pwd-main-title">Restablecer contraseña</h2>
+                  <p className="pwd-main-subtitle">
+                    Ingresa tu código de verificación y define tu nueva contraseña.
+                  </p>
+                </div>
+
+                {recoveryErr.length > 0 && <Alert kind="err" items={recoveryErr} />}
+                {recoverySuccess && <Alert kind="info">{recoverySuccess}</Alert>}
+
+                {devCode && (
+                  <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', padding: '8px 12px', borderRadius: 8, fontSize: 12, color: '#92400e', marginBottom: 12 }}>
+                    <b>Código de prueba para evaluación:</b> <span style={{ fontFamily: 'monospace', fontSize: 15, fontWeight: 'bold', letterSpacing: 2 }}>{devCode}</span> (Válido 10 min · Máx. 3 intentos)
+                  </div>
+                )}
+
+                <form onSubmit={handleResetPassword} className="pwd-form">
+                  {/* Correo o identificador si no está preestablecido */}
+                  {!recoveryEmail.trim() && (
+                    <div className="pwd-field-group">
+                      <label className="pwd-field-label">Correo electrónico o usuario</label>
+                      <input
+                        type="text"
+                        className="pwd-input"
+                        placeholder="ej. usuario@plurione.com"
+                        value={recoveryEmail}
+                        onChange={(e) => setRecoveryEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {/* Código de verificación de 6 dígitos */}
+                  <div className="pwd-field-group">
+                    <label className="pwd-field-label">Código de verificación</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      className="pwd-input"
+                      style={{ letterSpacing: '4px', fontWeight: '700', fontSize: '15px' }}
+                      placeholder="Ingresa los 6 dígitos"
+                      value={recoveryCode}
+                      onChange={(e) => setRecoveryCode(e.target.value.replace(/\D/g, ''))}
+                      required
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Nueva contraseña con botón para ver contraseña + indicador de fuerza */}
+                  <div className="pwd-field-group">
+                    <label className="pwd-field-label">Nueva contraseña</label>
+                    <div className="pwd-input-wrapper">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        className="pwd-input"
+                        placeholder="Mínimo 10 caracteres"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                        minLength={10}
+                      />
+                      <button
+                        type="button"
+                        className="pwd-toggle-btn"
+                        onClick={() => setShowNewPassword((v) => !v)}
+                        title={showNewPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                      >
+                        {showNewPassword ? (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                            <line x1="1" y1="1" x2="23" y2="23" />
+                          </svg>
+                        ) : (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Barra de fortaleza estilo Imagen 3 */}
+                    {newPassword && (
+                      <div className="pwd-strength-container">
+                        <div className="pwd-strength-bars">
+                          {[1, 2, 3, 4].map((level) => {
+                            const strength = getPasswordStrength(newPassword)
+                            const isFilled = strength.score >= level
+                            return (
+                              <div
+                                key={level}
+                                className="pwd-strength-bar"
+                                style={{
+                                  background: isFilled ? strength.color : undefined,
+                                }}
+                              />
+                            )
+                          })}
+                        </div>
+                        <span
+                          className="pwd-strength-text"
+                          style={{ color: getPasswordStrength(newPassword).color }}
+                        >
+                          Fortaleza de contraseña: {getPasswordStrength(newPassword).label}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Confirmar nueva contraseña con botón para ver contraseña */}
+                  <div className="pwd-field-group">
+                    <label className="pwd-field-label">Confirmar nueva contraseña</label>
+                    <div className="pwd-input-wrapper">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        className="pwd-input"
+                        placeholder="Repite la nueva contraseña"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        minLength={10}
+                      />
+                      <button
+                        type="button"
+                        className="pwd-toggle-btn"
+                        onClick={() => setShowConfirmPassword((v) => !v)}
+                        title={showConfirmPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                      >
+                        {showConfirmPassword ? (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                            <line x1="1" y1="1" x2="23" y2="23" />
+                          </svg>
+                        ) : (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Botón Naranja Pill */}
+                  <button
+                    type="submit"
+                    className="pwd-btn-submit-orange"
+                    disabled={recoveryBusy || recoveryCode.length !== 6 || newPassword.length < 10 || (confirmPassword && newPassword !== confirmPassword)}
                   >
                     {recoveryBusy ? 'Verificando…' : 'Restablecer contraseña'}
                   </button>
-                </div>
-              </div>
-            </form>
-          )}
 
-          {recoveryStep === 3 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, textAlign: 'center', padding: '8px 0' }}>
-              <div style={{ fontSize: 42 }}>✅</div>
-              <h3 style={{ margin: 0, color: '#16a34a' }}>¡Contraseña actualizada con éxito!</h3>
-              <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-                Tu contraseña ha sido sincronizada. Ya puedes iniciar sesión en el portal con tu nueva contraseña.
-              </p>
-              <button
-                className="btn primary"
-                style={{ width: '100%', marginTop: 8 }}
-                onClick={() => setShowRecovery(false)}
-              >
-                Ir a Iniciar Sesión
-              </button>
+                  {/* Acciones secundarias sin emojis */}
+                  <div className="pwd-secondary-actions">
+                    <button
+                      type="button"
+                      className="pwd-btn-link"
+                      onClick={handleSendCode}
+                      disabled={recoveryBusy || !recoveryEmail.trim()}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                      </svg>
+                      <span>Reenviar código</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="pwd-btn-link"
+                      onClick={() => setRecoveryStep(1)}
+                      disabled={recoveryBusy}
+                    >
+                      <span>Atrás</span>
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+
+            {/* Paso 3: Éxito (sin emojis) */}
+            {recoveryStep === 3 && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 14, padding: '10px 0' }}>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#dcfce7', display: 'grid', placeItems: 'center', color: '#16a34a' }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <h3 className="pwd-main-title" style={{ color: '#16a34a', margin: 0 }}>
+                  ¡Contraseña restablecida!
+                </h3>
+                <p className="pwd-main-subtitle">
+                  Tu contraseña ha sido actualizada exitosamente. Ya puedes ingresar al portal con tu nueva contraseña.
+                </p>
+                <button
+                  type="button"
+                  className="pwd-btn-submit-orange"
+                  style={{ width: '100%', marginTop: 8 }}
+                  onClick={() => setShowRecovery(false)}
+                >
+                  Ir a Iniciar Sesión
+                </button>
+              </div>
+            )}
+
+            {/* Pie de página sutil como en Imagen 3 */}
+            <div className="pwd-footer-meta">
+              Copyright © 2026 PluriOne · Seguridad y Privacidad
             </div>
-          )}
-        </Modal>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -50,7 +50,7 @@ Copia la plantilla de variables de entorno lista para evaluación:
   cp .env.example .env
   ```
 
-> ⚠️ **Nota sobre credenciales de demostración:** El archivo `.env.example` y los usuarios de prueba contienen contraseñas de demostración preconfiguradas únicamente para facilitar la evaluación en local (`localhost`). No deben considerarse seguras para un entorno de producción real; en producción es indispensable sustituir todas las credenciales y secretos (`SECRET_KEY`, `POSTGRES_PASSWORD`, `KEYCLOAK_ADMIN_PASSWORD`, etc.) por valores de alta seguridad gestionados mediante un gestor de secretos corporativo.
+> **Nota sobre credenciales de demostración:** El archivo `.env.example` y los usuarios de prueba contienen contraseñas de demostración preconfiguradas únicamente para facilitar la evaluación en local (`localhost`). No deben considerarse seguras para un entorno de producción real; en producción es indispensable sustituir todas las credenciales y secretos (`SECRET_KEY`, `POSTGRES_PASSWORD`, `KEYCLOAK_ADMIN_PASSWORD`, etc.) por valores de alta seguridad gestionados mediante un gestor de secretos corporativo.
 > *(Opcional)*: Si deseas activar el asistente de IA con Groq en la nube, puedes agregar tu `GROQ_API_KEY` en el archivo `.env`. Si no la configuras, el sistema funcionará automáticamente con el motor de reglas y soporte para Ollama local.
 
 ---
@@ -63,7 +63,7 @@ docker compose up -d --build
 
 > **Tiempo de espera estimado:** Aguarda entre **30 y 60 segundos** en el primer arranque para que PostgreSQL, Redis y Keycloak inicialicen e importen automáticamente el realm `rrhh`.
 >
-> 💡 **Nota para evaluadores con base de datos preexistente:**
+> **Nota para evaluadores con base de datos preexistente:**
 > El sistema inicializa automáticamente su esquema relacional mediante `Base.metadata.create_all()` al iniciar el backend (sin herramientas de migración pesadas como Alembic para simplificar la evaluación). Si ya contabas con volúmenes locales previos de una ejecución anterior y deseas reiniciar la base de datos limpia con todas las tablas y datos semilla actualizados, ejecuta:
 > ```bash
 > docker compose down -v
@@ -101,7 +101,7 @@ El sistema cuenta con soporte para inicio de sesión unificado con **Keycloak**:
      * `MANAGER`: Supervisor; revisa y aprueba/rechaza solicitudes de su equipo.
      * `HR_ADMIN`: Recursos Humanos; gestión de empleados, departamentos, constancias y reportes.
      * `SYSTEM_ADMIN`: Acceso total a todas las configuraciones y módulos.
-4. Abre [http://localhost](http://localhost) e inicia sesión con el botón **🔐 Iniciar sesión con Keycloak**.
+4. Abre [http://localhost](http://localhost) e inicia sesión con el botón ** Iniciar sesión con Keycloak**.
 
 ---
 

@@ -87,7 +87,7 @@ function Users() {
 
   return (
     <>
-      {/* ── Barra de Búsqueda y Filtros estilo Imagen 2 ───────────────── */}
+      {/* ── Barra de Búsqueda y Filtros de Administración ───────────────── */}
       <div className="admin-filter-bar">
         <input
           className="admin-search-input"
@@ -237,7 +237,7 @@ function Users() {
         </div>
       )}
 
-      {/* ── Paginación estilo Imagen 2 ─────────────────────────────────── */}
+      {/* ── Paginación de Administración ─────────────────────────────────── */}
       {totalPages > 1 && (
         <div className="admin-pagination">
           <button
@@ -836,7 +836,7 @@ export default function Admin() {
 
   return (
     <div className="admin-admin-container">
-      {/* ── Encabezado Principal estilo Imagen 2 ──────────────────────── */}
+      {/* ── Encabezado Principal de Administración ──────────────────────── */}
       <div style={{ marginBottom: 18 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>
           Gestión de Administración
@@ -846,7 +846,7 @@ export default function Admin() {
         </p>
       </div>
 
-      {/* ── Pestañas en forma de carpeta estilo Imagen 2 ──────────────── */}
+      {/* ── Pestañas en forma de carpeta de Gestión Administrativa ──────────────── */}
       <div className="admin-folder-tabs">
         {ALL_TABS.map(([k, l]) => (
           <button

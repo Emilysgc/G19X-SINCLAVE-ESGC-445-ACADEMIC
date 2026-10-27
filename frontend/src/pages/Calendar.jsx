@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import { useAuth } from '../services/auth.jsx'
-import { Loading, StatusBadge, Modal, Field } from '../components/ui.jsx'
+import { Loading, StatusBadge, Modal, Field, Alert } from '../components/ui.jsx'
 import { TYPE, STATUS, fmtDate } from '../services/labels'
 
 const MONTHS_ES = [
@@ -34,25 +34,29 @@ export default function Calendar() {
   )
 
   // Notas y actividades del usuario
-  const [activities, setActivities] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('hr_user_activities') || '[]')
-    } catch {
-      return []
-    }
-  })
+  const [activities, setActivities] = useState([])
+  const [calendarError, setCalendarError] = useState('')
+  const [modalError, setModalError] = useState('')
+  const [saving, setSaving] = useState(false)
 
+  // Modal para crear / editar actividad
   const [modalNew, setModalNew] = useState(false)
+  const [editingNote, setEditingNote] = useState(null)
   const [actTitle, setActTitle] = useState('')
   const [actDate, setActDate] = useState(() =>
     toDateString(today.getFullYear(), today.getMonth(), today.getDate())
   )
   const [actType, setActType] = useState('Actividad')
+  const [actVisibility, setActVisibility] = useState('PERSONAL')
   const [actDesc, setActDesc] = useState('')
+
+  const isHrOrAdmin = ['HR_ADMIN', 'SYSTEM_ADMIN'].includes(user?.role)
 
   useEffect(() => {
     let cancel = false
     setLoading(true)
+    setCalendarError('')
+
     api
       .get('/requests?limit=150')
       .then((res) => {
@@ -79,68 +83,102 @@ export default function Calendar() {
           } catch {}
         }
       })
-      .catch(() => {})
+      .catch((err) => {
+        if (!cancel) {
+          const msg = err?.response?.data?.detail || err?.message || 'No se pudieron sincronizar las notas de calendario'
+          setCalendarError(typeof msg === 'string' ? msg : JSON.stringify(msg))
+        }
+      })
 
     return () => {
       cancel = true
     }
   }, [currentYear, currentMonth])
 
-  // Guardar nueva actividad o nota en el backend
+  const handleOpenCreate = () => {
+    setEditingNote(null)
+    setActTitle('')
+    setActDate(selectedDate || toDateString(today.getFullYear(), today.getMonth(), today.getDate()))
+    setActType('Actividad')
+    setActVisibility('PERSONAL')
+    setActDesc('')
+    setModalError('')
+    setModalNew(true)
+  }
+
+  const handleOpenEdit = (ev) => {
+    setEditingNote(ev)
+    setActTitle(ev.title || '')
+    setActDate(ev.start_date || selectedDate || toDateString(today.getFullYear(), today.getMonth(), today.getDate()))
+    setActType(ev.type || 'Actividad')
+    setActVisibility(ev.visibility || 'PERSONAL')
+    setActDesc(ev.description || '')
+    setModalError('')
+    setSelectedEvent(null)
+    setModalNew(true)
+  }
+
+  // Guardar (POST) o Actualizar (PUT) actividad o nota en el backend
   const handleSaveActivity = async (e) => {
     e.preventDefault()
     if (!actTitle.trim()) return
+
+    setModalError('')
+    setSaving(true)
 
     const payload = {
       title: actTitle.trim(),
       date: actDate,
       type: actType,
       description: actDesc.trim() || null,
+      visibility: actVisibility,
+      department_id: actVisibility === 'DEPARTMENT' ? user?.department_id : null,
     }
 
     try {
-      const created = await api.post('/users/me/calendar-notes', payload)
-      const updated = [created, ...activities.filter((a) => a.id !== created.id)]
-      setActivities(updated)
-      try {
-        localStorage.setItem('hr_user_activities', JSON.stringify(updated))
-      } catch {}
-    } catch {
-      // Respaldo local
-      const newAct = {
-        id: 'act_' + Date.now(),
-        title: actTitle.trim(),
-        start_date: actDate,
-        end_date: actDate,
-        type: actType,
-        description: actDesc.trim(),
-        isCustomActivity: true,
-        requester: { full_name: user?.full_name || 'Usuario' },
-        created_at: new Date().toISOString(),
+      if (editingNote) {
+        const noteId = editingNote.id.replace('act_', '')
+        const updated = await api.put(`/users/me/calendar-notes/${noteId}`, payload)
+        const updatedList = activities.map((a) => (a.id === updated.id || a.note_db_id === updated.note_db_id ? updated : a))
+        setActivities(updatedList)
+        try {
+          localStorage.setItem('hr_user_activities', JSON.stringify(updatedList))
+        } catch {}
+      } else {
+        const created = await api.post('/users/me/calendar-notes', payload)
+        const updatedList = [created, ...activities.filter((a) => a.id !== created.id)]
+        setActivities(updatedList)
+        try {
+          localStorage.setItem('hr_user_activities', JSON.stringify(updatedList))
+        } catch {}
       }
-      const updated = [newAct, ...activities]
-      setActivities(updated)
-      try {
-        localStorage.setItem('hr_user_activities', JSON.stringify(updated))
-      } catch {}
+      setModalNew(false)
+      setEditingNote(null)
+      setActTitle('')
+      setActDesc('')
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || 'Error al guardar la actividad en el servidor'
+      setModalError(typeof msg === 'string' ? msg : JSON.stringify(msg))
+    } finally {
+      setSaving(false)
     }
-
-    setModalNew(false)
-    setActTitle('')
-    setActDesc('')
   }
 
-  // Eliminar actividad o nota
+  // Eliminar actividad o nota con validación de respuesta del servidor
   const handleDeleteActivity = async (id) => {
+    setCalendarError('')
     try {
       await api.del(`/users/me/calendar-notes/${id}`)
-    } catch {}
-    const updated = activities.filter((a) => a.id !== id)
-    setActivities(updated)
-    try {
-      localStorage.setItem('hr_user_activities', JSON.stringify(updated))
-    } catch {}
-    setSelectedEvent(null)
+      const updated = activities.filter((a) => a.id !== id)
+      setActivities(updated)
+      try {
+        localStorage.setItem('hr_user_activities', JSON.stringify(updated))
+      } catch {}
+      setSelectedEvent(null)
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || 'No se pudo eliminar la actividad en el servidor'
+      setCalendarError(typeof msg === 'string' ? msg : JSON.stringify(msg))
+    }
   }
 
   // Combinar solicitudes con notas
@@ -171,19 +209,20 @@ export default function Calendar() {
     return map
   }, [allEvents])
 
-  // Matriz de días del mes
+  // Días del mes para la cuadrícula
   const calendarDays = useMemo(() => {
     const firstDay = new Date(currentYear, currentMonth, 1)
-    const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate()
+    const lastDay = new Date(currentYear, currentMonth + 1, 0)
+    const daysInMonth = lastDay.getDate()
     const startDayOfWeek = firstDay.getDay()
 
-    const daysPrevMonth = new Date(currentYear, currentMonth, 0).getDate()
+    const prevMonthLastDay = new Date(currentYear, currentMonth, 0).getDate()
     const days = []
 
     for (let i = startDayOfWeek - 1; i >= 0; i--) {
-      const d = daysPrevMonth - i
       const prevM = currentMonth === 0 ? 11 : currentMonth - 1
       const prevY = currentMonth === 0 ? currentYear - 1 : currentYear
+      const d = prevMonthLastDay - i
       days.push({
         day: d,
         month: prevM,
@@ -193,7 +232,7 @@ export default function Calendar() {
       })
     }
 
-    for (let d = 1; d <= totalDays; d++) {
+    for (let d = 1; d <= daysInMonth; d++) {
       days.push({
         day: d,
         month: currentMonth,
@@ -219,7 +258,6 @@ export default function Calendar() {
     return days
   }, [currentYear, currentMonth])
 
-  // Datos del día seleccionado
   const selectedDateObj = useMemo(() => {
     if (!selectedDate) return today
     const [y, m, d] = selectedDate.split('-').map(Number)
@@ -249,75 +287,77 @@ export default function Calendar() {
   }
 
   return (
-    <div className="cal5-page-container">
-      {/* ── Contenedor Tarjeta Dividida estilo Imagen 5 ────────────── */}
-      <div className="cal5-main-card">
+    <div className="calendar-page-container">
+      {calendarError && (
+        <div style={{ maxWidth: 900, margin: '0 auto 16px', width: '100%' }}>
+          <Alert kind="err">{calendarError}</Alert>
+        </div>
+      )}
+
+      {/* ── Tarjeta Dividida de Calendario ────────────────────────── */}
+      <div className="calendar-main-card">
         {/* ── Columna Izquierda: Calendario mensual en español ──────── */}
-        <div className="cal5-left-pane">
-          {/* Encabezado con selector de mes y año */}
-          <div className="cal5-header-row">
-            <div className="cal5-month-selector">
-              <span className="cal5-month-title">{MONTHS_ES[currentMonth]}</span>
+        <div className="calendar-left-pane">
+          <div className="calendar-header-row">
+            <div className="calendar-month-selector">
+              <span className="calendar-month-title">{MONTHS_ES[currentMonth]}</span>
               <button
                 type="button"
-                className="cal5-month-chevron"
+                className="calendar-month-chevron"
                 onClick={nextMonth}
                 title="Siguiente mes"
               >
                 ▾
               </button>
-              <div className="cal5-month-arrows">
-                <button type="button" className="cal5-arrow-btn" onClick={prevMonth} title="Mes anterior">
+              <div className="calendar-month-arrows">
+                <button type="button" className="calendar-arrow-btn" onClick={prevMonth} title="Mes anterior">
                   ‹
                 </button>
-                <button type="button" className="cal5-arrow-btn" onClick={nextMonth} title="Mes siguiente">
+                <button type="button" className="calendar-arrow-btn" onClick={nextMonth} title="Mes siguiente">
                   ›
                 </button>
               </div>
             </div>
 
-            <div className="cal5-year-label">{currentYear}</div>
+            <div className="calendar-year-label">{currentYear}</div>
           </div>
 
-          {/* Días de la semana en español */}
-          <div className="cal5-weekdays-row">
+          <div className="calendar-weekdays-row">
             {WEEKDAYS_SHORT_ES.map((dayName) => (
-              <div key={dayName} className="cal5-th-weekday">
+              <div key={dayName} className="calendar-th-weekday">
                 {dayName}
               </div>
             ))}
           </div>
 
-          {/* Cuadrícula de días */}
-          <div className="cal5-days-grid">
+          <div className="calendar-days-grid">
             {calendarDays.map((cd, idx) => {
               const isSelected = cd.dateStr === selectedDate
               const dayEvents = eventsByDate[cd.dateStr] || []
               const hasEvents = dayEvents.length > 0
 
-              // Elegir color de punto (amarillo, rojo o verde como en Imagen 5)
               let dotColor = null
               if (hasEvents) {
-                if (dayEvents.some((e) => e.status === 'APPROVED')) dotColor = '#22c55e' // Verde
-                else if (dayEvents.some((e) => e.status === 'REJECTED')) dotColor = '#ef4444' // Rojo
-                else dotColor = '#eab308' // Amarillo
+                if (dayEvents.some((e) => e.status === 'APPROVED')) dotColor = '#22c55e'
+                else if (dayEvents.some((e) => e.status === 'REJECTED')) dotColor = '#ef4444'
+                else dotColor = '#eab308'
               }
 
               return (
                 <div
                   key={idx}
-                  className={`cal5-day-cell ${!cd.currentMonth ? 'cal5-day-outside' : ''}`}
+                  className={`calendar-day-cell ${!cd.currentMonth ? 'calendar-day-outside' : ''}`}
                   onClick={() => {
                     setSelectedDate(cd.dateStr)
                     setActDate(cd.dateStr)
                   }}
                 >
-                  <div className={`cal5-day-number ${isSelected ? 'cal5-day-selected' : ''}`}>
+                  <div className={`calendar-day-number ${isSelected ? 'calendar-day-selected' : ''}`}>
                     {cd.day}
                   </div>
                   {hasEvents && (
                     <div
-                      className="cal5-day-dot"
+                      className="calendar-day-dot"
                       style={{
                         backgroundColor: isSelected ? 'transparent' : dotColor,
                       }}
@@ -330,74 +370,70 @@ export default function Calendar() {
         </div>
 
         {/* ── Divisor vertical ─────────────────────────────────────── */}
-        <div className="cal5-divider" />
+        <div className="calendar-divider" />
 
-        {/* ── Columna Derecha: Detalle del día y Eventos (Imagen 5) ─── */}
-        <div className="cal5-right-pane">
-          {/* Día seleccionado y nombre del día en español */}
-          <div className="cal5-selected-header">
-            <div className="cal5-selected-number">{selectedDayNum}</div>
-            <div className="cal5-selected-weekday">{selectedWeekdayName}</div>
+        {/* ── Columna Derecha: Detalle del día y Eventos ─────────────── */}
+        <div className="calendar-right-pane">
+          <div className="calendar-selected-header">
+            <div className="calendar-selected-number">{selectedDayNum}</div>
+            <div className="calendar-selected-weekday">{selectedWeekdayName}</div>
           </div>
 
-          {/* Subtítulo: Eventos con botón redondo + */}
-          <div className="cal5-events-subheader">
-            <h3 className="cal5-events-heading">Eventos</h3>
+          <div className="calendar-events-subheader">
+            <h3 className="calendar-events-heading">Eventos</h3>
             <button
               type="button"
-              className="cal5-add-round-btn"
-              onClick={() => {
-                setActDate(selectedDate)
-                setModalNew(true)
-              }}
-              title="Agregar evento o nota para este día"
+              className="calendar-add-round-btn"
+              onClick={handleOpenCreate}
+              title="Agregar actividad o nota para este día"
             >
               +
             </button>
           </div>
 
-          {/* Lista de eventos con círculos huecos de colores (Imagen 5) */}
-          <div className="cal5-events-container">
+          <div className="calendar-events-container">
             {selectedDayEvents.length === 0 ? (
-              <div className="cal5-empty-state">
-                <p className="cal5-empty-msg">No hay eventos ni ausencias programadas para este día.</p>
+              <div className="calendar-empty-state">
+                <p className="calendar-empty-msg">No hay eventos ni ausencias programadas para este día.</p>
                 <button
                   type="button"
-                  className="cal5-btn-inline-add"
-                  onClick={() => {
-                    setActDate(selectedDate)
-                    setModalNew(true)
-                  }}
+                  className="calendar-btn-inline-add"
+                  onClick={handleOpenCreate}
                 >
                   + Agregar actividad o nota
                 </button>
               </div>
             ) : (
-              <div className="cal5-events-list">
+              <div className="calendar-events-list">
                 {selectedDayEvents.map((ev, idx) => {
-                  // Colores de los círculos huecos: rojo, amarillo, verde, azul
                   const colors = ['#ef4444', '#eab308', '#22c55e', '#3b82f6']
                   const circleColor = colors[idx % colors.length]
 
                   return (
                     <div
-                      key={ev.id}
-                      className="cal5-event-item"
+                      key={ev.id || idx}
+                      className="calendar-event-item"
                       onClick={() => setSelectedEvent(ev)}
                     >
                       <span
-                        className="cal5-hollow-bullet"
+                        className="calendar-hollow-bullet"
                         style={{ borderColor: circleColor }}
                       />
-                      <div className="cal5-event-content">
-                        <span className="cal5-event-text">
+                      <div className="calendar-event-content">
+                        <span className="calendar-event-text">
                           {ev.isCustomActivity
                             ? ev.title
                             : ev.title || TYPE[ev.type] || 'Solicitud de personal'}
                         </span>
-                        <span className="cal5-event-meta">
+                        <span className="calendar-event-meta">
                           {ev.isCustomActivity
-                            ? ev.type
+                            ? `${ev.type} · ${
+                                ev.visibility === 'GLOBAL'
+                                  ? 'Global'
+                                  : ev.visibility === 'DEPARTMENT'
+                                  ? 'Departamental'
+                                  : 'Personal'
+                              }`
                             : `${ev.requester?.full_name || user.full_name} · ${
                                 STATUS[ev.status]?.[0] || 'En revisión'
                               }`}
@@ -412,9 +448,17 @@ export default function Calendar() {
         </div>
       </div>
 
-      {/* ── Modal: Registrar nueva actividad o nota ───────────────── */}
+      {/* ── Modal: Registrar o Editar actividad / nota ─────────────── */}
       {modalNew && (
-        <Modal title="Agregar actividad o nota personal" onClose={() => setModalNew(false)}>
+        <Modal
+          title={editingNote ? 'Editar actividad de calendario' : 'Agregar actividad al calendario'}
+          onClose={() => {
+            setModalNew(false)
+            setEditingNote(null)
+          }}
+        >
+          {modalError && <Alert kind="err">{modalError}</Alert>}
+
           <form onSubmit={handleSaveActivity}>
             <Field label="Título del evento o actividad">
               <input
@@ -448,6 +492,24 @@ export default function Calendar() {
               </div>
             </div>
 
+            {/* Selector de visibilidad */}
+            <Field label="Visibilidad">
+              <select
+                value={actVisibility}
+                onChange={(e) => setActVisibility(e.target.value)}
+              >
+                <option value="PERSONAL">Personal (Solo tú puedes verla)</option>
+                <option value="DEPARTMENT">
+                  {user?.department?.name
+                    ? `Departamental (${user.department.name})`
+                    : 'Departamental (Tu departamento)'}
+                </option>
+                {isHrOrAdmin && (
+                  <option value="GLOBAL">Global (Visible para toda la empresa)</option>
+                )}
+              </select>
+            </Field>
+
             <Field label="Descripción o detalles adicionales">
               <textarea
                 style={{ minHeight: 80 }}
@@ -458,11 +520,23 @@ export default function Calendar() {
             </Field>
 
             <div className="row" style={{ marginTop: 20, justifyContent: 'flex-end', gap: 10 }}>
-              <button type="button" className="btn" onClick={() => setModalNew(false)}>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setModalNew(false)
+                  setEditingNote(null)
+                }}
+                disabled={saving}
+              >
                 Cancelar
               </button>
-              <button type="submit" className="btn primary">
-                Guardar evento
+              <button type="submit" className="btn primary" disabled={saving}>
+                {saving
+                  ? 'Guardando…'
+                  : editingNote
+                  ? 'Actualizar actividad'
+                  : 'Guardar evento'}
               </button>
             </div>
           </form>
@@ -494,11 +568,22 @@ export default function Calendar() {
                     ` al ${fmtDate(selectedEvent.end_date)}`}
                 </span>
               </div>
-              {selectedEvent.isCustomActivity ? (
-                <span className="badge blue">{selectedEvent.type}</span>
-              ) : (
-                <StatusBadge value={selectedEvent.status} />
-              )}
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                {selectedEvent.isCustomActivity ? (
+                  <>
+                    <span className="badge blue">{selectedEvent.type}</span>
+                    <span className="badge amber">
+                      {selectedEvent.visibility === 'GLOBAL'
+                        ? 'Global'
+                        : selectedEvent.visibility === 'DEPARTMENT'
+                        ? 'Departamental'
+                        : 'Personal'}
+                    </span>
+                  </>
+                ) : (
+                  <StatusBadge value={selectedEvent.status} />
+                )}
+              </div>
             </div>
 
             <p style={{ fontSize: 13.5, color: 'var(--ink-2)', lineHeight: 1.5, margin: '14px 0' }}>
@@ -507,13 +592,22 @@ export default function Calendar() {
 
             <div className="row" style={{ marginTop: 22, justifyContent: 'flex-end', gap: 10 }}>
               {selectedEvent.isCustomActivity ? (
-                <button
-                  type="button"
-                  className="btn danger"
-                  onClick={() => handleDeleteActivity(selectedEvent.id)}
-                >
-                  Eliminar actividad
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => handleOpenEdit(selectedEvent)}
+                  >
+                    Editar actividad
+                  </button>
+                  <button
+                    type="button"
+                    className="btn danger"
+                    onClick={() => handleDeleteActivity(selectedEvent.id)}
+                  >
+                    Eliminar actividad
+                  </button>
+                </>
               ) : (
                 <button
                   type="button"

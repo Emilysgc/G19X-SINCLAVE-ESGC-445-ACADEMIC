@@ -30,7 +30,7 @@ export default function Requests() {
   const wide = user.role !== 'EMPLOYEE'
   const set = (k) => (e) => setQ({ ...q, [k]: e.target.value, offset: 0 })
 
-  // Conteo de aprobadas y pendientes para las métricas estilo Imagen 4
+  // Conteo de solicitudes aprobadas y pendientes para métricas
   const items = data?.items || []
   const approvedCount = items.filter((r) => r.status === 'APPROVED').length
   const pendingCount = items.filter((r) => r.status === 'PENDING_SUPERVISOR' || r.status === 'PENDING_HR').length
@@ -60,7 +60,7 @@ export default function Requests() {
     document.body.removeChild(link)
   }
 
-  // Estilo de píldora según Imagen 4 (Sent=Gold, Void=Grey, Paid=Cyan)
+  // Estilos de píldora para estados de solicitud
   const getStatusPill = (status) => {
     if (status === 'APPROVED') {
       return <span className="invoices-status-pill invoices-status-paid">Aprobada</span>

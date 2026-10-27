@@ -8,7 +8,7 @@ import { TYPE } from '../services/labels'
 const DATED = ['VACATION', 'PERSONAL_LEAVE', 'MEDICAL_LEAVE', 'MATERNITY_PATERNITY']
 const today = () => new Date().toISOString().slice(0, 10)
 
-// Franjas de color y esquemas de tarjeta estilo Imagen 3
+// Franjas de color y esquemas de tarjeta de trámite
 const TYPE_STRIPES = {
   VACATION: '#eab308',           // Franja amarilla
   PERSONAL_LEAVE: '#64748b',     // Franja gris pizarra
@@ -185,7 +185,7 @@ export default function NewRequest() {
         </p>
       </div>
 
-      {/* ── Rejilla de Contenedores 3x3 estilo Imagen 3 con barra inferior ── */}
+      {/* ── Rejilla de Tipos de Trámite con Barra de Acento ── */}
       <div className="requests-types-grid">
         {types.map((t) => {
           const isSelected = type === t.type
@@ -460,7 +460,7 @@ export default function NewRequest() {
                 </div>
               )}
 
-              {/* Botones estilo Imagen 1 (Cancel + Save Employee) */}
+              {/* Acciones de Formulario (Cancelar / Enviar Solicitud) */}
               <div className="newreq-modal-footer">
                 <button
                   type="button"

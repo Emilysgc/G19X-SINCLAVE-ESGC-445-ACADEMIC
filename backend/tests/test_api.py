@@ -493,3 +493,72 @@ async def test_calendar_notes_crud_for_user(api):
     list_after = await api.get("emp1", f"{V}/users/me/calendar-notes")
     assert list_after.status_code == 200
     assert len(list_after.json()) == 0
+
+
+@pytest.mark.asyncio
+async def test_calendar_notes_visibility_permissions(api):
+    """Verifica que un empleado común no pueda publicar notas globales ni para departamentos ajenos (espera 403)."""
+    # 1. Empleado intenta crear nota GLOBAL -> 403 Forbidden
+    res_global = await api.post(
+        "emp1",
+        f"{V}/users/me/calendar-notes",
+        json={
+            "title": "Aviso Global No Autorizado",
+            "date": "2026-11-10",
+            "visibility": "GLOBAL",
+        },
+    )
+    assert res_global.status_code == 403
+    assert "Solo administradores" in res_global.json().get("detail", "")
+
+    # 2. Empleado intenta crear nota para departamento ajeno -> 403 Forbidden
+    res_other_dept = await api.post(
+        "emp1",
+        f"{V}/users/me/calendar-notes",
+        json={
+            "title": "Aviso Para Otro Departamento",
+            "date": "2026-11-10",
+            "visibility": "DEPARTMENT",
+            "department_id": 9999,
+        },
+    )
+    assert res_other_dept.status_code == 403
+    assert "propio departamento" in res_other_dept.json().get("detail", "")
+
+    # 3. Empleado crea una nota PERSONAL válida
+    res_personal = await api.post(
+        "emp1",
+        f"{V}/users/me/calendar-notes",
+        json={
+            "title": "Mi Nota Personal",
+            "date": "2026-11-10",
+            "visibility": "PERSONAL",
+        },
+    )
+    assert res_personal.status_code == 201
+    note_id = res_personal.json()["id"]
+
+    # 4. Empleado intenta escalarla a GLOBAL vía PUT -> 403 Forbidden
+    res_update_forbidden = await api.c.put(
+        f"{V}/users/me/calendar-notes/{note_id}",
+        headers=api.h("emp1"),
+        json={
+            "title": "Mi Nota Escalada a Global",
+            "date": "2026-11-10",
+            "visibility": "GLOBAL",
+        },
+    )
+    assert res_update_forbidden.status_code == 403
+
+    # 5. Administrador de RRHH sí puede publicar notas con visibilidad GLOBAL -> 201 Created
+    res_hr_global = await api.post(
+        "hr",
+        f"{V}/users/me/calendar-notes",
+        json={
+            "title": "Feriado Oficial Institucional",
+            "date": "2026-11-16",
+            "visibility": "GLOBAL",
+        },
+    )
+    assert res_hr_global.status_code == 201
+    assert res_hr_global.json()["visibility"] == "GLOBAL"

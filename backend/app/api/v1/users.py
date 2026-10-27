@@ -422,7 +422,19 @@ async def create_calendar_note(
     vis = (body.visibility or "PERSONAL").upper()
     if vis not in ("PERSONAL", "DEPARTMENT", "GLOBAL"):
         vis = "PERSONAL"
-    dept_id = (body.department_id or actor.department_id) if vis == "DEPARTMENT" else None
+
+    is_admin = actor.role in (UserRole.HR_ADMIN, UserRole.SYSTEM_ADMIN)
+    if vis == "GLOBAL" and not is_admin:
+        raise HTTPException(403, "Solo administradores de RRHH y del sistema pueden publicar notas con visibilidad global.")
+
+    if vis == "DEPARTMENT":
+        dept_id = body.department_id if body.department_id is not None else actor.department_id
+        if not dept_id:
+            raise HTTPException(400, "Debes pertenecer a un departamento para publicar notas departamentales.")
+        if not is_admin and dept_id != actor.department_id:
+            raise HTTPException(403, "Solo puedes publicar notas para tu propio departamento.")
+    else:
+        dept_id = None
 
     note = CalendarNote(
         user_id=actor.id,
@@ -478,13 +490,21 @@ async def update_calendar_note(
     if vis not in ("PERSONAL", "DEPARTMENT", "GLOBAL"):
         vis = note.visibility
 
+    if vis == "GLOBAL" and not is_admin:
+        raise HTTPException(403, "Solo administradores de RRHH y del sistema pueden publicar notas con visibilidad global.")
+
     note.title = body.title.strip()
     note.date = body.date
     note.type = body.type.strip() if body.type else "Actividad"
     note.description = body.description.strip() if body.description else None
     note.visibility = vis
     if vis == "DEPARTMENT":
-        note.department_id = body.department_id or note.department_id or actor.department_id
+        target_dept = body.department_id if body.department_id is not None else (note.department_id or actor.department_id)
+        if not target_dept:
+            raise HTTPException(400, "Debes pertenecer a un departamento para publicar notas departamentales.")
+        if not is_admin and target_dept != actor.department_id:
+            raise HTTPException(403, "Solo puedes publicar notas para tu propio departamento.")
+        note.department_id = target_dept
     elif vis == "PERSONAL":
         note.department_id = None
 

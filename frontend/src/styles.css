@@ -28,7 +28,7 @@ a{color:var(--ink);text-decoration:none;transition:color var(--t)}a:hover{color:
 .main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;transition:margin var(--t)}
 .content{padding:28px 32px 48px;width:100%;max-width:1240px;margin:0 auto}
 
-/* Barra lateral estilo Atlas (Imagen 4) */
+/* Barra lateral estilo Atlas */
 .side{width:var(--side-w);flex:0 0 var(--side-w);align-self:flex-start;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:18px 14px;
   background:#f4f0e8;border-right:1px solid var(--line);color:var(--ink-2);overflow-y:auto}
 .logo{display:flex;align-items:center;gap:12px;padding:6px 8px 22px}
@@ -50,7 +50,7 @@ a{color:var(--ink);text-decoration:none;transition:color var(--t)}a:hover{color:
 .avatar{width:36px;height:36px;flex-shrink:0;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff;background:linear-gradient(135deg,#8b5cf6,var(--teal))}
 .avatar.sm{width:34px;height:34px;font-size:12px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px #fff,0 0 0 3px var(--line)}
 
-/* Barra superior unificada Atlas (Imagen 3 & 4) */
+/* Barra superior unificada Atlas */
 .top{position:sticky;top:0;z-index:30;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 32px;background:rgba(244,240,232,.85);backdrop-filter:saturate(180%) blur(12px);-webkit-backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line)}
 .top-title{font-weight:800;color:var(--ink);font-size:17px;letter-spacing:-.01em}
 .atlas-global-search{display:flex;align-items:center;gap:10px;background:#fff;border-radius:9999px;padding:7px 18px;border:1px solid #ded8cb;width:340px;box-shadow:0 2px 8px rgba(0,0,0,.02)}
@@ -1098,7 +1098,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   ATLAS DASHBOARD (Imagen 2 - Exact Match en Colores, Layout y Componentes)
+   ATLAS DASHBOARD
 ══════════════════════════════════════════════════════════════════════════════ */
 .atlas-dash {
   display: flex;
@@ -1818,7 +1818,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   CALENDAR (Imagen 3 - Estructura de 3 Columnas)
+   CALENDAR (Estructura de 3 Columnas)
 ══════════════════════════════════════════════════════════════════════════════ */
 .cal-tri-layout {
   display: grid;
@@ -2167,7 +2167,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   AI CHAT (Imagen 4 - Script.io Structure)
+   AI CHAT (Asistente RRHH)
 ══════════════════════════════════════════════════════════════════════════════ */
 .chat-dock.fullscreen {
   position: fixed !important;
@@ -3180,7 +3180,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
 }
 
 
-/* ── Imagen 3: Nuevas Solicitudes (Contenedores con barra inferior y modo oscuro) ── */
+/* ── Nuevas Solicitudes (Contenedores con barra inferior y modo oscuro) ── */
 .requests-types-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -3275,7 +3275,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
-/* ── MODO OSCURO PARA NUEVA SOLICITUD (Imagen 3) ── */
+/* ── MODO OSCURO PARA NUEVA SOLICITUD ── */
 .dark-theme .requests-card-tile,
 [data-theme="dark"] .requests-card-tile {
   background: #18202c;
@@ -3319,7 +3319,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-/* ── Modal Flotante de Nueva Solicitud (Estilo Imagen 1: Add New...) ── */
+/* ── Modal Flotante de Nueva Solicitud ── */
 .newreq-page-wrapper {
   margin-bottom: 32px;
 }
@@ -3524,7 +3524,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   color: #0f172a;
 }
 
-/* Botón Guardar / Enviar estilo Imagen 1 (Save Employee con color menta / turquesa) */
+/* Botón Guardar / Enviar (color menta / turquesa) */
 .newreq-modal-btn-save {
   background: #6ee7b7;
   background: linear-gradient(135deg, #6ee7b7 0%, #34d399 100%);
@@ -3811,7 +3811,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   transform: translateY(-1px);
 }
 
-/* Tabla con filas flotantes estilo Imagen 4 */
+/* Tabla con filas flotantes */
 .invoices-table-card {
   background: transparent;
   border: none;
@@ -3875,7 +3875,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   text-decoration: underline;
 }
 
-/* Píldoras de Estado estilo Imagen 4 (Sent, Void, Paid) */
+/* Píldoras de Estado (Sent, Void, Paid) */
 .invoices-status-pill {
   display: inline-block;
   padding: 4px 14px;
@@ -3911,7 +3911,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   color: #1e293b;
 }
 
-/* Modo oscuro para Solicitudes (Imagen 4) */
+/* Modo oscuro para Solicitudes */
 .dark-theme .invoices-page-title,
 [data-theme="dark"] .invoices-page-title {
   color: #f8fafc;
@@ -4007,8 +4007,8 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   color: #f8fafc;
 }
 
-/* ── Imagen 5: Calendario Split-Card en Español ────────────────────────── */
-.cal5-page-container {
+/* ── Calendario Split-Card en Español ───────────────────────────────── */
+.calendar-page-container {
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -4016,7 +4016,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   width: 100%;
 }
 
-.cal5-main-card {
+.calendar-main-card {
   background: #ffffff;
   border-radius: 24px;
   box-shadow: 0 10px 36px -6px rgba(15, 23, 42, 0.08), 0 2px 10px rgba(15, 23, 42, 0.03);
@@ -4028,38 +4028,38 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   min-height: 440px;
 }
 @media (max-width: 820px) {
-  .cal5-main-card {
+  .calendar-main-card {
     flex-direction: column;
   }
 }
 
 /* Columna Izquierda: Calendario */
-.cal5-left-pane {
+.calendar-left-pane {
   flex: 1.4;
   padding: 32px 36px;
 }
 
-.cal5-header-row {
+.calendar-header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 24px;
 }
 
-.cal5-month-selector {
+.calendar-month-selector {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.cal5-month-title {
+.calendar-month-title {
   font-size: 19px;
   font-weight: 800;
   color: #1e293b;
   letter-spacing: -0.01em;
 }
 
-.cal5-month-chevron {
+.calendar-month-chevron {
   background: transparent;
   border: none;
   font-size: 14px;
@@ -4068,18 +4068,18 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   padding: 2px 4px;
   transition: color 0.15s ease;
 }
-.cal5-month-chevron:hover {
+.calendar-month-chevron:hover {
   color: #0f172a;
 }
 
-.cal5-month-arrows {
+.calendar-month-arrows {
   display: flex;
   align-items: center;
   gap: 4px;
   margin-left: 6px;
 }
 
-.cal5-arrow-btn {
+.calendar-arrow-btn {
   background: transparent;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
@@ -4092,38 +4092,38 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.cal5-arrow-btn:hover {
+.calendar-arrow-btn:hover {
   background: #f1f5f9;
   color: #0f172a;
 }
 
-.cal5-year-label {
+.calendar-year-label {
   font-size: 18px;
   font-weight: 700;
   color: #64748b;
 }
 
-.cal5-weekdays-row {
+.calendar-weekdays-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
   margin-bottom: 16px;
 }
 
-.cal5-th-weekday {
+.calendar-th-weekday {
   font-size: 12px;
   font-weight: 600;
   color: #94a3b8;
 }
 
-.cal5-days-grid {
+.calendar-days-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   row-gap: 10px;
   column-gap: 6px;
 }
 
-.cal5-day-cell {
+.calendar-day-cell {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4133,11 +4133,11 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   border-radius: 12px;
   transition: background 0.15s ease;
 }
-.cal5-day-cell:hover:not(.cal5-day-outside) {
+.calendar-day-cell:hover:not(.calendar-day-outside) {
   background: #f8fafc;
 }
 
-.cal5-day-number {
+.calendar-day-number {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -4149,20 +4149,20 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.cal5-day-outside .cal5-day-number {
+.calendar-day-outside .calendar-day-number {
   color: #cbd5e1;
   font-weight: 400;
 }
 
-/* Día seleccionado en círculo rojo sólido (exacto como día 27 en Imagen 5) */
-.cal5-day-number.cal5-day-selected {
+/* Día seleccionado en círculo rojo sólido */
+.calendar-day-number.calendar-day-selected {
   background: #f43f5e;
   color: #ffffff !important;
   font-weight: 800;
   box-shadow: 0 4px 14px rgba(244, 63, 94, 0.45);
 }
 
-.cal5-day-dot {
+.calendar-day-dot {
   width: 5px;
   height: 5px;
   border-radius: 50%;
@@ -4170,13 +4170,13 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
 }
 
 /* Divisor Vertical */
-.cal5-divider {
+.calendar-divider {
   width: 1px;
   background: #f1f5f9;
   margin: 20px 0;
 }
 @media (max-width: 820px) {
-  .cal5-divider {
+  .calendar-divider {
     width: 100%;
     height: 1px;
     margin: 0;
@@ -4184,7 +4184,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
 }
 
 /* Columna Derecha: Detalle de Eventos */
-.cal5-right-pane {
+.calendar-right-pane {
   flex: 1;
   padding: 32px 34px;
   background: #ffffff;
@@ -4192,11 +4192,11 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   flex-direction: column;
 }
 
-.cal5-selected-header {
+.calendar-selected-header {
   margin-bottom: 32px;
 }
 
-.cal5-selected-number {
+.calendar-selected-number {
   font-size: 56px;
   font-weight: 800;
   color: #1e293b;
@@ -4204,28 +4204,28 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   letter-spacing: -0.03em;
 }
 
-.cal5-selected-weekday {
+.calendar-selected-weekday {
   font-size: 16px;
   font-weight: 600;
   color: #64748b;
   margin-top: 4px;
 }
 
-.cal5-events-subheader {
+.calendar-events-subheader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
 }
 
-.cal5-events-heading {
+.calendar-events-heading {
   font-size: 17px;
   font-weight: 800;
   color: #1e293b;
   margin: 0;
 }
 
-.cal5-add-round-btn {
+.calendar-add-round-btn {
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -4239,30 +4239,30 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.cal5-add-round-btn:hover {
+.calendar-add-round-btn:hover {
   border-color: #2563eb;
   color: #2563eb;
   transform: scale(1.08);
 }
 
-.cal5-events-container {
+.calendar-events-container {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-.cal5-empty-state {
+.calendar-empty-state {
   padding: 16px 0;
   color: #94a3b8;
   font-size: 13px;
 }
 
-.cal5-empty-msg {
+.calendar-empty-msg {
   margin: 0 0 10px;
   line-height: 1.45;
 }
 
-.cal5-btn-inline-add {
+.calendar-btn-inline-add {
   background: transparent;
   border: none;
   color: #2563eb;
@@ -4271,28 +4271,28 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   cursor: pointer;
   padding: 0;
 }
-.cal5-btn-inline-add:hover {
+.calendar-btn-inline-add:hover {
   text-decoration: underline;
 }
 
-.cal5-events-list {
+.calendar-events-list {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
-.cal5-event-item {
+.calendar-event-item {
   display: flex;
   align-items: flex-start;
   gap: 14px;
   cursor: pointer;
   transition: transform 0.15s ease;
 }
-.cal5-event-item:hover {
+.calendar-event-item:hover {
   transform: translateX(3px);
 }
 
-.cal5-hollow-bullet {
+.calendar-hollow-bullet {
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -4302,113 +4302,113 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   background: transparent;
 }
 
-.cal5-event-content {
+.calendar-event-content {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.cal5-event-text {
+.calendar-event-text {
   font-size: 13.5px;
   font-weight: 600;
   color: #334155;
   line-height: 1.35;
 }
 
-.cal5-event-meta {
+.calendar-event-meta {
   font-size: 11.5px;
   color: #94a3b8;
 }
 
-/* Modo oscuro para Calendario (Imagen 5) */
-.dark-theme .cal5-main-card,
-[data-theme="dark"] .cal5-main-card {
+/* Modo oscuro para Calendario */
+.dark-theme .calendar-main-card,
+[data-theme="dark"] .calendar-main-card {
   background: #18202c;
   border-color: #273549;
   box-shadow: 0 12px 36px -6px rgba(0, 0, 0, 0.6);
 }
-.dark-theme .cal5-month-title,
-[data-theme="dark"] .cal5-month-title {
+.dark-theme .calendar-month-title,
+[data-theme="dark"] .calendar-month-title {
   color: #f8fafc;
 }
-.dark-theme .cal5-year-label,
-[data-theme="dark"] .cal5-year-label {
+.dark-theme .calendar-year-label,
+[data-theme="dark"] .calendar-year-label {
   color: #94a3b8;
 }
-.dark-theme .cal5-arrow-btn,
-[data-theme="dark"] .cal5-arrow-btn {
+.dark-theme .calendar-arrow-btn,
+[data-theme="dark"] .calendar-arrow-btn {
   border-color: #273549;
   color: #cbd5e1;
 }
-.dark-theme .cal5-arrow-btn:hover,
-[data-theme="dark"] .cal5-arrow-btn:hover {
+.dark-theme .calendar-arrow-btn:hover,
+[data-theme="dark"] .calendar-arrow-btn:hover {
   background: #222d3d;
   color: #f8fafc;
 }
-.dark-theme .cal5-th-weekday,
-[data-theme="dark"] .cal5-th-weekday {
+.dark-theme .calendar-th-weekday,
+[data-theme="dark"] .calendar-th-weekday {
   color: #94a3b8;
 }
-.dark-theme .cal5-day-cell:hover:not(.cal5-day-outside),
-[data-theme="dark"] .cal5-day-cell:hover:not(.cal5-day-outside) {
+.dark-theme .calendar-day-cell:hover:not(.calendar-day-outside),
+[data-theme="dark"] .calendar-day-cell:hover:not(.calendar-day-outside) {
   background: #1f2a3a;
 }
-.dark-theme .cal5-day-number,
-[data-theme="dark"] .cal5-day-number {
+.dark-theme .calendar-day-number,
+[data-theme="dark"] .calendar-day-number {
   color: #f8fafc;
 }
-.dark-theme .cal5-day-outside .cal5-day-number,
-[data-theme="dark"] .cal5-day-outside .cal5-day-number {
+.dark-theme .calendar-day-outside .calendar-day-number,
+[data-theme="dark"] .calendar-day-outside .calendar-day-number {
   color: #475569;
 }
-.dark-theme .cal5-divider,
-[data-theme="dark"] .cal5-divider {
+.dark-theme .calendar-divider,
+[data-theme="dark"] .calendar-divider {
   background: #273549;
 }
-.dark-theme .cal5-right-pane,
-[data-theme="dark"] .cal5-right-pane {
+.dark-theme .calendar-right-pane,
+[data-theme="dark"] .calendar-right-pane {
   background: #18202c;
 }
-.dark-theme .cal5-selected-number,
-[data-theme="dark"] .cal5-selected-number {
+.dark-theme .calendar-selected-number,
+[data-theme="dark"] .calendar-selected-number {
   color: #f8fafc;
 }
-.dark-theme .cal5-selected-weekday,
-[data-theme="dark"] .cal5-selected-weekday {
+.dark-theme .calendar-selected-weekday,
+[data-theme="dark"] .calendar-selected-weekday {
   color: #94a3b8;
 }
-.dark-theme .cal5-events-heading,
-[data-theme="dark"] .cal5-events-heading {
+.dark-theme .calendar-events-heading,
+[data-theme="dark"] .calendar-events-heading {
   color: #f8fafc;
 }
-.dark-theme .cal5-add-round-btn,
-[data-theme="dark"] .cal5-add-round-btn {
+.dark-theme .calendar-add-round-btn,
+[data-theme="dark"] .calendar-add-round-btn {
   border-color: #475569;
   color: #cbd5e1;
 }
-.dark-theme .cal5-add-round-btn:hover,
-[data-theme="dark"] .cal5-add-round-btn:hover {
+.dark-theme .calendar-add-round-btn:hover,
+[data-theme="dark"] .calendar-add-round-btn:hover {
   border-color: #60a5fa;
   color: #60a5fa;
 }
-.dark-theme .cal5-event-text,
-[data-theme="dark"] .cal5-event-text {
+.dark-theme .calendar-event-text,
+[data-theme="dark"] .calendar-event-text {
   color: #f8fafc;
 }
-.dark-theme .cal5-event-meta,
-[data-theme="dark"] .cal5-event-meta {
+.dark-theme .calendar-event-meta,
+[data-theme="dark"] .calendar-event-meta {
   color: #94a3b8;
 }
-.dark-theme .cal5-empty-msg,
-[data-theme="dark"] .cal5-empty-msg {
+.dark-theme .calendar-empty-msg,
+[data-theme="dark"] .calendar-empty-msg {
   color: #94a3b8;
 }
-.dark-theme .cal5-btn-inline-add,
-[data-theme="dark"] .cal5-btn-inline-add {
+.dark-theme .calendar-btn-inline-add,
+[data-theme="dark"] .calendar-btn-inline-add {
   color: #60a5fa;
 }
 
-/* ── Imagen 1: Reportes y Power BI (Diseño con Gráficas Moradas y Turquesa) ── */
+/* ── Reportes y Power BI (Diseño con Gráficas Moradas y Turquesa) ───── */
 .rep-container {
   display: flex;
   flex-direction: column;
@@ -4887,8 +4887,8 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   color: #94a3b8;
 }
 
-/* ── Imagen 5: Configuración de Usuario / Mi Perfil (Stack de Tarjetas) ── */
-.prof5-page-container {
+/* ── Configuración de Usuario / Mi Perfil (Stack de Tarjetas) ───────── */
+.profile-page-container {
   max-width: 840px;
   margin: 0 auto;
   display: flex;
@@ -4897,11 +4897,11 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   padding-bottom: 40px;
 }
 
-.prof5-header-row {
+.profile-header-row {
   margin-bottom: 2px;
 }
 
-.prof5-page-title {
+.profile-page-title {
   font-size: 24px;
   font-weight: 800;
   color: #0f172a;
@@ -4909,7 +4909,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   letter-spacing: -0.02em;
 }
 
-.prof5-card {
+.profile-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 20px;
@@ -4919,7 +4919,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
 }
 
 /* Tarjeta Hero de Perfil */
-.prof5-hero-card {
+.profile-hero-card {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4927,14 +4927,14 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   padding: 32px 24px 26px;
 }
 
-.prof5-avatar-container {
+.profile-avatar-container {
   position: relative;
   width: 96px;
   height: 96px;
   margin-bottom: 14px;
 }
 
-.prof5-avatar-img {
+.profile-avatar-img {
   width: 96px;
   height: 96px;
   border-radius: 50%;
@@ -4943,7 +4943,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   border: 3px solid #ffffff;
 }
 
-.prof5-avatar-placeholder {
+.profile-avatar-placeholder {
   width: 96px;
   height: 96px;
   border-radius: 50%;
@@ -4957,7 +4957,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   border: 3px solid #ffffff;
 }
 
-.prof5-avatar-edit-badge {
+.profile-avatar-edit-badge {
   position: absolute;
   right: -2px;
   bottom: 0px;
@@ -4974,30 +4974,30 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   transition: transform 0.15s ease;
 }
 
-.prof5-avatar-edit-badge:hover {
+.profile-avatar-edit-badge:hover {
   transform: scale(1.1);
 }
 
-.prof5-hero-name {
+.profile-hero-name {
   font-size: 20px;
   font-weight: 800;
   color: #0f172a;
   margin: 0 0 4px;
 }
 
-.prof5-hero-role {
+.profile-hero-role {
   font-size: 13.5px;
   font-weight: 600;
   color: #64748b;
   margin-bottom: 4px;
 }
 
-.prof5-hero-location {
+.profile-hero-location {
   font-size: 12.5px;
   color: #94a3b8;
 }
 
-.prof5-card-header {
+.profile-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -5006,14 +5006,14 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   border-bottom: 1px solid #f1f5f9;
 }
 
-.prof5-card-title {
+.profile-card-title {
   font-size: 16px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
 
-.prof5-btn-edit {
+.profile-btn-edit {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -5028,13 +5028,13 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   transition: all 0.15s ease;
 }
 
-.prof5-btn-edit:hover {
+.profile-btn-edit:hover {
   background: #06b6d4;
   color: #ffffff;
   border-color: #06b6d4;
 }
 
-.prof5-btn-cancel-edit {
+.profile-btn-cancel-edit {
   background: transparent;
   border: none;
   color: #64748b;
@@ -5044,62 +5044,62 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   padding: 6px 10px;
 }
 
-/* Grilla de Información estilo Imagen 5 */
-.prof5-info-grid {
+/* Grilla de Información de Perfil */
+.profile-info-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px 16px;
 }
 
 @media (max-width: 680px) {
-  .prof5-info-grid {
+  .profile-info-grid {
     grid-template-columns: 1fr;
   }
 }
 
-.prof5-info-col {
+.profile-info-col {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.prof5-info-col.full {
+.profile-info-col.full {
   grid-column: 1 / -1;
 }
 
-.prof5-info-label {
+.profile-info-label {
   font-size: 11.5px;
   font-weight: 600;
   color: #94a3b8;
 }
 
-.prof5-info-val {
+.profile-info-val {
   font-size: 13.5px;
   font-weight: 600;
   color: #1e293b;
 }
 
-.prof5-info-val.highlight-blue {
+.profile-info-val.highlight-blue {
   color: #2563eb;
   font-weight: 700;
 }
-.prof5-info-val.highlight-green {
+.profile-info-val.highlight-green {
   color: #16a34a;
   font-weight: 700;
 }
-.prof5-info-val.highlight-orange {
+.profile-info-val.highlight-orange {
   color: #ea580c;
   font-weight: 700;
 }
 
-.prof5-email-verified-row {
+.profile-email-verified-row {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.prof5-verified-pill {
+.profile-verified-pill {
   background: #ecfdf5;
   color: #059669;
   border: 1px solid #a7f3d0;
@@ -5109,7 +5109,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   border-radius: 12px;
 }
 
-.prof5-law-badge {
+.profile-law-badge {
   background: #f0fdf4;
   color: #166534;
   border: 1px solid #bbf7d0;
@@ -5119,7 +5119,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   border-radius: 14px;
 }
 
-.prof5-security-badge {
+.profile-security-badge {
   background: #eff6ff;
   color: #1d4ed8;
   border: 1px solid #bfdbfe;
@@ -5129,19 +5129,31 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   border-radius: 14px;
 }
 
-.prof5-form-grid-3 {
+.profile-form-grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
 }
 
 @media (max-width: 680px) {
-  .prof5-form-grid-3 {
+  .profile-form-grid-3 {
     grid-template-columns: 1fr;
   }
 }
 
-.prof5-field-label {
+.profile-form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 680px) {
+  .profile-form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.profile-field-label {
   display: block;
   font-size: 12px;
   font-weight: 600;
@@ -5149,7 +5161,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   margin-bottom: 6px;
 }
 
-.prof5-input {
+.profile-input {
   width: 100%;
   padding: 9px 12px;
   background: #f8fafc;
@@ -5162,13 +5174,13 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   transition: all 0.15s ease;
 }
 
-.prof5-input:focus {
+.profile-input:focus {
   border-color: #06b6d4;
   background: #ffffff;
   box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.18);
 }
 
-.prof5-actions-row {
+.profile-actions-row {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -5177,7 +5189,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   border-top: 1px solid #f1f5f9;
 }
 
-.prof5-btn-discard {
+.profile-btn-discard {
   background: transparent;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
@@ -5189,12 +5201,12 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   transition: all 0.15s ease;
 }
 
-.prof5-btn-discard:hover {
+.profile-btn-discard:hover {
   background: #f1f5f9;
   color: #0f172a;
 }
 
-.prof5-btn-save {
+.profile-btn-save {
   background: #06b6d4;
   color: #ffffff;
   border: none;
@@ -5207,12 +5219,12 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   transition: all 0.15s ease;
 }
 
-.prof5-btn-save:hover {
+.profile-btn-save:hover {
   background: #0891b2;
   transform: translateY(-1px);
 }
 
-.prof5-keycloak-box {
+.profile-keycloak-box {
   background: #eff6ff;
   border: 1px solid #bfdbfe;
   border-radius: 14px;
@@ -5223,26 +5235,26 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   margin-bottom: 18px;
 }
 
-.prof5-keycloak-icon {
+.profile-keycloak-icon {
   font-size: 24px;
   line-height: 1;
 }
 
-.prof5-keycloak-title {
+.profile-keycloak-title {
   margin: 0 0 4px;
   font-size: 14px;
   font-weight: 700;
   color: #1e40af;
 }
 
-.prof5-keycloak-text {
+.profile-keycloak-text {
   margin: 0;
   font-size: 12.5px;
   color: #1e3a8a;
   line-height: 1.45;
 }
 
-.prof5-logout-bar {
+.profile-logout-bar {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
@@ -5250,7 +5262,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   border-top: 1px solid #f1f5f9;
 }
 
-.prof5-btn-logout {
+.profile-btn-logout {
   background: transparent;
   border: 1px solid #fca5a5;
   color: #dc2626;
@@ -5262,118 +5274,118 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   transition: all 0.15s ease;
 }
 
-.prof5-btn-logout:hover {
+.profile-btn-logout:hover {
   background: #fef2f2;
 }
 
-/* Modo oscuro para Imagen 5 (Mi Perfil / Settings) */
-.dark-theme .prof5-page-title,
-[data-theme="dark"] .prof5-page-title {
+/* Modo oscuro para Mi Perfil / Settings */
+.dark-theme .profile-page-title,
+[data-theme="dark"] .profile-page-title {
   color: #f8fafc;
 }
-.dark-theme .prof5-card,
-[data-theme="dark"] .prof5-card {
+.dark-theme .profile-card,
+[data-theme="dark"] .profile-card {
   background: #18202c;
   border-color: #273549;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
-.dark-theme .prof5-avatar-placeholder,
-[data-theme="dark"] .prof5-avatar-placeholder,
-.dark-theme .prof5-avatar-img,
-[data-theme="dark"] .prof5-avatar-img {
+.dark-theme .profile-avatar-placeholder,
+[data-theme="dark"] .profile-avatar-placeholder,
+.dark-theme .profile-avatar-img,
+[data-theme="dark"] .profile-avatar-img {
   border-color: #18202c;
 }
-.dark-theme .prof5-avatar-edit-badge,
-[data-theme="dark"] .prof5-avatar-edit-badge {
+.dark-theme .profile-avatar-edit-badge,
+[data-theme="dark"] .profile-avatar-edit-badge {
   background: #3b82f6;
   border-color: #18202c;
 }
-.dark-theme .prof5-hero-name,
-[data-theme="dark"] .prof5-hero-name {
+.dark-theme .profile-hero-name,
+[data-theme="dark"] .profile-hero-name {
   color: #f8fafc;
 }
-.dark-theme .prof5-hero-role,
-[data-theme="dark"] .prof5-hero-role {
+.dark-theme .profile-hero-role,
+[data-theme="dark"] .profile-hero-role {
   color: #cbd5e1;
 }
-.dark-theme .prof5-hero-location,
-[data-theme="dark"] .prof5-hero-location {
+.dark-theme .profile-hero-location,
+[data-theme="dark"] .profile-hero-location {
   color: #94a3b8;
 }
-.dark-theme .prof5-card-header,
-[data-theme="dark"] .prof5-card-header {
+.dark-theme .profile-card-header,
+[data-theme="dark"] .profile-card-header {
   border-color: #273549;
 }
-.dark-theme .prof5-card-title,
-[data-theme="dark"] .prof5-card-title {
+.dark-theme .profile-card-title,
+[data-theme="dark"] .profile-card-title {
   color: #f8fafc;
 }
-.dark-theme .prof5-btn-edit,
-[data-theme="dark"] .prof5-btn-edit {
+.dark-theme .profile-btn-edit,
+[data-theme="dark"] .profile-btn-edit {
   background: #101620;
   border-color: #273549;
   color: #cbd5e1;
 }
-.dark-theme .prof5-btn-edit:hover,
-[data-theme="dark"] .prof5-btn-edit:hover {
+.dark-theme .profile-btn-edit:hover,
+[data-theme="dark"] .profile-btn-edit:hover {
   background: #06b6d4;
   color: #ffffff;
 }
-.dark-theme .prof5-info-val,
-[data-theme="dark"] .prof5-info-val {
+.dark-theme .profile-info-val,
+[data-theme="dark"] .profile-info-val {
   color: #f1f5f9;
 }
-.dark-theme .prof5-info-label,
-[data-theme="dark"] .prof5-info-label {
+.dark-theme .profile-info-label,
+[data-theme="dark"] .profile-info-label {
   color: #94a3b8;
 }
-.dark-theme .prof5-input,
-[data-theme="dark"] .prof5-input {
+.dark-theme .profile-input,
+[data-theme="dark"] .profile-input {
   background: #0f172a;
   border-color: #273549;
   color: #f8fafc;
 }
-.dark-theme .prof5-input:focus,
-[data-theme="dark"] .prof5-input:focus {
+.dark-theme .profile-input:focus,
+[data-theme="dark"] .profile-input:focus {
   border-color: #38bdf8;
   background: #131b26;
 }
-.dark-theme .prof5-actions-row,
-[data-theme="dark"] .prof5-actions-row,
-.dark-theme .prof5-logout-bar,
-[data-theme="dark"] .prof5-logout-bar {
+.dark-theme .profile-actions-row,
+[data-theme="dark"] .profile-actions-row,
+.dark-theme .profile-logout-bar,
+[data-theme="dark"] .profile-logout-bar {
   border-color: #273549;
 }
-.dark-theme .prof5-btn-discard,
-[data-theme="dark"] .prof5-btn-discard {
+.dark-theme .profile-btn-discard,
+[data-theme="dark"] .profile-btn-discard {
   border-color: #273549;
   color: #cbd5e1;
 }
-.dark-theme .prof5-btn-discard:hover,
-[data-theme="dark"] .prof5-btn-discard:hover {
+.dark-theme .profile-btn-discard:hover,
+[data-theme="dark"] .profile-btn-discard:hover {
   background: #222d3d;
   color: #f8fafc;
 }
-.dark-theme .prof5-keycloak-box,
-[data-theme="dark"] .prof5-keycloak-box {
+.dark-theme .profile-keycloak-box,
+[data-theme="dark"] .profile-keycloak-box {
   background: #1e3a8a22;
   border-color: #1e40af;
 }
-.dark-theme .prof5-keycloak-title,
-[data-theme="dark"] .prof5-keycloak-title {
+.dark-theme .profile-keycloak-title,
+[data-theme="dark"] .profile-keycloak-title {
   color: #93c5fd;
 }
-.dark-theme .prof5-keycloak-text,
-[data-theme="dark"] .prof5-keycloak-text {
+.dark-theme .profile-keycloak-text,
+[data-theme="dark"] .profile-keycloak-text {
   color: #bfdbfe;
 }
-.dark-theme .prof5-btn-logout,
-[data-theme="dark"] .prof5-btn-logout {
+.dark-theme .profile-btn-logout,
+[data-theme="dark"] .profile-btn-logout {
   border-color: #ef4444;
   color: #f87171;
 }
-.dark-theme .prof5-btn-logout:hover,
-[data-theme="dark"] .prof5-btn-logout:hover {
+.dark-theme .profile-btn-logout:hover,
+[data-theme="dark"] .profile-btn-logout:hover {
   background: #450a0a;
 }
 
@@ -5469,7 +5481,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   color: #ffffff;
 }
 
-/* ── Diseño de Restablecer Contraseña (Estilo Imagen 3: Kinety Mailbox) ── */
+/* ── Diseño de Restablecer Contraseña (Kinety Mailbox) ─────────────── */
 .pwd-modal-overlay {
   position: fixed;
   inset: 0;
@@ -5627,7 +5639,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   color: #0f172a;
 }
 
-/* Indicador de fortaleza estilo Imagen 3 */
+/* Indicador de fortaleza */
 .pwd-strength-container {
   display: flex;
   flex-direction: column;
@@ -5654,7 +5666,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   color: #64748b;
 }
 
-/* Botón Naranja Pill de Imagen 3 */
+/* Botón Naranja Pill */
 .pwd-btn-submit-orange {
   background: #ff5722;
   color: #ffffff;

@@ -2,7 +2,7 @@
 ## Sistema Inteligente de Solicitudes Internas de Personal (RRHH)
 **Organización:** PluriOne S.A. de C.V. — Develop Talent & Technology  
 **Código del Proyecto:** G19X-SINCLAVE-ESGC-445-ACADEMIC  
-**Versión del MVP:** 2.5.0 (Actualizado al 23 de Octubre de 2026)  
+**Versión del MVP:** 2.6.0 (Actualizado al 27 de Octubre de 2026)  
 **Versión Inicial:** 1.0.0 (9 de Octubre de 2026)  
 
 ---
@@ -42,10 +42,11 @@ El presente documento describe el alcance funcional, técnico y operativo del **
 * **Deducción de Días Hábiles:** El motor calcula los días solicitados excluyendo fines de semana (sábados y domingos) y días de descanso obligatorio oficiales según el artículo 74 de la Ley Federal del Trabajo (1 de enero, primer lunes de febrero, tercer lunes de marzo, 1 de mayo, 16 de septiembre, tercer lunes de noviembre, 1 de octubre sexenal y 25 de diciembre).
 * **Prima Vacacional:** Cálculo y proyección automática del 25% de prima vacacional legalmente exigible (artículo 80 LFT).
 
-### 2.4. Calendario Laboral y Actividades Persistentes
+### 2.4. Calendario Laboral, Actividades Persistentes y Gobernanza RBAC
 * **Visualización de Ausencias:** Calendario interactivo mensual que refleja en tiempo real las solicitudes aprobadas (vacaciones, incapacidades, permisos y días de paternidad/maternidad).
-* **Persistencia en Backend y Visibilidad Departamental:** Módulo de notas y actividades respaldadas en base de datos relacional (`calendar_notes`), permitiendo crear, consultar, editar (`PUT /users/me/calendar-notes/{id}`) y eliminar recordatorios propios del colaborador o compartidos a nivel departamental (`visibility: 'PERSONAL' | 'DEPARTMENT' | 'GLOBAL'`), integradas con el calendario de solicitudes aprobadas del equipo.
-* **Resiliencia Local:** Caché en cliente y sincronización asíncrona que garantiza la disponibilidad de consulta incluso ante desconexiones momentáneas.
+* **Persistencia en Backend y Visibilidad Departamental:** Módulo de notas y actividades respaldadas en base de datos relacional (`calendar_notes`), permitiendo crear, consultar, editar (`PUT /users/me/calendar-notes/{id}`) y eliminar recordatorios con soporte de visibilidad (`visibility: 'PERSONAL' | 'DEPARTMENT' | 'GLOBAL'`), integradas con las ausencias del equipo.
+* **Gobernanza de Publicación (RBAC 403):** La publicación de notas con visibilidad `GLOBAL` está restringida exclusivamente a `HR_ADMIN` y `SYSTEM_ADMIN` (retornando HTTP 403 para otros roles); las notas departamentales están delimitadas al propio departamento del colaborador salvo autorización de administradores.
+* **Manejo Explícito de Respuestas y Errores:** La interfaz web procesa y despliega de inmediato cualquier rechazo o error del servidor (`Alert`), eliminando almacenamientos silenciosos simulados o eliminaciones locales no sincronizadas.
 
 ### 2.5. Flujos de Aprobación y Matriz de Autorización
 * **Segregación de Funciones (RBAC):** Cuatro roles estrictos: `EMPLOYEE`, `MANAGER`, `HR_ADMIN` y `SYSTEM_ADMIN`.
@@ -60,7 +61,14 @@ El presente documento describe el alcance funcional, técnico y operativo del **
 * **Contexto Normativo:** Asistente alimentado con las 21 políticas laborales corporativas vigentes de PluriOne S.A. de C.V. y contextualizado a la zona horaria oficial (Ciudad de México).
 
 ### 2.7. Inteligencia de Negocio y Reportería (Power BI)
-* **Esquema Analítico Dedicado:** Base de datos equipada con vistas SQL optimizadas (`vw_requests_analytics`, `dim_departments`, `dim_request_types`, `vw_sla_compliance`).
+* **Esquema Analítico Dedicado:** Base de datos relacional equipada con vistas SQL optimizadas y libres de información sensible (`backend/sql/powerbi_views.sql`):
+  * `vw_solicitudes`: Hechos transaccionales consolidados, tiempos de ciclo, cumplimiento binario de SLA y scores de auditoría.
+  * `vw_aprobaciones`: Bitácora granular de pasos y etapas de autorización por trámite.
+  * `vw_ausencias`: Serie temporal diaria de ausencias por colaborador y departamento (excluyendo fines de semana).
+  * `vw_resumen_diario`: Métricas agrupadas por fecha y tipo de solicitud.
+  * `vw_auditoria`: Registro de trazabilidad y eventos de modificación en el sistema.
+  * `dim_empleados`: Dimensión de colaboradores con saldo de vacaciones y antigüedad.
+  * `dim_departamentos`: Dimensión estructural de unidades organizacionales.
 * **Usuario de Solo Lectura:** Credenciales dedicadas (`powerbi_reader`) con permisos restringidos exclusivamente a operaciones `SELECT` sobre el esquema analítico para salvaguardar la integridad de las tablas transaccionales.
 
 ---
@@ -86,8 +94,8 @@ El presente documento describe el alcance funcional, técnico y operativo del **
 
 El MVP cuenta con una suite completa de **pruebas automatizadas con Pytest**, logrando una tasa de aprobación del 100%:
 * **Cálculos y Algoritmos Matemáticos (4 pruebas):** Verificación del dígito de Banxico, cálculo de años de servicio, tabla LFT de vacaciones y días hábiles laborables excluyendo fines de semana y descansos obligatorios de la LFT.
-* **Endpoints y Reglas de Negocio (33 pruebas):** Ciclo de vida completo de solicitudes, aprobación multinivel, auto-aprobación, cambio de CLABE bancaria cifrada, CRUD y visibilidad departamental de calendario y recuperación de contraseña vía OTP.
-* **Integraciones y Resiliencia (11 pruebas):** Keycloak SSO, revocación en Redis, degradación elegante de IA hacia el motor de reglas y compatibilidad de base de datos.
+* **Endpoints y Reglas de Negocio (34 pruebas):** Ciclo de vida completo de solicitudes, aprobación multinivel, auto-aprobación, cambio de CLABE bancaria cifrada, CRUD y visibilidad departamental de calendario, control de permisos RBAC (403 para publicación global no autorizada) y recuperación de contraseña vía OTP.
+* **Integraciones y Resiliencia (10 pruebas):** Keycloak SSO, revocación en Redis, degradación elegante de IA hacia el motor de reglas y compatibilidad de base de datos.
 * **Validación de IA (5 pruebas):** Verificación de system prompts corporativos, inyección de fecha y contención de solicitudes fuera de alcance.
 
 ---
@@ -103,4 +111,5 @@ El MVP cuenta con una suite completa de **pruebas automatizadas con Pytest**, lo
 | **20-Oct-2026** | 2.2.0 | Motor de vacaciones LFT (Reforma 2023), cálculo automático de antigüedad y prima vacacional del 25%. |
 | **21-Oct-2026** | 2.3.0 | Módulo de calendario con persistencia en backend (`calendar_notes`), sincronización local y suite ampliada a 52 pruebas. |
 | **22-Oct-2026** | 2.4.0 | Recuperación de contraseñas con OTP (Redis, 3 intentos, 10 min), logging seguro en producción, codificación UTF-8 estricta y rediseño de interfaz con nomenclatura semántica. |
-| **23-Oct-2026** | 2.5.0 | Exclusión algorítmica de descansos obligatorios de la LFT en días hábiles (`utils.py`), edición y visibilidad departamental en notas de calendario (`calendar_notes`), eliminación total de datos simulados en analítica y extracción completa de estilos inline a CSS semántico. |
+| **23-Oct-2026** | 2.5.0 | Exclusión algorítmica de descansos obligatorios de la LFT en días hábiles (`utils.py`), eliminación total de datos simulados en analítica y modularización de estilos en arquitectura CSS semántica con `styles.css`. |
+| **27-Oct-2026** | 2.6.0 | Control de acceso estricto RBAC en notas de calendario (403 para notas globales no autorizadas), edición y visibilidad en pantalla de calendario con manejo explícito de errores de servidor, ordenamiento dinámico y paginación reactiva en tabla de solicitudes del Dashboard, visualización de datos reales en Mi Perfil (remoción de placeholders simulados y campos no persistidos), eliminación total de identificadores de plantilla («Imagen N») y homologación de vistas analíticas SQL (`vw_solicitudes`, `vw_aprobaciones`, etc.). |

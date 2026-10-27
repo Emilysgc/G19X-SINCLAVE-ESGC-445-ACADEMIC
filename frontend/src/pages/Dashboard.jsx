@@ -15,12 +15,16 @@ export default function Dashboard() {
   const [search, setSearch] = useState('')
   const [showVacationModal, setShowVacationModal] = useState(false)
   const [filterTab, setFilterTab] = useState('ALL')
+  const [sortField, setSortField] = useState('created_at')
+  const [sortOrder, setSortOrder] = useState('desc')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 10
 
   const approver = ['MANAGER', 'HR_ADMIN', 'SYSTEM_ADMIN'].includes(user.role)
 
   useEffect(() => {
     api.get('/analytics/overview').then(setA).catch((e) => setErr(e.message))
-    api.get('/requests?limit=15').then((r) => setRecent(r.items)).catch(() => setRecent([]))
+    api.get('/requests?limit=50').then((r) => setRecent(r.items)).catch(() => setRecent([]))
     if (approver) api.get('/approvals/pending').then((r) => setPending(r.length)).catch(() => {})
   }, [approver])
 
@@ -35,6 +39,52 @@ export default function Dashboard() {
     if (filterTab === 'PENDING') return r.status === 'PENDING_APPROVAL'
     return true
   }) : []
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortField(field)
+      setSortOrder('asc')
+    }
+    setPage(1)
+  }
+
+  const sortedRecent = [...filteredRecent].sort((a, b) => {
+    let valA, valB
+    if (sortField === 'folio') {
+      valA = a.folio || ''
+      valB = b.folio || ''
+    } else if (sortField === 'requester') {
+      valA = (a.requester?.full_name || user.full_name || '').toLowerCase()
+      valB = (b.requester?.full_name || user.full_name || '').toLowerCase()
+    } else if (sortField === 'created_at') {
+      valA = new Date(a.created_at || 0).getTime()
+      valB = new Date(b.created_at || 0).getTime()
+    } else if (sortField === 'type') {
+      valA = (TYPE[a.type] || a.type || '').toLowerCase()
+      valB = (TYPE[b.type] || b.type || '').toLowerCase()
+    } else if (sortField === 'days') {
+      valA = a.days_requested || 0
+      valB = b.days_requested || 0
+    } else if (sortField === 'status') {
+      valA = a.status || ''
+      valB = b.status || ''
+    } else {
+      return 0
+    }
+
+    if (valA < valB) return sortOrder === 'asc' ? -1 : 1
+    if (valA > valB) return sortOrder === 'asc' ? 1 : -1
+    return 0
+  })
+
+  const totalItems = sortedRecent.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE))
+  const currentPage = Math.min(Math.max(1, page), totalPages)
+  const startIndex = (currentPage - 1) * PAGE_SIZE
+  const endIndex = Math.min(startIndex + PAGE_SIZE, totalItems)
+  const paginatedRecent = sortedRecent.slice(startIndex, endIndex)
 
   const totalReq = s?.total ?? (recent?.length || 0)
   const activeReq = s?.active ?? (recent?.filter(r => r.status === 'PENDING_APPROVAL' || r.status === 'IN_REVIEW').length || 0)
@@ -360,38 +410,70 @@ export default function Dashboard() {
 
           <div className="atlas-table-controls">
             <div className="atlas-filter-pills-bar">
-              <button className={filterTab === 'ALL' ? 'active' : ''} onClick={() => setFilterTab('ALL')}>Todas</button>
-              <button className={filterTab === 'APPROVED' ? 'active' : ''} onClick={() => setFilterTab('APPROVED')}>Aprobadas</button>
-              <button className={filterTab === 'IN_REVIEW' ? 'active' : ''} onClick={() => setFilterTab('IN_REVIEW')}>En revisión</button>
-              <button className={filterTab === 'PENDING' ? 'active' : ''} onClick={() => setFilterTab('PENDING')}>Pendientes</button>
+              <button className={filterTab === 'ALL' ? 'active' : ''} onClick={() => { setFilterTab('ALL'); setPage(1) }}>Todas</button>
+              <button className={filterTab === 'APPROVED' ? 'active' : ''} onClick={() => { setFilterTab('APPROVED'); setPage(1) }}>Aprobadas</button>
+              <button className={filterTab === 'IN_REVIEW' ? 'active' : ''} onClick={() => { setFilterTab('IN_REVIEW'); setPage(1) }}>En revisión</button>
+              <button className={filterTab === 'PENDING' ? 'active' : ''} onClick={() => { setFilterTab('PENDING'); setPage(1) }}>Pendientes</button>
             </div>
             <div className="atlas-table-pagination">
-              <span className="atlas-count-label">1-10 de {filteredRecent.length}</span>
-              <button className="atlas-page-arrow">‹</button>
-              <button className="atlas-page-arrow">›</button>
+              <span className="atlas-count-label">
+                {totalItems > 0 ? `${startIndex + 1}-${endIndex} de ${totalItems}` : '0 de 0'}
+              </span>
+              <button
+                type="button"
+                className="atlas-page-arrow"
+                disabled={currentPage <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                style={{ opacity: currentPage <= 1 ? 0.35 : 1, cursor: currentPage <= 1 ? 'not-allowed' : 'pointer' }}
+                title="Página anterior"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                className="atlas-page-arrow"
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                style={{ opacity: currentPage >= totalPages ? 0.35 : 1, cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
+                title="Página siguiente"
+              >
+                ›
+              </button>
             </div>
           </div>
         </div>
 
         {!recent ? (
           <Loading />
-        ) : filteredRecent.length === 0 ? (
+        ) : sortedRecent.length === 0 ? (
           <Empty>No hay solicitudes registradas en esta categoría.</Empty>
         ) : (
           <table className="atlas-table">
             <thead>
               <tr>
-                <th>Folio ⇅</th>
-                <th>Solicitante ⇅</th>
-                <th>Fecha de Registro ⇅</th>
-                <th>Tipo de Trámite ⇅</th>
-                <th>Días ⇅</th>
-                <th>Estado ⇅</th>
+                <th onClick={() => handleSort('folio')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Folio {sortField === 'folio' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                </th>
+                <th onClick={() => handleSort('requester')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Solicitante {sortField === 'requester' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                </th>
+                <th onClick={() => handleSort('created_at')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Fecha de Registro {sortField === 'created_at' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                </th>
+                <th onClick={() => handleSort('type')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Tipo de Trámite {sortField === 'type' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                </th>
+                <th onClick={() => handleSort('days')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Días {sortField === 'days' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                </th>
+                <th onClick={() => handleSort('status')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  Estado {sortField === 'status' ? (sortOrder === 'asc' ? '▲' : '▼') : '⇅'}
+                </th>
                 <th />
               </tr>
             </thead>
             <tbody>
-              {filteredRecent.map((r) => (
+              {paginatedRecent.map((r) => (
                 <tr key={r.id} className="click" onClick={() => nav(`/requests/${r.id}`)}>
                   <td><span className="atlas-folio">{r.folio}</span></td>
                   <td><b>{r.requester?.full_name || user.full_name}</b></td>
@@ -458,7 +540,7 @@ export default function Dashboard() {
             {/* Regla de vacaciones continuas */}
             <div style={{ background: '#eff6ff', padding: 14, borderRadius: 8, marginBottom: 16, border: '1px solid #bfdbfe' }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: '#1e40af', marginBottom: 4 }}>
-                🏖️ Regla de Vacaciones Continuas (Art. 78 LFT - Vacaciones Dignas)
+                Regla de Vacaciones Continuas (Art. 78 LFT - Vacaciones Dignas)
               </div>
               <div style={{ fontSize: 12.5, color: '#1e3a8a', lineHeight: 1.5 }}>
                 La ley exige que los trabajadores disfruten de <b>al menos 12 días continuos</b> de vacaciones. Los días restantes pueden distribuirse en las fechas que acuerden libremente el colaborador y la empresa a lo largo del año.
@@ -468,7 +550,7 @@ export default function Dashboard() {
             {/* Tabla LFT */}
             <div style={{ marginTop: 12 }}>
               <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8, color: '#0f172a' }}>
-                📋 Tabla Oficial de Vacaciones por Años de Antigüedad (LFT México)
+                Tabla Oficial de Vacaciones por Años de Antigüedad (LFT México)
               </div>
               <table style={{ width: '100%', fontSize: 12.5, borderCollapse: 'collapse', border: '1px solid #e2e8f0' }}>
                 <thead>

@@ -275,7 +275,7 @@ export default function Login() {
         </div>
       </div>
 
-      {/* ── Modal de Restablecer Contraseña (Diseño Imagen 3: Kinety Mailbox) ── */}
+      {/* ── Modal de Restablecimiento de Contraseña ── */}
       {showRecovery && (
         <div className="pwd-modal-overlay" onClick={() => setShowRecovery(false)}>
           <div
@@ -305,7 +305,7 @@ export default function Login() {
               </button>
             </div>
 
-            {/* Ilustración de buzón con carta estilo Imagen 3 (sin emojis) */}
+            {/* Ilustración de verificación por correo */}
             <div className="pwd-illustration-wrap">
               <MailboxGraphic />
             </div>
@@ -357,7 +357,7 @@ export default function Login() {
               </>
             )}
 
-            {/* Paso 2: Diseño Imagen 3 (Reset password + código + ver contraseña) */}
+            {/* Paso 2: Restablecimiento de contraseña con código de verificación */}
             {recoveryStep === 2 && (
               <>
                 <div className="pwd-header-center">
@@ -442,7 +442,7 @@ export default function Login() {
                       </button>
                     </div>
 
-                    {/* Barra de fortaleza estilo Imagen 3 */}
+                    {/* Indicador de fortaleza de contraseña */}
                     {newPassword && (
                       <div className="pwd-strength-container">
                         <div className="pwd-strength-bars">
@@ -564,7 +564,7 @@ export default function Login() {
               </div>
             )}
 
-            {/* Pie de página sutil como en Imagen 3 */}
+            {/* Pie de página institucional */}
             <div className="pwd-footer-meta">
               Copyright © 2026 PluriOne · Seguridad y Privacidad
             </div>

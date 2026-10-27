@@ -17,8 +17,6 @@ export default function Settings() {
   const [lastName, setLastName] = useState(defaultLast)
   const [phone, setPhone] = useState(user?.phone || '')
   const [address, setAddress] = useState(user?.address || '')
-  const [location, setLocation] = useState(user?.department?.name || 'Ciudad de México, México')
-  const [postalCode, setPostalCode] = useState('06000')
 
   // Seguridad y contraseñas
   const [currentPassword, setCurrentPassword] = useState('')
@@ -50,7 +48,6 @@ export default function Settings() {
     setAvatarPreview(URL.createObjectURL(file))
     setErr([])
 
-    // Subir de inmediato el avatar
     try {
       setBusy(true)
       const res = await api.upload('/users/me/avatar', file)
@@ -132,25 +129,25 @@ export default function Settings() {
   }
 
   return (
-    <div className="prof5-page-container">
-      <div className="prof5-header-row">
-        <h1 className="prof5-page-title">Mi Perfil</h1>
+    <div className="profile-page-container">
+      <div className="profile-header-row">
+        <h1 className="profile-page-title">Mi Perfil</h1>
       </div>
 
       {msg && <Alert kind="ok">{msg}</Alert>}
       {err.length > 0 && <Alert kind="err" items={err} />}
 
-      {/* ── Tarjeta 1: Perfil Hero con Avatar Centrado (Imagen 5) ───── */}
-      <div className="prof5-card prof5-hero-card">
-        <div className="prof5-avatar-container">
+      {/* Tarjeta 1: Perfil Hero con Avatar */}
+      <div className="profile-card profile-hero-card">
+        <div className="profile-avatar-container">
           {avatarPreview ? (
-            <img src={avatarPreview} alt={user?.full_name} className="prof5-avatar-img" />
+            <img src={avatarPreview} alt={user?.full_name} className="profile-avatar-img" />
           ) : (
-            <div className="prof5-avatar-placeholder">
+            <div className="profile-avatar-placeholder">
               {initials(user?.full_name || 'U')}
             </div>
           )}
-          <label className="prof5-avatar-edit-badge" title="Cambiar foto de perfil">
+          <label className="profile-avatar-edit-badge" title="Cambiar foto de perfil">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
               <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
             </svg>
@@ -163,19 +160,19 @@ export default function Settings() {
           </label>
         </div>
 
-        <h2 className="prof5-hero-name">{user?.full_name || 'Colaborador PluriOne'}</h2>
-        <div className="prof5-hero-role">{user?.job_title || ROLE[user?.role] || 'Recursos Humanos'}</div>
-        <div className="prof5-hero-location">{user?.department?.name || 'Corporativo · Ciudad de México, México'}</div>
+        <h2 className="profile-hero-name">{user?.full_name || 'Colaborador PluriOne'}</h2>
+        <div className="profile-hero-role">{user?.job_title || ROLE[user?.role] || 'Colaborador'}</div>
+        <div className="profile-hero-location">{user?.department?.name || 'Sin departamento asignado'}</div>
       </div>
 
-      {/* ── Tarjeta 2: Información Personal con Botón Edit (Imagen 5) ─── */}
-      <div className="prof5-card">
-        <div className="prof5-card-header">
-          <h3 className="prof5-card-title">Información Personal</h3>
+      {/* Tarjeta 2: Información Personal */}
+      <div className="profile-card">
+        <div className="profile-card-header">
+          <h3 className="profile-card-title">Información Personal</h3>
           {!isEditingPersonal ? (
             <button
               type="button"
-              className="prof5-btn-edit"
+              className="profile-btn-edit"
               onClick={() => setIsEditingPersonal(true)}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -186,7 +183,7 @@ export default function Settings() {
           ) : (
             <button
               type="button"
-              className="prof5-btn-cancel-edit"
+              className="profile-btn-cancel-edit"
               onClick={handleDiscardPersonal}
             >
               Cancelar
@@ -195,117 +192,96 @@ export default function Settings() {
         </div>
 
         {!isEditingPersonal ? (
-          /* Vista estilo Imagen 5 con pares Etiqueta / Valor */
-          <div className="prof5-info-grid">
-            <div className="prof5-info-col">
-              <span className="prof5-info-label">Nombre(s)</span>
-              <span className="prof5-info-val">{firstName || '—'}</span>
+          <div className="profile-info-grid">
+            <div className="profile-info-col">
+              <span className="profile-info-label">Nombre(s)</span>
+              <span className="profile-info-val">{firstName || '—'}</span>
             </div>
-            <div className="prof5-info-col">
-              <span className="prof5-info-label">Apellidos</span>
-              <span className="prof5-info-val">{lastName || '—'}</span>
+            <div className="profile-info-col">
+              <span className="profile-info-label">Apellidos</span>
+              <span className="profile-info-val">{lastName || '—'}</span>
             </div>
-            <div className="prof5-info-col">
-              <span className="prof5-info-label">Ciudad / Sede</span>
-              <span className="prof5-info-val">{location || 'Ciudad de México'}</span>
-            </div>
-
-            <div className="prof5-info-col">
-              <span className="prof5-info-label">Correo electrónico</span>
-              <div className="prof5-email-verified-row">
-                <span className="prof5-info-val">{user?.email || '—'}</span>
-                <span className="prof5-verified-pill">✔ Verificado</span>
-              </div>
-            </div>
-            <div className="prof5-info-col">
-              <span className="prof5-info-label">Teléfono</span>
-              <span className="prof5-info-val">{phone || '(55) 5555-0128'}</span>
-            </div>
-            <div className="prof5-info-col">
-              <span className="prof5-info-label">País</span>
-              <span className="prof5-info-val">México</span>
+            <div className="profile-info-col">
+              <span className="profile-info-label">Puesto / Cargo</span>
+              <span className="profile-info-val">{user?.job_title || 'No registrado'}</span>
             </div>
 
-            <div className="prof5-info-col full">
-              <span className="prof5-info-label">Dirección / Domicilio</span>
-              <span className="prof5-info-val">{address || 'No especificado'}</span>
+            <div className="profile-info-col">
+              <span className="profile-info-label">Correo electrónico</span>
+              <span className="profile-info-val">{user?.email || '—'}</span>
+            </div>
+            <div className="profile-info-col">
+              <span className="profile-info-label">Teléfono</span>
+              <span className="profile-info-val">{user?.phone || 'No registrado'}</span>
+            </div>
+            <div className="profile-info-col">
+              <span className="profile-info-label">Departamento</span>
+              <span className="profile-info-val">{user?.department?.name || 'Sin departamento asignado'}</span>
+            </div>
+
+            <div className="profile-info-col full">
+              <span className="profile-info-label">Dirección / Domicilio</span>
+              <span className="profile-info-val">{user?.address || 'No registrado'}</span>
             </div>
           </div>
         ) : (
-          /* Formulario de edición activa */
-          <form onSubmit={handleSavePersonal} className="prof5-edit-form">
-            <div className="prof5-form-grid-3">
+          <form onSubmit={handleSavePersonal} className="profile-edit-form">
+            <div className="profile-form-grid-2">
               <div>
-                <label className="prof5-field-label">Nombre(s)</label>
+                <label className="profile-field-label">Nombre(s)</label>
                 <input
-                  className="prof5-input"
+                  className="profile-input"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   required
                 />
               </div>
               <div>
-                <label className="prof5-field-label">Apellidos</label>
+                <label className="profile-field-label">Apellidos</label>
                 <input
-                  className="prof5-input"
+                  className="profile-input"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   required
                 />
               </div>
-              <div>
-                <label className="prof5-field-label">Ciudad / Sede</label>
-                <input
-                  className="prof5-input"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-              </div>
             </div>
 
-            <div className="prof5-form-grid-3" style={{ marginTop: 14 }}>
+            <div className="profile-form-grid-2" style={{ marginTop: 14 }}>
               <div>
-                <label className="prof5-field-label">Correo electrónico</label>
+                <label className="profile-field-label">Teléfono</label>
                 <input
-                  className="prof5-input"
+                  className="profile-input"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Ej. 55 1234 5678"
+                />
+              </div>
+              <div>
+                <label className="profile-field-label">Correo institucional</label>
+                <input
+                  className="profile-input"
                   disabled
                   value={user?.email || ''}
                   title="Gestionado institucionalmente"
                 />
               </div>
-              <div>
-                <label className="prof5-field-label">Teléfono</label>
-                <input
-                  className="prof5-input"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="(55) 5555-0128"
-                />
-              </div>
-              <div>
-                <label className="prof5-field-label">Código Postal</label>
-                <input
-                  className="prof5-input"
-                  value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value)}
-                />
-              </div>
             </div>
 
             <div style={{ marginTop: 14 }}>
-              <label className="prof5-field-label">Dirección / Domicilio</label>
+              <label className="profile-field-label">Dirección / Domicilio</label>
               <input
-                className="prof5-input"
+                className="profile-input"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="Calle, número exterior/interior, colonia..."
+                placeholder="Calle, número exterior/interior, colonia, alcaldía o municipio..."
               />
             </div>
 
-            <div className="prof5-actions-row">
+            <div className="profile-actions-row">
               <button
                 type="button"
-                className="prof5-btn-discard"
+                className="profile-btn-discard"
                 onClick={handleDiscardPersonal}
                 disabled={busy}
               >
@@ -313,7 +289,7 @@ export default function Settings() {
               </button>
               <button
                 type="submit"
-                className="prof5-btn-save"
+                className="profile-btn-save"
                 disabled={busy}
               >
                 {busy ? 'Guardando…' : 'Guardar Cambios'}
@@ -323,68 +299,67 @@ export default function Settings() {
         )}
       </div>
 
-      {/* ── Tarjeta 3: Información Laboral & Vacaciones LFT (Imagen 5) ─ */}
-      <div className="prof5-card">
-        <div className="prof5-card-header">
-          <h3 className="prof5-card-title">Información Laboral & Vacaciones (LFT)</h3>
-          <span className="prof5-law-badge">Ley Federal del Trabajo</span>
+      {/* Tarjeta 3: Información Laboral & Vacaciones LFT */}
+      <div className="profile-card">
+        <div className="profile-card-header">
+          <h3 className="profile-card-title">Información Laboral & Vacaciones (LFT)</h3>
+          <span className="profile-law-badge">Ley Federal del Trabajo</span>
         </div>
 
-        <div className="prof5-info-grid">
-          <div className="prof5-info-col">
-            <span className="prof5-info-label">Fecha de Ingreso</span>
-            <span className="prof5-info-val">{user?.hire_date || '01/06/2020'}</span>
+        <div className="profile-info-grid">
+          <div className="profile-info-col">
+            <span className="profile-info-label">Fecha de Ingreso</span>
+            <span className="profile-info-val">{user?.hire_date || 'No registrada'}</span>
           </div>
-          <div className="prof5-info-col">
-            <span className="prof5-info-label">Antigüedad Acumulada</span>
-            <span className="prof5-info-val highlight-blue">
+          <div className="profile-info-col">
+            <span className="profile-info-label">Antigüedad Acumulada</span>
+            <span className="profile-info-val highlight-blue">
               {user?.years_of_service ?? 0} {user?.years_of_service === 1 ? 'año' : 'años'}
             </span>
           </div>
-          <div className="prof5-info-col">
-            <span className="prof5-info-label">Días por Ley al Año</span>
-            <span className="prof5-info-val highlight-green">
+          <div className="profile-info-col">
+            <span className="profile-info-label">Días por Ley al Año</span>
+            <span className="profile-info-val highlight-green">
               {user?.vacation_entitlement ?? 0} días (Vacaciones Dignas)
             </span>
           </div>
-
-          <div className="prof5-info-col">
-            <span className="prof5-info-label">Saldo Disponible</span>
-            <span className="prof5-info-val highlight-orange">
+          <div className="profile-info-col">
+            <span className="profile-info-label">Saldo Disponible</span>
+            <span className="profile-info-val highlight-orange">
               {user?.vacation_balance ?? 0} días
             </span>
           </div>
-          <div className="prof5-info-col">
-            <span className="prof5-info-label">Prima Vacacional</span>
-            <span className="prof5-info-val">25% sobre salario (Art. 80 LFT)</span>
+          <div className="profile-info-col">
+            <span className="profile-info-label">Prima Vacacional</span>
+            <span className="profile-info-val">25% sobre salario (Art. 80 LFT)</span>
           </div>
-          <div className="prof5-info-col">
-            <span className="prof5-info-label">Rol en el Sistema</span>
-            <span className="prof5-info-val">{ROLE[user?.role] || user?.role}</span>
+          <div className="profile-info-col">
+            <span className="profile-info-label">Rol en el Sistema</span>
+            <span className="profile-info-val">{ROLE[user?.role] || user?.role}</span>
           </div>
         </div>
       </div>
 
-      {/* ── Tarjeta 4: Seguridad y Contraseña / Sesión Keycloak ──────── */}
-      <div className="prof5-card">
-        <div className="prof5-card-header">
-          <h3 className="prof5-card-title">Seguridad y Acceso</h3>
-          <span className="prof5-security-badge">
+      {/* Tarjeta 4: Seguridad y Acceso */}
+      <div className="profile-card">
+        <div className="profile-card-header">
+          <h3 className="profile-card-title">Seguridad y Acceso</h3>
+          <span className="profile-security-badge">
             {user?.auth_provider === 'keycloak' ? 'Keycloak OIDC' : 'Autenticación Local'}
           </span>
         </div>
 
         {user?.auth_provider === 'local' ? (
-          <form onSubmit={handleSavePassword} className="prof5-edit-form">
+          <form onSubmit={handleSavePassword} className="profile-edit-form">
             <p className="muted" style={{ margin: '0 0 14px', fontSize: 13 }}>
               Cambia tu contraseña actual por una nueva clave de acceso seguro.
             </p>
-            <div className="prof5-form-grid-3">
+            <div className="profile-form-grid-3">
               <div>
-                <label className="prof5-field-label">Contraseña Actual</label>
+                <label className="profile-field-label">Contraseña Actual</label>
                 <input
                   type="password"
-                  className="prof5-input"
+                  className="profile-input"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   placeholder="••••••••••"
@@ -392,10 +367,10 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="prof5-field-label">Nueva Contraseña</label>
+                <label className="profile-field-label">Nueva Contraseña</label>
                 <input
                   type="password"
-                  className="prof5-input"
+                  className="profile-input"
                   minLength={10}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
@@ -404,10 +379,10 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="prof5-field-label">Confirmar Contraseña</label>
+                <label className="profile-field-label">Confirmar Contraseña</label>
                 <input
                   type="password"
-                  className="prof5-input"
+                  className="profile-input"
                   minLength={10}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -417,10 +392,10 @@ export default function Settings() {
               </div>
             </div>
 
-            <div className="prof5-actions-row">
+            <div className="profile-actions-row">
               <button
                 type="submit"
-                className="prof5-btn-save"
+                className="profile-btn-save"
                 disabled={busy || !newPassword}
               >
                 {busy ? 'Actualizando…' : 'Actualizar Contraseña'}
@@ -428,24 +403,29 @@ export default function Settings() {
             </div>
           </form>
         ) : (
-          <div className="prof5-keycloak-box">
-            <div className="prof5-keycloak-icon">🔐</div>
+          <div className="profile-keycloak-box">
+            <div className="profile-keycloak-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
             <div>
-              <h4 className="prof5-keycloak-title">Inicio de sesión federado con Keycloak</h4>
-              <p className="prof5-keycloak-text">
+              <h4 className="profile-keycloak-title">Inicio de sesión federado con Keycloak</h4>
+              <p className="profile-keycloak-text">
                 Tu cuenta está protegida y autenticada centralmente mediante Keycloak SSO y tokens OIDC / PKCE. Para actualizar credenciales consulta al administrador institucional.
               </p>
             </div>
           </div>
         )}
 
-        <div className="prof5-logout-bar">
+        <div className="profile-logout-bar">
           <button
             type="button"
-            className="prof5-btn-logout"
+            className="profile-btn-logout"
             onClick={() => setShowLogoutModal(true)}
           >
-            <span>🚪 Cerrar Sesión</span>
+            <span>Cerrar Sesión</span>
           </button>
         </div>
       </div>

@@ -108,13 +108,14 @@ class KeycloakService:
             "lastName": last_name,
             "enabled": True,
             "emailVerified": True,
+            "requiredActions": [],
         }
         if pwd:
             user_data["credentials"] = [
                 {
                     "type": "password",
                     "value": pwd,
-                    "temporary": True,
+                    "temporary": False,
                 }
             ]
 

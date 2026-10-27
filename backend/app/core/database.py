@@ -1,6 +1,7 @@
 """Motor async de SQLAlchemy. PostgreSQL en producción (SQLite solo para pruebas locales)."""
 from typing import AsyncGenerator
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -37,3 +38,13 @@ async def init_db() -> None:
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        if settings.is_postgresql:
+            await conn.execute(text(
+                "ALTER TABLE calendar_notes ADD COLUMN IF NOT EXISTS department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL;"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE calendar_notes ADD COLUMN IF NOT EXISTS visibility VARCHAR(20) DEFAULT 'PERSONAL';"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_calendar_notes_department_id ON calendar_notes (department_id);"
+            ))

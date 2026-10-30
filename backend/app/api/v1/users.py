@@ -301,23 +301,27 @@ async def update_my_profile(body: ProfileUpdateIn, request: HttpRequest, actor: 
         u.hashed_password = hash_password(body.new_password)
         # Sincronizar con Keycloak si existe
         kc = get_keycloak_service()
-        try:
-            await kc.reset_password(u.email, body.new_password)
-        except Exception:
-            pass  # Si falla Keycloak en dev, la contraseña local queda actualizada
+        if kc.is_enabled:
+            try:
+                await kc.reset_password(u.email, body.new_password)
+            except Exception as exc:
+                logger.error("Error al sincronizar nueva contraseña con Keycloak para %s: %s", u.email, exc)
+                audit(db, u.id, "Auth", u.id, AuditAction.UPDATE, f"Error al sincronizar contraseña con Keycloak para {u.email}: {exc}", ip=client_ip(request))
 
-    if body.full_name:
+    if "full_name" in body.model_fields_set and body.full_name:
         u.full_name = body.full_name.strip()
         kc = get_keycloak_service()
-        try:
-            await kc.update_user(u.email, full_name=u.full_name)
-        except Exception:
-            pass
+        if kc.is_enabled:
+            try:
+                await kc.update_user(u.email, full_name=u.full_name)
+            except Exception as exc:
+                logger.error("Error al sincronizar nombre actualizado con Keycloak para %s: %s", u.email, exc)
+                audit(db, u.id, "User", u.id, AuditAction.UPDATE, f"Error al sincronizar nombre con Keycloak para {u.email}: {exc}", ip=client_ip(request))
 
-    if body.phone is not None:
-        u.phone = body.phone.strip() if body.phone else None
-    if body.address is not None:
-        u.address = body.address.strip() if body.address else None
+    if "phone" in body.model_fields_set:
+        u.phone = body.phone.strip() if body.phone and body.phone.strip() else None
+    if "address" in body.model_fields_set:
+        u.address = body.address.strip() if body.address and body.address.strip() else None
 
     audit(db, u.id, "User", u.id, AuditAction.UPDATE, f"Perfil actualizado por el usuario: {u.email}", ip=client_ip(request))
     return user_public(u, full=True)

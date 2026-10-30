@@ -37,6 +37,7 @@ export default function Calendar() {
   const [activities, setActivities] = useState([])
   const [calendarError, setCalendarError] = useState('')
   const [modalError, setModalError] = useState('')
+  const [detailError, setDetailError] = useState('')
   const [saving, setSaving] = useState(false)
 
   // Modal para crear / editar actividad
@@ -167,6 +168,7 @@ export default function Calendar() {
   // Eliminar actividad o nota con validación de respuesta del servidor
   const handleDeleteActivity = async (id) => {
     setCalendarError('')
+    setDetailError('')
     try {
       await api.del(`/users/me/calendar-notes/${id}`)
       const updated = activities.filter((a) => a.id !== id)
@@ -175,9 +177,10 @@ export default function Calendar() {
         localStorage.setItem('hr_user_activities', JSON.stringify(updated))
       } catch {}
       setSelectedEvent(null)
+      setDetailError('')
     } catch (err) {
       const msg = err?.response?.data?.detail || err?.message || 'No se pudo eliminar la actividad en el servidor'
-      setCalendarError(typeof msg === 'string' ? msg : JSON.stringify(msg))
+      setDetailError(typeof msg === 'string' ? msg : JSON.stringify(msg))
     }
   }
 
@@ -551,9 +554,17 @@ export default function Calendar() {
               ? `Actividad: ${selectedEvent.title}`
               : `Solicitud ${selectedEvent.folio || ''}`
           }
-          onClose={() => setSelectedEvent(null)}
+          onClose={() => {
+            setSelectedEvent(null)
+            setDetailError('')
+          }}
         >
           <div style={{ padding: '6px 0' }}>
+            {detailError && (
+              <div style={{ marginBottom: 14 }}>
+                <Alert kind="err">{detailError}</Alert>
+              </div>
+            )}
             <div className="row between" style={{ marginBottom: 16 }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: 17 }}>
@@ -593,20 +604,24 @@ export default function Calendar() {
             <div className="row" style={{ marginTop: 22, justifyContent: 'flex-end', gap: 10 }}>
               {selectedEvent.isCustomActivity ? (
                 <>
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={() => handleOpenEdit(selectedEvent)}
-                  >
-                    Editar actividad
-                  </button>
-                  <button
-                    type="button"
-                    className="btn danger"
-                    onClick={() => handleDeleteActivity(selectedEvent.id)}
-                  >
-                    Eliminar actividad
-                  </button>
+                  {(selectedEvent.is_owner || isHrOrAdmin) && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => handleOpenEdit(selectedEvent)}
+                      >
+                        Editar actividad
+                      </button>
+                      <button
+                        type="button"
+                        className="btn danger"
+                        onClick={() => handleDeleteActivity(selectedEvent.id)}
+                      >
+                        Eliminar actividad
+                      </button>
+                    </>
+                  )}
                 </>
               ) : (
                 <button
@@ -617,7 +632,14 @@ export default function Calendar() {
                   Ver solicitud completa
                 </button>
               )}
-              <button type="button" className="btn" onClick={() => setSelectedEvent(null)}>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setSelectedEvent(null)
+                  setDetailError('')
+                }}
+              >
                 Cerrar
               </button>
             </div>

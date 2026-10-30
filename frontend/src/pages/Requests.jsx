@@ -73,7 +73,7 @@ export default function Requests() {
 
   return (
     <div className="invoices-container">
-      {/* ── Encabezado estilo Imagen 4 ───────────────────────────────── */}
+      {/* ── Encabezado de Mis Solicitudes ── */}
       <div className="invoices-header-row">
         <h1 className="invoices-page-title">
           <span>{wide ? 'SOLICITUDES' : 'MIS SOLICITUDES'}</span>
@@ -81,7 +81,7 @@ export default function Requests() {
         <div className="invoices-brand-tag">PluriOne</div>
       </div>
 
-      {/* ── Barra de Filtros horizontal estilo píldora (Imagen 4) ───── */}
+      {/* ── Barra de Filtros horizontal ── */}
       <div className="invoices-filter-bar">
         <div className="invoices-filter-item">
           <svg className="invoices-filter-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -134,7 +134,7 @@ export default function Requests() {
         </button>
       </div>
 
-      {/* ── Fila de Métricas / KPI + Botones de Acción (Imagen 4) ────── */}
+      {/* ── Fila de Métricas y Acciones ── */}
       <div className="invoices-kpi-bar">
         <div className="invoices-kpi-group">
           <div className="invoices-kpi-item">
@@ -168,7 +168,7 @@ export default function Requests() {
         </div>
       </div>
 
-      {/* ── Tabla de Solicitudes con Filas Flotantes (Imagen 4) ──────── */}
+      {/* ── Tabla de Solicitudes con Filas Flotantes ── */}
       <div className="invoices-table-card">
         {!data ? (
           <Loading />

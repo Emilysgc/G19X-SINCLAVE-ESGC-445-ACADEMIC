@@ -148,7 +148,7 @@ export default function Login() {
   return (
     <div className="login-login-screen">
       <div className="login-workspace-container">
-        {/* ── Ilustración plana del espacio de trabajo (Imagen 3) ───────── */}
+        {/* ── Ilustración del espacio de trabajo institucional ── */}
         <div className="login-illustration-pane">
           <svg viewBox="0 0 650 500" style={{ width: '100%', maxWidth: 580, height: 'auto' }} fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Reloj de pared circular arriba */}
@@ -224,7 +224,7 @@ export default function Login() {
           </svg>
         </div>
 
-        {/* ── Tarjeta Flotante Derecha (Imagen 3) ──────────────────────── */}
+        {/* ── Tarjeta de Formulario de Acceso ── */}
         <div className="login-floating-card">
           <div className="login-card-top-header">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>

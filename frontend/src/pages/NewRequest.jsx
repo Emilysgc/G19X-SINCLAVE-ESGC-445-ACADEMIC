@@ -216,7 +216,7 @@ export default function NewRequest() {
         })}
       </div>
 
-      {/* ── Modal Flotante estilo Imagen 1 (Add New...) ─────────────────── */}
+      {/* ── Modal Flotante de Registro de Solicitud ── */}
       {type && (
         <div className="newreq-modal-overlay" onClick={() => setType(null)}>
           <div

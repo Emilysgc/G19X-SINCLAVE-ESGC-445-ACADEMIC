@@ -461,7 +461,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   border-color: #262626;
 }
 
-/* ═══════════════ ESTILOS DEL DASHBOARD (DISEÑO IMAGEN 4) ═══════════════ */
+/* ═══════════════ ESTILOS DEL DASHBOARD ATLAS ═══════════════ */
 .modern-dash {
   display: flex;
   flex-direction: column;
@@ -749,7 +749,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   color: #c4b5fd;
 }
 
-/* ═══════════════ ESTILOS DEL CALENDARIO REMINDME (DISEÑO IMAGEN 5) ═══════════════ */
+/* ═══════════════ ESTILOS DEL CALENDARIO ═══════════════ */
 .remind-page {
   display: grid;
   grid-template-columns: 1fr 330px;
@@ -2560,10 +2560,10 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   REDiseños Solicitados: Imágenes 1, 2, 3 y 4
+   Módulos de Interfaz: Configuración, Administración y Solicitudes
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Imagen 1: Configuración / Perfil Personal ──────────────────────────── */
+/* ── Configuración / Perfil Personal ────────────────────────────────── */
 .settings-settings-container {
   display: grid;
   grid-template-columns: 280px 1fr;
@@ -2805,7 +2805,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
 }
 
 
-/* ── Imagen 2: Administración / Gestión de Trabajo ───────────────────────── */
+/* ── Administración / Gestión de Trabajo ───────────────────────────── */
 .admin-admin-container {
   margin-top: 12px;
 }
@@ -3634,7 +3634,7 @@ pre.n{white-space:pre-wrap;font-family:inherit;margin:0}.empty{text-align:center
   color: #f8fafc;
 }
 
-/* ── Imagen 4: Mis Solicitudes estilo Dashboard Stripe / Invoices ─────────── */
+/* ── Mis Solicitudes estilo Dashboard Stripe / Invoices ─────────────── */
 .invoices-container {
   display: flex;
   flex-direction: column;

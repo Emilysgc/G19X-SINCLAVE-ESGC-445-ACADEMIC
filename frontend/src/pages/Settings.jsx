@@ -7,10 +7,20 @@ import { ROLE } from '../services/labels'
 export default function Settings() {
   const { user, refreshUser, logout } = useAuth()
 
-  // Dividir nombre completo en nombre(s) y apellidos
-  const nameParts = (user?.full_name || '').trim().split(' ')
-  const defaultFirst = nameParts.slice(0, Math.max(1, nameParts.length - 1)).join(' ')
-  const defaultLast = nameParts.length > 1 ? nameParts[nameParts.length - 1] : ''
+  // Separación adecuada de nombre(s) y apellidos (soporta 1 o 2 nombres de pila y 2 apellidos paterno/materno)
+  const splitFullName = (raw) => {
+    const parts = (raw || '').trim().split(/\s+/).filter(Boolean)
+    if (parts.length === 0) return { first: '', last: '' }
+    if (parts.length === 1) return { first: parts[0], last: '' }
+    if (parts.length === 2) return { first: parts[0], last: parts[1] }
+    if (parts.length === 3) return { first: parts[0], last: `${parts[1]} ${parts[2]}` }
+    return {
+      first: parts.slice(0, parts.length - 2).join(' '),
+      last: parts.slice(parts.length - 2).join(' '),
+    }
+  }
+
+  const { first: defaultFirst, last: defaultLast } = splitFullName(user?.full_name)
 
   const [isEditingPersonal, setIsEditingPersonal] = useState(false)
   const [firstName, setFirstName] = useState(defaultFirst)
@@ -64,8 +74,9 @@ export default function Settings() {
   }
 
   const handleDiscardPersonal = () => {
-    setFirstName(defaultFirst)
-    setLastName(defaultLast)
+    const { first, last } = splitFullName(user?.full_name)
+    setFirstName(first)
+    setLastName(last)
     setPhone(user?.phone || '')
     setAddress(user?.address || '')
     setIsEditingPersonal(false)
@@ -82,8 +93,8 @@ export default function Settings() {
       const fullCombinedName = `${firstName.trim()} ${lastName.trim()}`.trim()
       const body = {
         full_name: fullCombinedName || user?.full_name,
-        phone: phone.trim() || null,
-        address: address.trim() || null,
+        phone: phone.trim() ? phone.trim() : null,
+        address: address.trim() ? address.trim() : null,
       }
 
       await api.patch('/users/me/profile', body)

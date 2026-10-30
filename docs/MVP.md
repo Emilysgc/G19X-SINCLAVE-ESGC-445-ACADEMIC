@@ -94,7 +94,7 @@ El presente documento describe el alcance funcional, técnico y operativo del **
 
 El MVP cuenta con una suite completa de **pruebas automatizadas con Pytest**, logrando una tasa de aprobación del 100%:
 * **Cálculos y Algoritmos Matemáticos (4 pruebas):** Verificación del dígito de Banxico, cálculo de años de servicio, tabla LFT de vacaciones y días hábiles laborables excluyendo fines de semana y descansos obligatorios de la LFT.
-* **Endpoints y Reglas de Negocio (34 pruebas):** Ciclo de vida completo de solicitudes, aprobación multinivel, auto-aprobación, cambio de CLABE bancaria cifrada, CRUD y visibilidad departamental de calendario, control de permisos RBAC (403 para publicación global no autorizada) y recuperación de contraseña vía OTP.
+* **Endpoints y Reglas de Negocio (35 pruebas):** Ciclo de vida completo de solicitudes, aprobación multinivel, auto-aprobación, cambio de CLABE bancaria cifrada, CRUD y visibilidad departamental de calendario, control de permisos RBAC (403 para publicación global o modificaciones no autorizadas), eliminación efectiva de teléfono/contacto y recuperación de contraseña vía OTP.
 * **Integraciones y Resiliencia (10 pruebas):** Keycloak SSO, revocación en Redis, degradación elegante de IA hacia el motor de reglas y compatibilidad de base de datos.
 * **Validación de IA (5 pruebas):** Verificación de system prompts corporativos, inyección de fecha y contención de solicitudes fuera de alcance.
 

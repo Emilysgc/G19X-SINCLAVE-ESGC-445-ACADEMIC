@@ -562,3 +562,42 @@ async def test_calendar_notes_visibility_permissions(api):
     )
     assert res_hr_global.status_code == 201
     assert res_hr_global.json()["visibility"] == "GLOBAL"
+
+    # 6. Empleado 2 intenta editar nota de RRHH -> 403 Forbidden
+    hr_note_id = res_hr_global.json()["id"]
+    res_other_edit = await api.c.put(
+        f"{V}/users/me/calendar-notes/{hr_note_id}",
+        headers=api.h("emp2"),
+        json={
+            "title": "Intento de Modificación Ajena",
+            "date": "2026-11-16",
+            "visibility": "GLOBAL",
+        },
+    )
+    assert res_other_edit.status_code == 403
+
+    # 7. Empleado 2 intenta eliminar nota de RRHH -> 403 Forbidden
+    res_other_del = await api.c.delete(
+        f"{V}/users/me/calendar-notes/{hr_note_id}",
+        headers=api.h("emp2"),
+    )
+    assert res_other_del.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_update_profile_phone_can_be_cleared(api):
+    """Verifica que el teléfono del colaborador se pueda registrar y posteriormente borrar (quedar en null)."""
+    # 1. Registrar teléfono
+    r1 = await api.patch("emp1", f"{V}/users/me/profile", json={"phone": "5512345678"})
+    assert r1.status_code == 200
+    assert r1.json()["phone"] == "5512345678"
+
+    # 2. Borrar teléfono mandando null o vacío
+    r2 = await api.patch("emp1", f"{V}/users/me/profile", json={"phone": None})
+    assert r2.status_code == 200
+    assert r2.json()["phone"] is None
+
+    # 3. Verificar persistencia con GET en /auth/me
+    r3 = await api.get("emp1", f"{V}/auth/me")
+    assert r3.status_code == 200
+    assert r3.json()["phone"] is None

@@ -17,7 +17,7 @@ Automatización integral de trámites laborales (vacaciones, permisos personales
 | **Orquestación** | Docker & Docker Compose | Contenerización completa de microservicios | Operativo |
 | **CI/CD** | GitHub Actions | Pipeline automatizado de pruebas, análisis y empaquetado | Operativo |
 
-> 📄 **Documentación Oficial del Proyecto:** Consulta la definición técnica y funcional completa en el [Documento del MVP (v2.5.0)](docs/MVP.md) y el [Documento de Requisitos de Producto (PRD)](PRD.md).
+> 📄 **Documentación Oficial del Proyecto:** Consulta la definición técnica y funcional completa en el [Documento del MVP (v2.6.0)](docs/MVP.md) y el [Documento de Requisitos de Producto (PRD)](PRD.md).
 
 ---
 

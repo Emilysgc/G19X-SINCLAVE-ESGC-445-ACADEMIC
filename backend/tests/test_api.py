@@ -37,6 +37,14 @@ async def test_login_errors_and_profile(api):
     assert me["vacation_balance"] == me["vacation_entitlement"] > 0  # saldo calculado por antigüedad (LFT)
     assert (await api.c.get(f"{V}/auth/me")).status_code == 401
 
+    # Actualización y borrado de teléfono en perfil (admite null para limpiar)
+    r_phone = await api.patch("emp1", f"{V}/users/me/profile", json={"phone": "5512345678"})
+    assert r_phone.status_code == 200 and r_phone.json()["phone"] == "5512345678"
+    r_clear = await api.patch("emp1", f"{V}/users/me/profile", json={"phone": None})
+    assert r_clear.status_code == 200 and r_clear.json()["phone"] is None
+    me_cleared = (await api.get("emp1", f"{V}/auth/me")).json()
+    assert me_cleared["phone"] is None
+
 
 async def test_rate_limit_on_login(api):
     codes = []
@@ -583,21 +591,3 @@ async def test_calendar_notes_visibility_permissions(api):
     )
     assert res_other_del.status_code == 403
 
-
-@pytest.mark.asyncio
-async def test_update_profile_phone_can_be_cleared(api):
-    """Verifica que el teléfono del colaborador se pueda registrar y posteriormente borrar (quedar en null)."""
-    # 1. Registrar teléfono
-    r1 = await api.patch("emp1", f"{V}/users/me/profile", json={"phone": "5512345678"})
-    assert r1.status_code == 200
-    assert r1.json()["phone"] == "5512345678"
-
-    # 2. Borrar teléfono mandando null o vacío
-    r2 = await api.patch("emp1", f"{V}/users/me/profile", json={"phone": None})
-    assert r2.status_code == 200
-    assert r2.json()["phone"] is None
-
-    # 3. Verificar persistencia con GET en /auth/me
-    r3 = await api.get("emp1", f"{V}/auth/me")
-    assert r3.status_code == 200
-    assert r3.json()["phone"] is None

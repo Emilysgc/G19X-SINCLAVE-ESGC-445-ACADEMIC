@@ -167,9 +167,9 @@ Para ejecutar la suite completa de pruebas unitarias y de integración:
 docker compose exec backend pytest tests/ -v
 ```
 
-> **Resultado:** **53 pruebas registradas (52 aprobadas, 1 omitida en SQLite por depender de PostgreSQL) (100% PASSED)** cubriendo:
+> **Resultado:** **54 pruebas registradas (53 aprobadas, 1 omitida en SQLite por depender de PostgreSQL) (100% PASSED)** cubriendo:
 > - **Pruebas unitarias (`test_units.py` - 4 pruebas):** Cálculo de días hábiles laborables excluyendo fines de semana y descansos obligatorios de la LFT (Art. 74), tabla de antigüedad y validación matemática de CLABE (estándar Banxico módulo-10).
-> - **API y reglas de negocio (`test_api.py` - 33 pruebas):** Autenticación, creación de solicitudes, prevención de empalmes, permisos con auto-aprobación, aprobación multinivel de vacaciones, cifrado de datos sensibles, CRUD y visibilidad departamental de notas de calendario, descargas seguras y vistas analíticas.
+> - **API y reglas de negocio (`test_api.py` - 34 pruebas):** Autenticación, creación de solicitudes, prevención de empalmes, permisos con auto-aprobación, aprobación multinivel de vacaciones, cifrado de datos sensibles, control de permisos RBAC en notas de calendario (403), CRUD y visibilidad departamental, descargas seguras y vistas analíticas.
 > - **Integraciones y resiliencia (`test_integrations.py` - 11 pruebas):** Keycloak OIDC, linking de usuarios SSO, alternancia automática de proveedores de IA y degradación elegante al motor de reglas.
 > - **Comportamiento del Agente de IA (`test_ai_agent_behavior.py` - 5 pruebas):** Inyección de fecha Ciudad de México, system prompt estructurado con alcance/reglas/ejemplos, filtro de solicitudes fuera de alcance y parámetros de inferencia.
 

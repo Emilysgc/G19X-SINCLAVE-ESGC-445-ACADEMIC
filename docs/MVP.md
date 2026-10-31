@@ -92,10 +92,10 @@ El presente documento describe el alcance funcional, técnico y operativo del **
 
 ## 4. Estrategia de Pruebas y Aseguramiento de Calidad
 
-El MVP cuenta con una suite completa de **pruebas automatizadas con Pytest**, logrando una tasa de aprobación del 100%:
+El MVP cuenta con una suite completa de **54 pruebas automatizadas con Pytest**, logrando una tasa de aprobación del 100%:
 * **Cálculos y Algoritmos Matemáticos (4 pruebas):** Verificación del dígito de Banxico, cálculo de años de servicio, tabla LFT de vacaciones y días hábiles laborables excluyendo fines de semana y descansos obligatorios de la LFT.
-* **Endpoints y Reglas de Negocio (35 pruebas):** Ciclo de vida completo de solicitudes, aprobación multinivel, auto-aprobación, cambio de CLABE bancaria cifrada, CRUD y visibilidad departamental de calendario, control de permisos RBAC (403 para publicación global o modificaciones no autorizadas), eliminación efectiva de teléfono/contacto y recuperación de contraseña vía OTP.
-* **Integraciones y Resiliencia (10 pruebas):** Keycloak SSO, revocación en Redis, degradación elegante de IA hacia el motor de reglas y compatibilidad de base de datos.
+* **Endpoints y Reglas de Negocio (34 pruebas):** Ciclo de vida completo de solicitudes, aprobación multinivel, auto-aprobación, cambio de CLABE bancaria cifrada, CRUD y visibilidad departamental de calendario, control de permisos RBAC (403 para publicación global o modificaciones no autorizadas), eliminación efectiva de teléfono/contacto y recuperación de contraseña vía OTP.
+* **Integraciones y Resiliencia (11 pruebas):** Keycloak SSO, linking de usuarios OIDC, revocación en Redis, degradación elegante de IA hacia el motor de reglas y compatibilidad de base de datos.
 * **Validación de IA (5 pruebas):** Verificación de system prompts corporativos, inyección de fecha y contención de solicitudes fuera de alcance.
 
 ---
@@ -112,4 +112,4 @@ El MVP cuenta con una suite completa de **pruebas automatizadas con Pytest**, lo
 | **21-Oct-2026** | 2.3.0 | Módulo de calendario con persistencia en backend (`calendar_notes`), sincronización local y suite ampliada a 52 pruebas. |
 | **22-Oct-2026** | 2.4.0 | Recuperación de contraseñas con OTP (Redis, 3 intentos, 10 min), logging seguro en producción, codificación UTF-8 estricta y rediseño de interfaz con nomenclatura semántica. |
 | **23-Oct-2026** | 2.5.0 | Exclusión algorítmica de descansos obligatorios de la LFT en días hábiles (`utils.py`), eliminación total de datos simulados en analítica y modularización de estilos en arquitectura CSS semántica con `styles.css`. |
-| **27-Oct-2026** | 2.6.0 | Control de acceso estricto RBAC en notas de calendario (403 para notas globales no autorizadas), edición y visibilidad en pantalla de calendario con manejo explícito de errores de servidor, ordenamiento dinámico y paginación reactiva en tabla de solicitudes del Dashboard, visualización de datos reales en Mi Perfil (remoción de placeholders simulados y campos no persistidos), eliminación total de identificadores de plantilla («Imagen N») y homologación de vistas analíticas SQL (`vw_solicitudes`, `vw_aprobaciones`, etc.). |
+| **27-Oct-2026** | 2.6.0 | Control de acceso estricto RBAC en notas de calendario (403 para notas globales no autorizadas), edición y visibilidad en pantalla de calendario con manejo explícito de errores de servidor, ordenamiento dinámico y paginación reactiva en tabla de solicitudes del Dashboard, visualización de datos reales en Mi Perfil (remoción de placeholders simulados y campos no persistidos), limpieza integral de nomenclaturas de plantilla y comentarios de referencia de maquetación, y homologación de vistas analíticas SQL (`vw_solicitudes`, `vw_aprobaciones`, etc.). |

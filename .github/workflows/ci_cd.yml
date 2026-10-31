@@ -150,7 +150,7 @@ jobs:
           context: .
           file: ./docker/Dockerfile.backend
           push: false
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_BACKEND }}:latest
+          tags: hr-backend:latest
 
       - name: Build Frontend Docker Image
         uses: docker/build-push-action@v5
@@ -158,4 +158,4 @@ jobs:
           context: .
           file: ./docker/Dockerfile.frontend
           push: false
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_FRONTEND }}:latest
+          tags: hr-frontend:latest

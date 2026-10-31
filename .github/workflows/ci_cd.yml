@@ -114,6 +114,7 @@ jobs:
           KEYCLOAK_ADMIN_PASSWORD: test-keycloak-admin-pass
           KEYCLOAK_DB_PASSWORD: test-keycloak-db-pass
         run: |
+          test -f .env || cp .env.example .env
           docker compose config --quiet && echo " docker-compose.yml es válido"
 
       - name: Validar script de vistas analíticas Power BI

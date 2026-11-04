@@ -75,6 +75,29 @@
   ],
   "users": [
     {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@plurione.com",
+      "firstName": "Administrador",
+      "lastName": "RRHH",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin2026!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "EMPLOYEE",
+        "HR_ADMIN",
+        "SYSTEM_ADMIN"
+      ],
+      "attributes": {
+        "locale": ["es"]
+      }
+    },
+    {
       "username": "jefe.desarrollo",
       "enabled": true,
       "email": "jefe.desarrollo@plurione.com",
@@ -91,6 +114,48 @@
       "realmRoles": [
         "EMPLOYEE",
         "MANAGER"
+      ],
+      "attributes": {
+        "locale": ["es"]
+      }
+    },
+    {
+      "username": "empleado",
+      "enabled": true,
+      "email": "empleado@plurione.com",
+      "firstName": "Carlos",
+      "lastName": "López",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "temporal123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "EMPLOYEE"
+      ],
+      "attributes": {
+        "locale": ["es"]
+      }
+    },
+    {
+      "username": "empleado2",
+      "enabled": true,
+      "email": "empleado2@plurione.com",
+      "firstName": "Ana",
+      "lastName": "Torres",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "temporal123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "EMPLOYEE"
       ],
       "attributes": {
         "locale": ["es"]

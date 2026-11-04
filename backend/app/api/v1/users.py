@@ -463,7 +463,7 @@ async def create_calendar_note(
         "description": note.description or "",
         "isCustomActivity": True,
         "is_owner": True,
-        "requester": {"full_name": actor.full_name},
+        "requester": {"full_name": note.user.full_name if note.user else actor.full_name},
         "created_at": note.created_at.isoformat() if note.created_at else None,
     }
 
@@ -481,7 +481,13 @@ async def update_calendar_note(
     except ValueError:
         raise HTTPException(400, "ID de nota inválido")
 
-    note = await db.get(CalendarNote, numeric_id)
+    note = (
+        await db.execute(
+            select(CalendarNote)
+            .options(selectinload(CalendarNote.user))
+            .where(CalendarNote.id == numeric_id)
+        )
+    ).scalar_one_or_none()
     if not note:
         raise HTTPException(404, "Nota o actividad no encontrada")
 
@@ -525,7 +531,7 @@ async def update_calendar_note(
         "description": note.description or "",
         "isCustomActivity": True,
         "is_owner": note.user_id == actor.id,
-        "requester": {"full_name": actor.full_name},
+        "requester": {"full_name": note.user.full_name if note.user else actor.full_name},
         "created_at": note.created_at.isoformat() if note.created_at else None,
     }
 
@@ -542,7 +548,13 @@ async def delete_calendar_note(
     except ValueError:
         raise HTTPException(400, "ID de nota inválido")
 
-    note = await db.get(CalendarNote, numeric_id)
+    note = (
+        await db.execute(
+            select(CalendarNote)
+            .options(selectinload(CalendarNote.user))
+            .where(CalendarNote.id == numeric_id)
+        )
+    ).scalar_one_or_none()
     if not note:
         raise HTTPException(404, "Nota o actividad no encontrada")
 

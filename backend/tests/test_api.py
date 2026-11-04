@@ -558,6 +558,19 @@ async def test_calendar_notes_visibility_permissions(api):
     )
     assert res_update_forbidden.status_code == 403
 
+    # 4b. RRHH edita la nota del empleado: el autor retornado debe ser el dueño (emp1), no RRHH
+    res_hr_edit = await api.c.put(
+        f"{V}/users/me/calendar-notes/{note_id}",
+        headers=api.h("hr"),
+        json={
+            "title": "Nota Personal Revisada por RRHH",
+            "date": "2026-11-10",
+            "visibility": "PERSONAL",
+        },
+    )
+    assert res_hr_edit.status_code == 200
+    assert res_hr_edit.json()["requester"]["full_name"] == res_personal.json()["requester"]["full_name"]
+
     # 5. Administrador de RRHH sí puede publicar notas con visibilidad GLOBAL -> 201 Created
     res_hr_global = await api.post(
         "hr",

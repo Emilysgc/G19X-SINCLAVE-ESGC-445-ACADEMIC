@@ -88,20 +88,29 @@ Una vez levantados los contenedores, accede a los siguientes puntos de entrada d
 
 ##  Guía Paso a Paso para Evaluadores (Cómo Probar el Sistema)
 
-### 1. Autenticación y Usuarios
-El sistema cuenta con soporte para inicio de sesión unificado con **Keycloak**:
+### 1. Autenticación y Cuentas Preconfiguradas
 
-1. Ingresa a la consola de Keycloak: [http://localhost:8080](http://localhost:8080) con `admin` / `admin`.
+El sistema arranca con **usuarios listos para evaluación** (cuyos roles y contraseñas ya vienen preconfigurados en el realm `rrhh` de Keycloak y sincronizados con el backend):
+
+| Rol en el Sistema | Correo de Acceso | Contraseña | Permisos y Alcance en la Evaluación |
+|---|---|---|---|
+| **Administrador / RRHH** (`HR_ADMIN`, `SYSTEM_ADMIN`) | `admin@plurione.com` | `Admin2026!` | Acceso total: gestión de empleados, doble aprobación de CLABE, analítica y publicación de notas globales. |
+| **Supervisor / Líder** (`MANAGER`, `EMPLOYEE`) | `jefe.desarrollo@plurione.com` | `temporal123` | Aprobación de vacaciones y permisos de su equipo en la bandeja de aprobación. |
+| **Colaborador 1** (`EMPLOYEE`) | `empleado@plurione.com` | `temporal123` | Solicitudes de vacaciones, permisos, consultas al Asistente IA y notas de calendario. |
+| **Colaborador 2** (`EMPLOYEE`) | `empleado2@plurione.com` | `temporal123` | Mismo departamento (Tecnología); permite verificar notas departamentales compartidas y alertas de cobertura. |
+
+#### Formas de Iniciar Sesión en [http://localhost](http://localhost):
+* **Opción A (Recomendada - SSO con Keycloak):** Haz clic en el botón azul **«Iniciar sesión con Keycloak»**. El navegador te llevará a la pantalla institucional de Keycloak; ingresa cualquiera de las cuentas de la tabla anterior.
+* **Opción B (Acceso Local Directo):** En la misma pantalla de bienvenida, ingresa el correo (ej. `admin@plurione.com`) y contraseña (`Admin2026!`) en el formulario inferior y haz clic en **«Entrar con correo y contraseña»**.
+
+#### Cómo crear usuarios adicionales con otros roles en Keycloak:
+Si deseas dar de alta un usuario nuevo desde la consola de identidad:
+1. Ingresa a la consola administrativa de Keycloak: [http://localhost:8080](http://localhost:8080) con `admin` / `admin`.
 2. En la esquina superior izquierda, cambia del realm `master` al realm **`rrhh`**.
-3. En la sección **Users**, puedes crear nuevos usuarios o gestionar los existentes:
-   * **Crear usuario:** Ingresa Nombre, Apellido, Correo y activa **Email verified**.
-   * **Contraseña:** En la pestaña **Credentials**, haz clic en **Set password**, escribe la contraseña deseada y desmarca la casilla **Temporary**.
-   * **Rol:** En la pestaña **Role mapping** → **Assign role**, asigna el rol deseado:
-     * `EMPLOYEE`: Puede crear solicitudes, consultar sus saldos y chatear con el asistente IA.
-     * `MANAGER`: Supervisor; revisa y aprueba/rechaza solicitudes de su equipo.
-     * `HR_ADMIN`: Recursos Humanos; gestión de empleados, departamentos, constancias y reportes.
-     * `SYSTEM_ADMIN`: Acceso total a todas las configuraciones y módulos.
-4. Abre [http://localhost](http://localhost) e inicia sesión con el botón ** Iniciar sesión con Keycloak**.
+3. En la sección **Users** → **Create user**: ingresa Nombre, Apellido, Correo y activa la casilla **Email verified**.
+4. En la pestaña **Credentials** → **Set password**: escribe la contraseña deseada y **desmarca la casilla Temporary**.
+5. En la pestaña **Role mapping** → **Assign role**: selecciona el rol asignado (`EMPLOYEE`, `MANAGER`, `HR_ADMIN`, `SYSTEM_ADMIN`).
+6. Al iniciar sesión por primera vez con esa cuenta en [http://localhost](http://localhost), el backend aprovisiona automáticamente su registro en la base de datos de PluriOne.
 
 ---
 
@@ -110,7 +119,7 @@ El sistema cuenta con soporte para inicio de sesión unificado con **Keycloak**:
 1. **Dashboard Ejecutivo Atlas:**
    * Visualiza tarjetas KPI interactivas con indicadores de rendimiento, métricas de solicitudes y tiempos de respuesta.
    * Gráficos circulares (donuts) de eficiencia y cumplimiento de SLA.
-   * Tabla dinámica de solicitudes recientes con filtros rápidos por estado (*Todas, Aprobadas, En revisión, Pendientes*).
+   * Tabla dinámica de solicitudes recientes con filtros rápidos por estado (*Todas, Aprobadas, En revisión, Pendientes*), ordenamiento interactivo y paginación reactiva.
 
 2. **Modo Oscuro Puro (#000000) y Modo Claro:**
    * En la barra superior, haz clic en el botón de **Sol / Luna** para alternar instantáneamente entre el tema claro ejecutivo y el modo oscuro en negro puro OLED de alto contraste.
@@ -120,11 +129,20 @@ El sistema cuenta con soporte para inicio de sesión unificado con **Keycloak**:
    * Prueba crear solicitudes de **Vacaciones**, **Permisos personales** o **Incapacidades médicas**.
    * El sistema valida en tiempo real las reglas de negocio (anticipación mínima, días disponibles, solapamiento de fechas y porcentaje de cobertura del equipo).
 
-4. **Calendario Interactivo con Actividades:**
+4. **Calendario Interactivo, Visibilidad de Notas y Permisos RBAC:**
    * Abre la sección **Calendario**.
    * Visualiza el mes actual en español con días y semanas localizadas.
-   * **Selección con color:** Haz clic sobre cualquier día de la cuadrícula para pintarlo y seleccionarlo activamente.
-   * **Notas y Actividades:** Haz clic en **+ Agregar actividad o nota** para agendar notas personales o recordatorios que se guardan y reflejan en el calendario.
+   * **Selección con color:** Haz clic sobre cualquier día de la cuadrícula para seleccionarlo y consultar ausencias programadas y eventos.
+   * **Agregar notas con visibilidad por rol:** Haz clic en **+ Agregar actividad o nota**:
+     * **Personal:** Solo visible para el usuario que la creó.
+     * **Departamental:** Visible para todos los integrantes del mismo departamento. *(Para probarlo: crea una nota departamental con `empleado@plurione.com`, cierra sesión e ingresa con `empleado2@plurione.com`; ambos verán la nota en el calendario)*.
+     * **Global:** Visible para toda la empresa en el calendario. **Solo permitida para roles administrativos (`HR_ADMIN` y `SYSTEM_ADMIN`)**.
+   * **Prueba de seguridad RBAC (Control 403 Forbidden):**
+     * Si un empleado estándar (`EMPLOYEE`) intenta seleccionar y publicar una nota con visibilidad **Global**, el sistema rechaza la operación con código **HTTP 403 Forbidden** (*"Solo administradores de RRHH y del sistema pueden publicar notas con visibilidad global"*).
+   * **Edición y eliminación de notas:**
+     * Al hacer clic sobre cualquier nota existente, se despliega su modal de detalle.
+     * Si el usuario es el dueño de la nota o administrador de RRHH, podrá ver los botones **Editar actividad** (para modificar título, fecha, tipo o visibilidad) y **Eliminar actividad**.
+     * Al editar una nota, el autor original se preserva fielmente. Si la nota pertenece a otro usuario de otro departamento, los botones no se muestran y cualquier intento de borrado es bloqueado por el servidor con código **HTTP 403**.
 
 5. **Asistente de IA en Pantalla Completa:**
    * En la barra superior haz clic en el botón **Asistente IA**.
@@ -167,7 +185,7 @@ Para ejecutar la suite completa de pruebas unitarias y de integración:
 docker compose exec backend pytest tests/ -v
 ```
 
-> **Resultado:** **54 pruebas registradas (53 aprobadas, 1 omitida en SQLite por depender de PostgreSQL) (100% PASSED)** cubriendo:
+> **Resultado:** **54 pruebas automatizadas con Pytest (100% de aprobación en el contenedor Docker con PostgreSQL; 53 aprobadas y 1 omitida en pruebas locales sobre SQLite por validar vistas nativas de PostgreSQL)** cubriendo:
 > - **Pruebas unitarias (`test_units.py` - 4 pruebas):** Cálculo de días hábiles laborables excluyendo fines de semana y descansos obligatorios de la LFT (Art. 74), tabla de antigüedad y validación matemática de CLABE (estándar Banxico módulo-10).
 > - **API y reglas de negocio (`test_api.py` - 34 pruebas):** Autenticación, creación de solicitudes, prevención de empalmes, permisos con auto-aprobación, aprobación multinivel de vacaciones, cifrado de datos sensibles, control de permisos RBAC en notas de calendario (403), CRUD y visibilidad departamental, descargas seguras y vistas analíticas.
 > - **Integraciones y resiliencia (`test_integrations.py` - 11 pruebas):** Keycloak OIDC, linking de usuarios SSO, alternancia automática de proveedores de IA y degradación elegante al motor de reglas.

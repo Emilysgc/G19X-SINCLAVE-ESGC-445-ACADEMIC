@@ -72,6 +72,32 @@ docker compose up -d --build
 
 ---
 
+## Primer Acceso (Cuentas Disponibles por Rol)
+
+Al concluir el `docker compose up`, el sistema cuenta con cuentas preconfiguradas e importadas automáticamente en el realm `rrhh` de Keycloak y sincronizadas con PostgreSQL. Puedes ingresar inmediatamente con cualquiera de ellas en **[http://localhost](http://localhost)**:
+
+| Rol en el Sistema | Correo / Usuario | Contraseña | ¿Qué permite probar este usuario? |
+|---|---|---|---|
+| **Administrador / RRHH** (`HR_ADMIN`, `SYSTEM_ADMIN`) | `admin@plurione.com` *(o usuario `admin`)* | `Admin2026!` | Acceso total: catálogo de empleados, doble aprobación de CLABE, analítica y publicación de notas globales en el calendario. Creado automáticamente desde `FIRST_ADMIN_EMAIL` en `.env`. |
+| **Supervisor / Líder** (`MANAGER`, `EMPLOYEE`) | `jefe.desarrollo@plurione.com` *(o usuario `jefe.desarrollo`)* | `temporal123` | Bandeja de aprobación: autorizar o rechazar solicitudes de su equipo y notas departamentales. Usuario de prueba importado desde `realm-rrhh.json`. |
+| **Colaborador 1** (`EMPLOYEE`) | `empleado@plurione.com` *(o usuario `empleado`)* | `temporal123` | Autoservicio: crear solicitudes de vacaciones, permisos, chatear con el Asistente IA y agendar notas personales. |
+| **Colaborador 2** (`EMPLOYEE`) | `empleado2@plurione.com` *(o usuario `empleado2`)* | `temporal123` | Mismo departamento (Tecnología); permite verificar que las notas departamentales se comparten entre compañeros y probar alertas de cobertura del 50%. |
+
+#### Dos formas de iniciar sesión en [http://localhost](http://localhost):
+1. **Vía Keycloak SSO (Recomendado):** Haz clic en el botón azul **«Iniciar sesión con Keycloak»** e introduce cualquiera de las credenciales de la tabla.
+2. **Vía Acceso Local Directo:** Ingresa el correo (ej. `admin@plurione.com`) y contraseña (`Admin2026!`) en el formulario de la pantalla de bienvenida.
+
+#### ¿Cómo conseguir un usuario nuevo de cada rol en Keycloak?
+Si deseas crear usuarios adicionales personalizados desde la consola de identidades:
+1. Entra a Keycloak: **[http://localhost:8080](http://localhost:8080)** con `admin` / `admin`.
+2. En la esquina superior izquierda, cambia al realm **`rrhh`**.
+3. Ve a **Users** → **Create user** (completa Nombre, Apellido, Correo institucional y marca **Email verified**).
+4. En la pestaña **Credentials** → **Set password**, escribe la contraseña deseada y **desmarca la casilla Temporary**.
+5. En la pestaña **Role mapping** → **Assign role**, asigna el rol deseado (`EMPLOYEE`, `MANAGER`, `HR_ADMIN` o `SYSTEM_ADMIN`).
+6. Al iniciar sesión en **[http://localhost](http://localhost)** con esa nueva cuenta, el backend aprovisiona automáticamente su registro en la base de datos de PluriOne.
+
+---
+
 ##  URLs de Acceso y Servicios
 
 Una vez levantados los contenedores, accede a los siguientes puntos de entrada desde tu navegador:

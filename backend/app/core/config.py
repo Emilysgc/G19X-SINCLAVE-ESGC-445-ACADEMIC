@@ -44,6 +44,7 @@ class Settings(BaseSettings):
 
     # Inicio de sesión corporativo con OpenID Connect (Keycloak)
     OIDC_ISSUER: Optional[str] = None  # URL PÚBLICA del realm, igual a la que ve el navegador: http://localhost:8080/realms/rrhh
+    OIDC_PUBLIC_ISSUER: Optional[str] = None  # Alias público para enlace de reseteo de credenciales en Keycloak
     OIDC_CLIENT_ID: Optional[str] = None
     OIDC_JWKS_URL: Optional[str] = None  # opcional: URL interna de las llaves (dentro de Docker: http://keycloak:8080/realms/rrhh/protocol/openid-connect/certs)
     OIDC_ALLOWED_DOMAINS: str = ""  # csv, vacío = cualquier usuario del realm

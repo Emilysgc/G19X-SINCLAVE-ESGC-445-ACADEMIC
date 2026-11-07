@@ -266,7 +266,7 @@ class KeycloakService:
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
         }
-        public_issuer = self.settings.OIDC_ISSUER or f"http://localhost:8080/realms/{self.realm}"
+        public_issuer = getattr(self.settings, 'OIDC_PUBLIC_ISSUER', None) or self.settings.OIDC_ISSUER or f"http://localhost:8080/realms/{self.realm}"
         client_id = self.settings.OIDC_CLIENT_ID or "rrhh-frontend"
         reset_url = f"{public_issuer}/login-actions/reset-credentials?client_id={client_id}"
 

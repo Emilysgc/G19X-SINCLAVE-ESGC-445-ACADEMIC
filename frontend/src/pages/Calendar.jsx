@@ -69,6 +69,7 @@ export default function Calendar() {
       .catch(() => {
         if (!cancel) {
           setRequests([])
+          setCalendarError('No se pudieron cargar las ausencias')
           setLoading(false)
         }
       })

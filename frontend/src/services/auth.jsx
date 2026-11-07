@@ -30,8 +30,10 @@ export function AuthProvider({ children }) {
     // si Keycloak está activo, se cierra la sesión en el IdP para evitar reingreso silencioso
     if (!silent) { try { await api.post('/auth/logout') } catch { /* token ya inválido */ } }
     setToken(null); setUser(null)
+    const loginVia = sessionStorage.getItem('login_via')
+    sessionStorage.removeItem('login_via')
     const oidc = configRef.current?.oidc
-    if (oidc?.enabled) {  // también termina la sesión en Keycloak; si no, el siguiente clic entraría solo
+    if (oidc?.enabled && (loginVia === 'oidc' || userRef.current?.auth_provider === 'oidc')) {
       try { const k = await getKeycloak(oidc); if (k.authenticated) await k.logout({ redirectUri: window.location.origin }) } catch { /* Keycloak no disponible */ }
     }
   }, [])
@@ -48,6 +50,7 @@ export function AuthProvider({ children }) {
           const k = await getKeycloak(c.oidc)
           if (k.authenticated && k.idToken) {
             const session = await api.post('/auth/oidc', { id_token: k.idToken })
+            sessionStorage.setItem('login_via', 'oidc')
             setToken(session.access_token); setUser(await api.get('/auth/me'))
           }
         }
@@ -55,7 +58,7 @@ export function AuthProvider({ children }) {
     })()
   }, [logout, loadConfig])
 
-  const startSession = async (session) => { setToken(session.access_token); setUser(await api.get('/auth/me')); await loadConfig() }
+  const startSession = async (session) => { sessionStorage.removeItem('login_via'); setToken(session.access_token); setUser(await api.get('/auth/me')); await loadConfig() }
   const login = async (email, password) => startSession(await api.post('/auth/login', { email, password }))
   const setup = async (payload) => startSession(await api.post('/auth/setup', payload))
   const loginOidc = async () => { const k = await getKeycloak(config.oidc); await k.login({ redirectUri: window.location.origin }) }  // redirige a Keycloak

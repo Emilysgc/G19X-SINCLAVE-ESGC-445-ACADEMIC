@@ -51,7 +51,7 @@ Copia la plantilla de variables de entorno lista para evaluación:
   ```
 
 > **Nota sobre credenciales de demostración:** El archivo `.env.example` y los usuarios de prueba contienen contraseñas de demostración preconfiguradas únicamente para facilitar la evaluación en local (`localhost`). No deben considerarse seguras para un entorno de producción real; en producción es indispensable sustituir todas las credenciales y secretos (`SECRET_KEY`, `POSTGRES_PASSWORD`, `KEYCLOAK_ADMIN_PASSWORD`, etc.) por valores de alta seguridad gestionados mediante un gestor de secretos corporativo.
-> *(Opcional)*: Si deseas activar el asistente de IA con Groq en la nube, puedes agregar tu `GROQ_API_KEY` en el archivo `.env`. Si no la configuras, el sistema funcionará automáticamente con el motor de reglas y soporte para Ollama local.
+> *(Opcional)*: Si deseas activar el asistente de IA con Groq en la nube, puedes agregar tu `GROQ_API_KEY` en el archivo `.env`. Si no la configuras y no levantas el perfil `ollama`, cada prevalidación de solicitudes esperará ~5 segundos al intento de conexión local con Ollama antes de degradar de forma transparente y segura al motor de reglas determinista de la LFT.
 
 ---
 
@@ -61,7 +61,7 @@ Ejecuta el siguiente comando para compilar e iniciar todos los servicios:
 docker compose up -d --build
 ```
 
-> **Tiempo de espera estimado:** Aguarda entre **30 y 60 segundos** en el primer arranque para que PostgreSQL, Redis y Keycloak inicialicen e importen automáticamente el realm `rrhh`.
+> **Tiempo de espera estimado:** La primera compilación (`docker compose up -d --build`) toma típicamente entre **3 y 5 minutos** descargando imágenes base y construyendo capas; en arranques posteriores toma solo **30 a 60 segundos** para que PostgreSQL, Redis y Keycloak inicialicen e importen automáticamente el realm `rrhh`.
 >
 > **Nota para evaluadores con base de datos preexistente:**
 > El sistema inicializa automáticamente su esquema relacional mediante `Base.metadata.create_all()` al iniciar el backend (sin herramientas de migración pesadas como Alembic para simplificar la evaluación). Si ya contabas con volúmenes locales previos de una ejecución anterior y deseas reiniciar la base de datos limpia con todas las tablas y datos semilla actualizados, ejecuta:
@@ -78,14 +78,14 @@ Al concluir el `docker compose up`, el sistema cuenta con cuentas preconfigurada
 
 | Rol en el Sistema | Correo / Usuario | Contraseña | ¿Qué permite probar este usuario? |
 |---|---|---|---|
-| **Administrador / RRHH** (`HR_ADMIN`, `SYSTEM_ADMIN`) | `admin@plurione.com` *(o usuario `admin`)* | `Admin2026!` | Acceso total: catálogo de empleados, doble aprobación de CLABE, analítica y publicación de notas globales en el calendario. Creado automáticamente desde `FIRST_ADMIN_EMAIL` en `.env`. |
+| **Administrador del Sistema** (`SYSTEM_ADMIN`) | `admin@plurione.com` *(en Keycloak también usuario `admin`)* | `Admin2026!` | Acceso total como `SYSTEM_ADMIN`: catálogo de empleados, analítica y notas globales en el calendario. Creado automáticamente desde `FIRST_ADMIN_EMAIL` en `.env`. *(Nota: Para probar el rol `HR_ADMIN`, crea un usuario en Keycloak asignándole ese rol como se detalla abajo).* |
 | **Supervisor / Líder** (`MANAGER`, `EMPLOYEE`) | `jefe.desarrollo@plurione.com` *(o usuario `jefe.desarrollo`)* | `temporal123` | Bandeja de aprobación: autorizar o rechazar solicitudes de su equipo y notas departamentales. Usuario de prueba importado desde `realm-rrhh.json`. |
 | **Colaborador 1** (`EMPLOYEE`) | `empleado@plurione.com` *(o usuario `empleado`)* | `temporal123` | Autoservicio: crear solicitudes de vacaciones, permisos, chatear con el Asistente IA y agendar notas personales. |
 | **Colaborador 2** (`EMPLOYEE`) | `empleado2@plurione.com` *(o usuario `empleado2`)* | `temporal123` | Mismo departamento (Tecnología); permite verificar que las notas departamentales se comparten entre compañeros y probar alertas de cobertura del 50%. |
 
 #### Dos formas de iniciar sesión en [http://localhost](http://localhost):
-1. **Vía Keycloak SSO (Recomendado):** Haz clic en el botón azul **«Iniciar sesión con Keycloak»** e introduce cualquiera de las credenciales de la tabla.
-2. **Vía Acceso Local Directo:** Ingresa el correo (ej. `admin@plurione.com`) y contraseña (`Admin2026!`) en el formulario de la pantalla de bienvenida.
+1. **Vía Keycloak SSO (Recomendado):** Haz clic en el botón azul **«Iniciar sesión con Keycloak»** e introduce cualquiera de las credenciales de la tabla (permite ingresar con correo institucional o con el nombre de usuario corto como `admin`).
+2. **Vía Acceso Local Directo:** Ingresa el correo institucional completo (ej. `admin@plurione.com`) y contraseña (`Admin2026!`) en el formulario local de la pantalla de bienvenida.
 
 #### ¿Cómo conseguir un usuario nuevo de cada rol en Keycloak?
 Si deseas crear usuarios adicionales personalizados desde la consola de identidades:
@@ -214,6 +214,10 @@ El sistema genera automáticamente el esquema analítico para reportes de Busine
 Para ejecutar la suite completa de pruebas unitarias y de integración en el entorno de desarrollo:
 
 ```bash
+# Opción 1: Ejecución aislada en contenedor Docker (sin requerir Python en el host)
+docker run --rm -v "${PWD}/backend:/app" -w /app python:3.11-slim sh -c "pip install -q -r requirements.txt -r requirements-dev.txt && pytest tests/ -v"
+
+# Opción 2: Ejecución local en host con Python 3.11
 pytest backend/tests/ -v
 # En Windows:
 py -3.11 -m pytest backend/tests/ -v

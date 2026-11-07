@@ -59,7 +59,7 @@ export default function Calendar() {
     setCalendarError('')
 
     api
-      .get('/requests?limit=150')
+      .get('/requests?limit=100')
       .then((res) => {
         if (!cancel) {
           setRequests(res.items || [])
@@ -133,7 +133,7 @@ export default function Calendar() {
       type: actType,
       description: actDesc.trim() || null,
       visibility: actVisibility,
-      department_id: actVisibility === 'DEPARTMENT' ? user?.department_id : null,
+      department_id: actVisibility === 'DEPARTMENT' ? (editingNote?.department_id ?? user?.department_id) : null,
     }
 
     try {

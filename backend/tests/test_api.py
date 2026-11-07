@@ -216,7 +216,17 @@ async def test_bank_change_masks_and_encrypts_clabe(api):
     assert hr_view["sensitive"]["clabe"] == clabe  # RRHH puede verla para capturar la nómina
     audit = (await api.get("hr", f"{V}/admin/audit?action=VIEW_SENSITIVE")).json()
     assert audit["total"] >= 1
-    assert (await api.post("hr", f"{V}/approvals/{req['id']}/approve", json={})).json()["status"] == "COMPLETED"
+    # Doble validación: Paso 1 aprobado por primer integrante de RRHH
+    step1_res = await api.post("hr", f"{V}/approvals/{req['id']}/approve", json={})
+    assert step1_res.status_code == 200
+    assert step1_res.json()["status"] == "IN_REVIEW"
+    # Mismo aprobador es rechazado en el paso 2 (_already_approved_prior_step)
+    dup_res = await api.post("hr", f"{V}/approvals/{req['id']}/approve", json={})
+    assert dup_res.status_code == 403
+    # Paso 2 aprobado por un segundo integrante administrativo
+    step2_res = await api.post("admin", f"{V}/approvals/{req['id']}/approve", json={})
+    assert step2_res.status_code == 200
+    assert step2_res.json()["status"] == "COMPLETED"
 
 
 async def test_address_change_is_applied_on_approval(api):

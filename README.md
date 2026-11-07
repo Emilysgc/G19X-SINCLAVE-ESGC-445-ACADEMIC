@@ -96,6 +96,12 @@ Si deseas crear usuarios adicionales personalizados desde la consola de identida
 5. En la pestaña **Role mapping** → **Assign role**, asigna el rol deseado (`EMPLOYEE`, `MANAGER`, `HR_ADMIN` o `SYSTEM_ADMIN`).
 6. Al iniciar sesión en **[http://localhost](http://localhost)** con esa nueva cuenta, el backend aprovisiona automáticamente su registro en la base de datos de PluriOne.
 
+#### Gestión y preparación de departamentos desde la interfaz:
+En una instalación limpia, el sistema inicializa automáticamente los departamentos base (**Tecnología** y **Recursos Humanos**), designando a `jefe.desarrollo` como responsable de Tecnología y asignando a `empleado` y `empleado2` dentro de dicho departamento con saldos iniciales de vacaciones (12 y 10 días). Para administrar departamentos o reasignar colaboradores manualmente:
+1. Inicia sesión como administrador (`admin@plurione.com`).
+2. Ve a **Administración** en la barra lateral.
+3. En la pestaña de departamentos podrás crear nuevas áreas o cambiar supervisores, y en la pestaña de colaboradores podrás reasignar el departamento o jefe directo de cualquier empleado.
+
 ---
 
 ##  URLs de Acceso y Servicios
@@ -106,7 +112,7 @@ Una vez levantados los contenedores, accede a los siguientes puntos de entrada d
 |---|---|---|
 |  **Frontend Web (SPA)** | [http://localhost](http://localhost) | Interfaz gráfica de usuario principal de RRHH |
 | **Keycloak SSO** | [http://localhost:8080](http://localhost:8080) | Consola de administración (Usuario: `admin` / Contraseña: `admin`) |
-| **Documentación API (Swagger)** | [http://localhost:8000/docs](http://localhost:8000/docs) | Endpoints interactivos de FastAPI y esquemas OpenAPI |
+| **API REST (Backend)** | `http://localhost/api` | Enrutada vía proxy inverso Nginx (Swagger deshabilitado en producción por seguridad) |
 | **PostgreSQL** | `localhost:5432` | BD: `hr_automation` (Usuario: `powerbi_reader` / Contraseña: `Alumno2026`) |
 | **Redis** | `localhost:6379` | Gestor de sesiones, blacklist de tokens y rate limiting |
 
@@ -205,13 +211,17 @@ El sistema genera automáticamente el esquema analítico para reportes de Busine
 
 ## Pruebas Automatizadas (Pytest)
 
-Para ejecutar la suite completa de pruebas unitarias y de integración:
+Para ejecutar la suite completa de pruebas unitarias y de integración en el entorno de desarrollo:
 
 ```bash
-docker compose exec backend pytest tests/ -v
+pytest backend/tests/ -v
+# En Windows:
+py -3.11 -m pytest backend/tests/ -v
 ```
 
-> **Resultado:** **54 pruebas automatizadas con Pytest (100% de aprobación en el contenedor Docker con PostgreSQL; 53 aprobadas y 1 omitida en pruebas locales sobre SQLite por validar vistas nativas de PostgreSQL)** cubriendo:
+*(Nota: La imagen de producción `Dockerfile.backend` está optimizada y endurecida para despliegue mínimo, por lo que las dependencias de testing y la carpeta `tests/` se ejecutan en el entorno de desarrollo con `pytest`)*.
+
+> **Resultado:** **54 pruebas automatizadas con Pytest (53 aprobadas y 1 omitida en SQLite por validar vistas analíticas nativas de PostgreSQL)** cubriendo:
 > - **Pruebas unitarias (`test_units.py` - 4 pruebas):** Cálculo de días hábiles laborables excluyendo fines de semana y descansos obligatorios de la LFT (Art. 74), tabla de antigüedad y validación matemática de CLABE (estándar Banxico módulo-10).
 > - **API y reglas de negocio (`test_api.py` - 34 pruebas):** Autenticación, creación de solicitudes, prevención de empalmes, permisos con auto-aprobación, aprobación multinivel de vacaciones, cifrado de datos sensibles, control de permisos RBAC en notas de calendario (403), CRUD y visibilidad departamental, descargas seguras y vistas analíticas.
 > - **Integraciones y resiliencia (`test_integrations.py` - 11 pruebas):** Keycloak OIDC, linking de usuarios SSO, alternancia automática de proveedores de IA y degradación elegante al motor de reglas.

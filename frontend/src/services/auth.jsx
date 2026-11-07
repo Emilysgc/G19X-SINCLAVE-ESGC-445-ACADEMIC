@@ -27,12 +27,12 @@ export function AuthProvider({ children }) {
   configRef.current = config
 
   const logout = useCallback(async (silent = false) => {
-    const wasOidc = userRef.current?.auth_provider === 'oidc'
+    // si Keycloak está activo, se cierra la sesión en el IdP para evitar reingreso silencioso
     if (!silent) { try { await api.post('/auth/logout') } catch { /* token ya inválido */ } }
     setToken(null); setUser(null)
     const oidc = configRef.current?.oidc
-    if (wasOidc && oidc?.enabled) {  // también termina la sesión en Keycloak; si no, el siguiente clic entraría solo
-      try { const k = await getKeycloak(oidc); await k.logout({ redirectUri: window.location.origin }) } catch { /* Keycloak no disponible */ }
+    if (oidc?.enabled) {  // también termina la sesión en Keycloak; si no, el siguiente clic entraría solo
+      try { const k = await getKeycloak(oidc); if (k.authenticated) await k.logout({ redirectUri: window.location.origin }) } catch { /* Keycloak no disponible */ }
     }
   }, [])
 

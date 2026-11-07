@@ -192,7 +192,7 @@ export default function Layout() {
                 logout()
               }}
             >
-              Cerrar sesi?n
+              Cerrar sesión
             </button>
           </div>
         </Modal>

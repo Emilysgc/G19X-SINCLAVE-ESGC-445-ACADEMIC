@@ -1,8 +1,9 @@
-"""Arranque: configuración base (NO datos de demostración) y primer administrador opcional.
+"""Arranque: configuración base, departamentos y usuarios iniciales de demostración.
 
 Se crean solo parámetros que el sistema necesita para operar (tipos de solicitud con su SLA y una plantilla
-inicial de políticas editable por RRHH). No se crean empleados, solicitudes ni saldos de ejemplo."""
+inicial de políticas editable por RRHH, departamentos y colaboradores preconfigurados para evaluación."""
 import logging
+from datetime import date
 from pathlib import Path
 
 from sqlalchemy import func, select, text
@@ -10,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from app.core.config import get_settings
 from app.core.security import hash_password
-from app.models import AuditAction, HRPolicy, RequestType, RequestTypeConfig, User, UserRole
+from app.models import AuditAction, Department, HRPolicy, RequestType, RequestTypeConfig, User, UserRole
 from app.services.audit import audit
 
 logger = logging.getLogger("hr.bootstrap")
@@ -212,12 +213,89 @@ async def ensure_first_admin(db: AsyncSession) -> None:
     if len(s.FIRST_ADMIN_PASSWORD) < 10:
         logger.error("FIRST_ADMIN_PASSWORD debe tener al menos 10 caracteres; se omite la creación.")
         return
-    u = User(employee_id="EMP-0001", email=s.FIRST_ADMIN_EMAIL.lower(), full_name=s.FIRST_ADMIN_NAME, hashed_password=hash_password(s.FIRST_ADMIN_PASSWORD),
-             role=UserRole.SYSTEM_ADMIN, job_title="Administrador del sistema")
-    db.add(u)
+    existing_dept_codes = {d.code: d for d in (await db.execute(select(Department))).scalars()}
+    dept_rh = existing_dept_codes.get("rh")
+    if not dept_rh:
+        dept_rh = Department(name="Recursos Humanos", code="rh", description="Gestión de talento, nómina y políticas internas")
+        db.add(dept_rh)
+    dept_ti = existing_dept_codes.get("ti")
+    if not dept_ti:
+        dept_ti = Department(name="Tecnología", code="ti", description="Ingeniería de software, desarrollo y sistemas")
+        db.add(dept_ti)
     await db.flush()
-    audit(db, u.id, "System", "bootstrap", AuditAction.CREATE, f"Administrador inicial creado desde variables de entorno: {u.email}")
-    logger.info("Administrador inicial creado: %s", u.email)
+
+    admin = User(
+        employee_id="EMP-0001",
+        email=s.FIRST_ADMIN_EMAIL.lower(),
+        full_name=s.FIRST_ADMIN_NAME or "Administrador RRHH",
+        hashed_password=hash_password(s.FIRST_ADMIN_PASSWORD),
+        role=UserRole.SYSTEM_ADMIN,
+        job_title="Administrador del sistema",
+        department_id=dept_rh.id if dept_rh else None,
+        auth_provider="local",
+    )
+    db.add(admin)
+    await db.flush()
+    audit(db, admin.id, "System", "bootstrap", AuditAction.CREATE, f"Administrador inicial creado: {admin.email}")
+    logger.info("Administrador inicial creado: %s", admin.email)
+
+    # Supervisor de Tecnología (coincide con jefe.desarrollo del realm de Keycloak)
+    jefe = User(
+        employee_id="EMP-0002",
+        email="jefe.desarrollo@plurione.com",
+        full_name="Jefe de Desarrollo",
+        hashed_password=hash_password("temporal123"),
+        role=UserRole.MANAGER,
+        job_title="Líder de Desarrollo",
+        department_id=dept_ti.id if dept_ti else None,
+        hire_date=date(2023, 6, 1),
+        vacation_balance=16,
+        personal_leave_balance=3,
+        auth_provider="local",
+    )
+    db.add(jefe)
+    await db.flush()
+    if dept_ti:
+        dept_ti.manager_id = jefe.id
+        await db.flush()
+    audit(db, jefe.id, "System", "bootstrap", AuditAction.CREATE, f"Líder de desarrollo creado: {jefe.email}")
+
+    # Colaborador 1 de Tecnología (coincide con empleado del realm de Keycloak)
+    emp1 = User(
+        employee_id="EMP-0003",
+        email="empleado@plurione.com",
+        full_name="Juan Empleado",
+        hashed_password=hash_password("temporal123"),
+        role=UserRole.EMPLOYEE,
+        job_title="Desarrollador Full Stack",
+        department_id=dept_ti.id if dept_ti else None,
+        direct_supervisor_id=jefe.id,
+        hire_date=date(2025, 1, 15),
+        vacation_balance=12,
+        personal_leave_balance=2,
+        auth_provider="local",
+    )
+    db.add(emp1)
+
+    # Colaborador 2 de Tecnología (coincide con empleado2 del realm de Keycloak)
+    emp2 = User(
+        employee_id="EMP-0004",
+        email="empleado2@plurione.com",
+        full_name="Pedro Empleado",
+        hashed_password=hash_password("temporal123"),
+        role=UserRole.EMPLOYEE,
+        job_title="Desarrollador Frontend",
+        department_id=dept_ti.id if dept_ti else None,
+        direct_supervisor_id=jefe.id,
+        hire_date=date(2025, 3, 1),
+        vacation_balance=10,
+        personal_leave_balance=2,
+        auth_provider="local",
+    )
+    db.add(emp2)
+    await db.flush()
+    audit(db, emp1.id, "System", "bootstrap", AuditAction.CREATE, f"Colaboradores creados en Tecnología: {emp1.email}, {emp2.email}")
+    logger.info("Usuarios de prueba creados en departamento Tecnología: jefe.desarrollo, empleado, empleado2")
 
 
 async def apply_powerbi_views(engine: AsyncEngine) -> None:

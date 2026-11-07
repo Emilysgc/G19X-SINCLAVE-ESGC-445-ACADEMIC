@@ -78,6 +78,11 @@ def _chain(rtype: RequestType, days: Optional[float], sup: Optional[User]) -> li
     if rtype in (RequestType.PERSONAL_LEAVE, RequestType.OTHER):
         return [sup_step] if sup_step else [hr_step]
 
+    # Cambio de cuenta bancaria: requiere doble validación por dos integrantes distintos de RRHH
+    if rtype == RequestType.BANK_ACCOUNT_CHANGE:
+        hr_step_2 = {"label": "Segunda validación RRHH", "approver_id": None, "approver_role": UserRole.HR_ADMIN.value}
+        return [hr_step, hr_step_2]
+
     # Por defecto (médico, cuenta bancaria, domicilio, incidencias): aprobación de RRHH
     return [hr_step]
 

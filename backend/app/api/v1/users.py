@@ -1,7 +1,10 @@
 """Usuarios y departamentos."""
 import csv
 import io
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 import uuid
 from datetime import date
 from pathlib import Path

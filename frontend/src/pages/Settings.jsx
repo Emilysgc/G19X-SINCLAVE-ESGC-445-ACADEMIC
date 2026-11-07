@@ -173,7 +173,7 @@ export default function Settings() {
 
         <h2 className="profile-hero-name">{user?.full_name || 'Colaborador PluriOne'}</h2>
         <div className="profile-hero-role">{user?.job_title || ROLE[user?.role] || 'Colaborador'}</div>
-        <div className="profile-hero-location">{user?.department?.name || 'Sin departamento asignado'}</div>
+        <div className="profile-hero-location">{(typeof user?.department === 'object' ? user?.department?.name : user?.department) || 'Sin departamento asignado'}</div>
       </div>
 
       {/* Tarjeta 2: Información Personal */}
@@ -227,7 +227,7 @@ export default function Settings() {
             </div>
             <div className="profile-info-col">
               <span className="profile-info-label">Departamento</span>
-              <span className="profile-info-val">{user?.department?.name || 'Sin departamento asignado'}</span>
+              <span className="profile-info-val">{(typeof user?.department === 'object' ? user?.department?.name : user?.department) || 'Sin departamento asignado'}</span>
             </div>
 
             <div className="profile-info-col full">

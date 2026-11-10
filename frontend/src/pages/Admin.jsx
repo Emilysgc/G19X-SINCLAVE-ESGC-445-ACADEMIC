@@ -26,7 +26,16 @@ function Users() {
 
   if (!list || !depts || !dir) return <Loading />
 
-  const blank = { email: '', full_name: '', role: 'EMPLOYEE', password: '', department_id: '', direct_supervisor_id: '', job_title: '', hire_date: '', salary: '' }
+  const calcLftDays = (hd) => {
+    if (!hd) return 12
+    const d = new Date(hd + 'T00:00:00'), now = new Date()
+    const y = Math.max(0, now.getFullYear() - d.getFullYear() - (now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate()) ? 1 : 0))
+    if (y <= 1) return 12
+    if (y <= 5) return 10 + 2 * y
+    if (y <= 10) return 22
+    return 22 + 2 * Math.floor((y - 6) / 5)
+  }
+  const blank = { email: '', full_name: '', role: 'EMPLOYEE', password: '', department_id: '', direct_supervisor_id: '', job_title: '', hire_date: '', salary: '', vacation_balance: 12 }
   const set = (k) => (e) => setEdit({ ...edit, [k]: e.target.value })
   const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== '' && v !== null).map(([k, v]) => [k, ['department_id', 'direct_supervisor_id', 'salary', 'vacation_balance', 'personal_leave_balance'].includes(k) ? Number(v) : v]))
 
@@ -218,6 +227,7 @@ function Users() {
                               direct_supervisor_id: u.direct_supervisor_id ?? '',
                               hire_date: u.hire_date ?? '',
                               salary: u.salary ?? '',
+                              vacation_balance: Math.max(Number(u.vacation_balance) || 0, calcLftDays(u.hire_date)),
                             })
                           }}
                         >
@@ -325,7 +335,7 @@ function Users() {
             <div className="row">
               <div className="f1">
                 <Field label="Fecha de ingreso" hint="Define el saldo de vacaciones (LFT).">
-                  <input type="date" value={edit.hire_date} onChange={set('hire_date')} />
+                  <input type="date" value={edit.hire_date} onChange={(e) => setEdit({ ...edit, hire_date: e.target.value, vacation_balance: calcLftDays(e.target.value) })} />
                 </Field>
               </div>
               <div className="f1">
@@ -337,8 +347,8 @@ function Users() {
             {edit.id && (
               <div className="row">
                 <div className="f1">
-                  <Field label="Saldo vacaciones (ajuste manual)">
-                    <input type="number" min="0" step="0.5" value={edit.vacation_balance ?? ''} onChange={set('vacation_balance')} />
+                  <Field label="Saldo vacaciones (ajuste manual)" hint="12 días por defecto; aumenta automáticamente según antigüedad (LFT).">
+                    <input type="number" min="0" step="0.5" value={edit.vacation_balance ?? 12} onChange={set('vacation_balance')} />
                   </Field>
                 </div>
                 <div className="f1">

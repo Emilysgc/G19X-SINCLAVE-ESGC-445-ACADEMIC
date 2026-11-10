@@ -241,11 +241,15 @@ async def update_user(user_id: int, body: UserUpdateIn, request: HttpRequest, ac
 
     old_sup_id = u.direct_supervisor_id
     old_salary = u.salary
+    old_hire = u.hire_date
+    old_vac = u.vacation_balance
 
     for k, v in changes.items():
         setattr(u, k, v)
     if "status" in changes:
         u.is_active = u.status == UserStatus.ACTIVE
+    if "hire_date" in changes and u.hire_date != old_hire and changes.get("vacation_balance") in (None, old_vac):
+        u.vacation_balance = max(12.0, vacation_entitlement(u.hire_date)) if u.hire_date else 12.0
 
     await db.flush()
     if "direct_supervisor_id" in changes and u.direct_supervisor_id != old_sup_id:

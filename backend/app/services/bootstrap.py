@@ -288,7 +288,7 @@ async def ensure_first_admin(db: AsyncSession) -> None:
         department_id=dept_ti.id if dept_ti else None,
         direct_supervisor_id=jefe.id,
         hire_date=date(2025, 3, 1),
-        vacation_balance=10,
+        vacation_balance=12,
         personal_leave_balance=2,
         auth_provider="local",
     )

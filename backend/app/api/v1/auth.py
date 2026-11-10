@@ -115,8 +115,7 @@ async def login_oidc(body: OidcLoginIn, request: HttpRequest, db: AsyncSession =
         sup_id = sup_mgr.id if (sup_mgr and role == UserRole.EMPLOYEE) else None
         user = User(employee_id=eid, email=ident["email"], full_name=ident["name"], hashed_password=None,
                     auth_provider="oidc", oidc_sub=ident["sub"], role=role,
-                    department_id=dept_id, direct_supervisor_id=sup_id,
-                    vacation_balance=12 if role == UserRole.EMPLOYEE else 0)
+                    department_id=dept_id, direct_supervisor_id=sup_id, vacation_balance=0.0, personal_leave_balance=6.0)
         db.add(user)
         await db.flush()
         audit(db, user.id, "User", user.id, AuditAction.CREATE, f"Usuario aprovisionado desde Keycloak: {user.email}", ip=ip)

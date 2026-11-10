@@ -1,4 +1,5 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
 import { STATUS, PRIORITY, RISK } from '../services/labels'
 
 export const Badge = ({ map, value }) => { const [t, c] = map[value] || [value, 'gray']; return <span className={`badge ${c}`}>{t}</span> }
@@ -14,11 +15,13 @@ export const Alert = ({ kind = 'info', title, items, children }) => (
   </div>
 )
 
-export const Modal = ({ title, onClose, children }) => (
-  <div className="modal" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-    <div className="m"><div className="row between"><h2>{title}</h2><button className="btn sm" onClick={onClose}>✕</button></div>{children}</div>
-  </div>
-)
+export const Modal = ({ title, onClose, children }) =>
+  createPortal(
+    <div className="modal" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="m"><div className="row between"><h2>{title}</h2><button className="btn sm" onClick={onClose}>✕</button></div>{children}</div>
+    </div>,
+    document.body
+  )
 
 export const Field = ({ label, children, hint }) => (<div><label>{label}</label>{children}{hint && <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{hint}</div>}</div>)
 export const Empty = ({ children }) => <div className="empty">{children}</div>

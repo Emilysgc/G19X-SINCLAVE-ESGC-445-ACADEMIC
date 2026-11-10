@@ -762,7 +762,7 @@ function Integrations() {
             <tbody>
               {res.map((r) => (
                 <tr key={r.key}>
-                  <td style={{ width: 32 }}>{r.ok === true ? '✅' : r.ok === false ? '❌' : 'ℹ️'}</td>
+                  <td style={{ width: 32 }}>{r.ok === true ? '✓' : r.ok === false ? '✕' : '•'}</td>
                   <td>
                     <b>{r.name}</b>{!r.required && <span className="muted"> (opcional)</span>}
                     <div style={{ fontSize: 12, color: '#64748b' }}>{r.detail}</div>

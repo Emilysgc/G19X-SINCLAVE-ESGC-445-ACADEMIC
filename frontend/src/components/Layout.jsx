@@ -26,6 +26,7 @@ export default function Layout() {
   const [chatOpen, setChatOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [confirmLogout, setConfirmLogout] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const closeChat = useCallback(() => setChatOpen(false), [])
 
   const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'light')
@@ -74,12 +75,13 @@ export default function Layout() {
   }
 
   const Item = ({ to, icon, children, end }) => (
-    <NavLink to={to} end={end}><Icon name={icon} size={18} /><span>{children}</span></NavLink>
+    <NavLink to={to} end={end} onClick={() => setMenuOpen(false)}><Icon name={icon} size={18} /><span>{children}</span></NavLink>
   )
 
   return (
     <div className={`layout ${chatOpen ? 'with-chat' : ''}`}>
-      <aside className="side">
+      {menuOpen && <div className="side-backdrop" onClick={() => setMenuOpen(false)} />}
+      <aside className={`side ${menuOpen ? 'open' : ''}`}>
         <div className="logo">
           <div>
             <div className="logo-name">{config?.company_name || 'RRHH'}</div>
@@ -110,7 +112,12 @@ export default function Layout() {
 
       <div className="main">
         <div className="top atlas-main-top">
-          <div className="top-title">{title}</div>
+          <div className="top-left-group">
+            <button type="button" className="icon-btn mobile-menu-btn" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menú">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div className="top-title">{title}</div>
+          </div>
 
           <div className="atlas-global-search">
             <Icon name="search" size={16} />

@@ -49,6 +49,12 @@ export const api = {
     const a = document.createElement('a'); a.href = url; a.download = filename; a.click()
     setTimeout(() => URL.revokeObjectURL(url), 10000)
   },
+  async blobUrl(p, mime) {
+    const res = await request('GET', p, { raw: true })
+    const rawBlob = await res.blob()
+    const blob = mime ? new Blob([rawBlob], { type: mime }) : rawBlob
+    return URL.createObjectURL(blob)
+  },
 }
 
 export const errorList = (e) => (e?.body?.errors?.length ? e.body.errors : [e.message])

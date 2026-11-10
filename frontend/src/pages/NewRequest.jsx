@@ -188,7 +188,7 @@ export default function NewRequest() {
 
       {/* ── Rejilla de Tipos de Trámite con Barra de Acento ── */}
       <div className="requests-types-grid">
-        {types.map((t) => {
+        {types.filter((t) => t.type !== 'ADDRESS_CHANGE').map((t) => {
           const isSelected = type === t.type
           const stripeColor = TYPE_STRIPES[t.type] || '#3b82f6'
           return (

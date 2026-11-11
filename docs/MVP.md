@@ -56,7 +56,7 @@ El presente documento describe el alcance funcional, técnico y operativo del **
 ### 2.6. Asistente Virtual Inteligente (IA Híbrida)
 * **Arquitectura de Inferencia Dual:**
   * **Groq Cloud:** Inferencia ultrarrápida impulsada por el modelo Llama 3.3 70B para atención inmediata de dudas sobre prestaciones y reglamentos.
-  * **Ollama Local:** Contenedor local para inferencia soberana en entornos sin conectividad exterior.
+  * **Ollama Local:** Contenedor local para responder consultas sin depender de internet.
   * **Motor Determinista:** Fallback instantáneo basado en reglas si ninguno de los servicios LLM está disponible.
 * **Contexto Normativo:** Asistente alimentado con las 21 políticas laborales corporativas vigentes de PluriOne S.A. de C.V. y contextualizado a la zona horaria oficial (Ciudad de México).
 
@@ -95,7 +95,7 @@ El presente documento describe el alcance funcional, técnico y operativo del **
 El MVP cuenta con una suite completa de **54 pruebas automatizadas con Pytest**, logrando una tasa de aprobación del 100%:
 * **Cálculos y Algoritmos Matemáticos (4 pruebas):** Verificación del dígito de Banxico, cálculo de años de servicio, tabla LFT de vacaciones y días hábiles laborables excluyendo fines de semana y descansos obligatorios de la LFT.
 * **Endpoints y Reglas de Negocio (34 pruebas):** Ciclo de vida completo de solicitudes, aprobación multinivel, auto-aprobación, cambio de CLABE bancaria cifrada, CRUD y visibilidad departamental de calendario, control de permisos RBAC (403 para publicación global o modificaciones no autorizadas), eliminación efectiva de teléfono/contacto y recuperación de contraseña vía OTP.
-* **Integraciones y Resiliencia (11 pruebas):** Keycloak SSO, linking de usuarios OIDC, revocación en Redis, degradación elegante de IA hacia el motor de reglas y compatibilidad de base de datos.
+* **Integraciones y Resiliencia (11 pruebas):** Keycloak SSO, vinculación de usuarios OIDC, revocación en Redis, respaldo automático hacia el motor de reglas si falla la IA y compatibilidad de base de datos.
 * **Validación de IA (5 pruebas):** Verificación de system prompts corporativos, inyección de fecha y contención de solicitudes fuera de alcance.
 
 ---

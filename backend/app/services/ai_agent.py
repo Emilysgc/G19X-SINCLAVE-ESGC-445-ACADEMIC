@@ -249,14 +249,25 @@ class HRAgent:
         fecha_actual = _format_now_mexico()
         policies = await active_policies(db)
         policies_context = "\n".join(f"- [{p.title} · {p.category}]: {p.content}" for p in policies)[:14000]
+        user_reqs = (await self._run_tool(db, user, "list_my_requests", {"limit": 10})).get("solicitudes", [])
+        if user_reqs:
+            reqs_context = "\n".join(
+                f"{idx}. Folio {r['folio']} · Tipo: {r['tipo']} ({r['titulo']}) · Estado: {r['estado']}"
+                for idx, r in enumerate(user_reqs, 1)
+            )
+        else:
+            reqs_context = "El usuario aún no ha registrado solicitudes."
         system = f"""### ALCANCE
 Eres el asistente virtual de Recursos Humanos de PluriOne S.A. de C.V. Hablas con {user.full_name} (saldo actual: {user.vacation_balance:g} días de vacaciones y {user.personal_leave_balance:g} días de permisos personales).
 Atiendes temas laborales y de RRHH de PluriOne S.A. de C.V.:
 1. Saldos de vacaciones y permisos del propio usuario.
-2. Estado de las solicitudes del propio usuario.
+2. Estado e historial de las solicitudes del propio usuario.
 3. Políticas oficiales de PluriOne S.A. de C.V. (vacaciones, permisos, salidas anticipadas, jornada remota/híbrida, horario flexible, guardias on-call, horas extra, equipo de cómputo, seguridad, uso de IA, propiedad intelectual, altas/bajas, capacitación, conducta/ética, constancias y nómina).
 4. Soluciones prácticas paso a paso cuando el empleado plantea un problema o imprevisto (salir temprano, familiar en el hospital, malestar/enfermedad, reunión religiosa, dudas de nómina o cuentas bancarias).
 5. Fecha actual de referencia.
+
+### SOLICITUDES REGISTRADAS DE {user.full_name.upper()}
+{reqs_context}
 
 ### POLÍTICAS OFICIALES DE PLURIONE S.A. DE C.V.
 {policies_context}
@@ -266,27 +277,33 @@ Cualquier tema ajeno a PluriOne S.A. de C.V. y RRHH (chistes, programación gene
 Si la pregunta está fuera de alcance, responde ÚNICAMENTE:
 «{rejection_msg}»
 
-### REGLAS
-- Si la pregunta es sencilla, responde en UNA sola línea.
-- Datos y políticas salen SOLO de las herramientas o del contexto oficial.
-- Cuando el colaborador exponga una situación (ej. "quiero salir temprano", "tengo un familiar en el hospital", "me siento mal/enfermé", "tengo una reunión religiosa", "tuve un incidente nocturno de guardia", "tengo un error en mi nómina"), dale soluciones concretas de PluriOne S.A. de C.V.:
-  1. Indica las alternativas según las políticas de PluriOne S.A. de C.V. (ej. reposición de horas con el líder, permiso personal o permiso médico).
-  2. Explica qué trámite usar en el sistema ('Nueva solicitud' → tipo de trámite).
+### REGLAS DE FORMATO Y RESPUESTA
+- Cuando des pasos, opciones, requisitos o listes las solicitudes del usuario, escribe SIEMPRE cada punto en una línea separada y numerada:
+1. Primer paso u opción...
+2. Segundo paso u opción...
+3. Tercer paso u opción...
+- NUNCA pegues los puntos 1., 2., 3. en un mismo párrafo continuo; usa siempre saltos de línea entre cada punto para que la lectura sea ordenada y clara.
+- Datos, solicitudes y políticas salen SOLO de las herramientas o del contexto oficial de arriba.
+- Cuando el colaborador exponga una situación (ej. "quiero salir temprano", "tengo un familiar en el hospital", "me siento mal/enfermé", "tengo una reunión religiosa", "tuve un incidente nocturno de guardia", "tengo un error en mi nómina"), dale soluciones concretas de PluriOne S.A. de C.V. enumeradas paso por paso (1., 2., 3.).
 - Nunca inventes cifras ni apruebes solicitudes por tu cuenta; responde siempre en español.
-
-### EJEMPLOS
-- "¿Cuántos días de vacaciones tengo?": Consulta tu herramienta y responde brevemente con el saldo disponible.
-- "¿Puedo salir temprano hoy?": En PluriOne S.A. de C.V., puedes acordar reposición de horas (<4h) con tu líder o solicitar permiso personal en 'Nueva solicitud'.
 
 ### FECHA ACTUAL
 Fecha actual: {fecha_actual}."""
 
         convo = [{"role": "system", "content": system}] + messages[-10:]
         for _ in range(4):
-            resp = await self._create(
-                preferred_provider=preferred_provider,
-                messages=convo, tools=self.TOOLS, temperature=0.1, max_tokens=250
-            )
+            try:
+                resp = await self._create(
+                    preferred_provider=preferred_provider,
+                    messages=convo, tools=self.TOOLS, temperature=0.1, max_tokens=400
+                )
+            except Exception:
+                for p in self.providers:
+                    p.down_until = 0.0
+                resp = await self._create(
+                    preferred_provider=preferred_provider,
+                    messages=convo, temperature=0.1, max_tokens=400
+                )
             msg = resp.choices[0].message
             if not msg.tool_calls:
                 return ChatResult(msg.content or "", [{"label": "Nueva solicitud", "path": "/requests/new"}], used_ai=True)
@@ -311,15 +328,20 @@ Fecha actual: {fecha_actual}."""
         if any(w in text for w in ("saldo", "me quedan", "disponible")) or asks_days:
             b = await self._run_tool(db, user, "get_my_balances", {})
             return ChatResult(f"En PluriOne S.A. de C.V. tienes **{b['vacaciones']:g}** días de vacaciones y **{b['permisos_personales']:g}** días de permisos personales disponibles.", sugg)
-        if any(w in text for w in ("mis solicitudes", "estado", "cómo va", "como va")):
-            r = await self._run_tool(db, user, "list_my_requests", {"limit": 5})
+        asks_reqs = any(w in text for w in (
+            "mis solicitudes", "solicitudes he hecho", "solicitudes hice", "solicitudes tengo",
+            "qué solicitudes", "que solicitudes", "tipo de solicitudes", "historial de solicitudes",
+            "sobre solicitudes", "mis trámites", "mis tramites", "estado", "cómo va", "como va",
+        ))
+        if asks_reqs:
+            r = await self._run_tool(db, user, "list_my_requests", {"limit": 10})
             if not r["solicitudes"]:
                 return ChatResult("Aún no tienes solicitudes registradas. Puedes crear una desde 'Nueva solicitud'.", sugg)
-            lines = "\n".join(f"- {x['folio']} · {x['titulo']} · {x['estado']}" for x in r["solicitudes"])
-            return ChatResult(f"Tus últimas solicitudes en PluriOne S.A. de C.V.:\n{lines}", [{"label": "Ver mis solicitudes", "path": "/requests"}])
+            lines = "\n".join(f"{idx}. {x['folio']} · {x['titulo']} · Estado: {x['estado']}" for idx, x in enumerate(r["solicitudes"], 1))
+            return ChatResult(f"Tus solicitudes registradas en PluriOne S.A. de C.V.:\n\n{lines}", [{"label": "Ver mis solicitudes", "path": "/requests"}])
         found = await search_policies(db, text, k=2)
         if found:
-            blocks = "\n\n".join(f"• {p.title} ({p.category}): {p.content}" for p in found)
+            blocks = "\n\n".join(f"{idx}. {p.title} ({p.category}):\n{p.content}" for idx, p in enumerate(found, 1))
             return ChatResult(f"De acuerdo con las políticas de PluriOne S.A. de C.V.:\n\n{blocks}", sugg)
         return ChatResult("Soy el asistente de RRHH de PluriOne S.A. de C.V. Puedo darte soluciones sobre salidas anticipadas, permisos médicos o personales, vacaciones, trabajo remoto, guardias, nómina y estado de tus solicitudes. ¿En qué te ayudo?", sugg)
 

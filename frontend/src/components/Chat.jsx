@@ -4,12 +4,34 @@ import { api } from '../services/api'
 import { useAuth } from '../services/auth.jsx'
 import { Icon } from './ui.jsx'
 
-const PROMPT_CARDS = [
-  { icon: 'sun', title: 'Consultar saldo', desc: '¿Cuántos días de vacaciones me quedan disponibles?', prompt: '¿Cuántos días de vacaciones me quedan disponibles este año?' },
-  { icon: 'list', title: 'Mis solicitudes', desc: 'Ver cómo va el trámite de mis peticiones', prompt: '¿Cómo van mis solicitudes pendientes?' },
-  { icon: 'clock', title: 'Permiso personal', desc: 'Consultar balance de permisos con goce', prompt: '¿Cuál es mi saldo de permisos personales?' },
-  { icon: 'calendar', title: 'Políticas vigentes', desc: 'Reglas de anticipación para trámites', prompt: '¿Con cuántos días de anticipación debo solicitar mis vacaciones?' }
-]
+function getPersonalizedGreeting(fullName) {
+  const h = new Date().getHours()
+  const timeSaludo = h >= 5 && h < 12 ? 'Buenos días' : h >= 12 && h < 19 ? 'Buenas tardes' : 'Buenas noches'
+  const firstName = (fullName || '').trim().split(/\s+/)[0] || ''
+  return {
+    title: firstName ? `¡${timeSaludo}, ${firstName}!` : `¡${timeSaludo}, bienvenido!`,
+    subtitle: firstName
+      ? `Bienvenido(a), ${firstName}. ¿En qué puedo ayudarte hoy? Pregúntame sobre tus vacaciones, saldo de días, estado de tus solicitudes o políticas internas.`
+      : 'Bienvenido(a). ¿En qué puedo ayudarte hoy? Pregúntame sobre tus vacaciones, saldo de días, estado de tus solicitudes o políticas internas.',
+  }
+}
+
+function formatMessageContent(raw) {
+  if (!raw) return ''
+  let txt = String(raw).replace(/\*\*/g, '').trim()
+  // Separar pasos numerados (1., 2., 3...) en líneas individuales cuando vengan seguidos en el mismo párrafo
+  txt = txt.replace(/([^\n])\s+([1-9]\d?\.\s+)/g, '$1\n\n$2')
+  // Si vienen viñetas "• " pegadas en el texto, enumerarlas 1., 2., 3. en líneas separadas
+  if (txt.includes('•')) {
+    let idx = 0
+    txt = txt.replace(/\s*•\s*/g, () => {
+      idx += 1
+      return `\n\n${idx}. `
+    })
+  }
+  txt = txt.replace(/\n{3,}/g, '\n\n').trim()
+  return txt
+}
 
 function loadSavedConversations(convsKey, legacyMsgsKey) {
   try {
@@ -315,29 +337,10 @@ export default function Chat({ open, onClose }) {
           <div className="script-chat-body" ref={list}>
             {msgs.length === 0 ? (
               <div className="script-hero-screen">
-                <h1 className="script-hero-title">¿En qué puedo ayudarte hoy?</h1>
+                <h1 className="script-hero-title">{getPersonalizedGreeting(user?.full_name).title}</h1>
                 <p className="script-hero-sub">
-                  Pregúntame sobre tus vacaciones, saldo de días, estado de trámites o políticas internas.
+                  {getPersonalizedGreeting(user?.full_name).subtitle}
                 </p>
-
-                <div className="script-prompt-grid">
-                  {PROMPT_CARDS.map((card, i) => (
-                    <div
-                      key={i}
-                      className="script-prompt-card click"
-                      onClick={() => ask(card.prompt)}
-                    >
-                      <div className="prompt-card-top">
-                        <div className="prompt-card-icon">
-                          <Icon name={card.icon} size={18} />
-                        </div>
-                        <span className="prompt-plus">+</span>
-                      </div>
-                      <div className="prompt-card-title">{card.title}</div>
-                      <div className="prompt-card-desc">{card.desc}</div>
-                    </div>
-                  ))}
-                </div>
               </div>
             ) : (
               <div className="script-messages-stream">
@@ -347,7 +350,9 @@ export default function Chat({ open, onClose }) {
                       <Icon name={m.role === 'user' ? 'users' : 'sparkles'} size={16} />
                     </div>
                     <div className="script-bubble">
-                      <div className="script-msg-text">{m.content.replace(/\*\*/g, '')}</div>
+                      <div className="script-msg-text">
+                        {m.role === 'assistant' ? formatMessageContent(m.content) : m.content}
+                      </div>
                       <div className="row" style={{ gap: 8, marginTop: 4 }}>
                         {m.provider && (
                           <span className="script-msg-badge">{m.provider.toUpperCase()}</span>

@@ -277,15 +277,16 @@ Cualquier tema ajeno a PluriOne S.A. de C.V. y RRHH (chistes, programación gene
 Si la pregunta está fuera de alcance, responde ÚNICAMENTE:
 «{rejection_msg}»
 
-### REGLAS DE FORMATO Y RESPUESTA
-- Cuando des pasos, opciones, requisitos o listes las solicitudes del usuario, escribe SIEMPRE cada punto en una línea separada y numerada:
-1. Primer paso u opción...
-2. Segundo paso u opción...
-3. Tercer paso u opción...
-- NUNCA pegues los puntos 1., 2., 3. en un mismo párrafo continuo; usa siempre saltos de línea entre cada punto para que la lectura sea ordenada y clara.
-- Datos, solicitudes y políticas salen SOLO de las herramientas o del contexto oficial de arriba.
+### REGLAS
+- Si la pregunta es sencilla, responde en UNA sola línea.
+- Datos y políticas salen SOLO de las herramientas o del contexto oficial.
+- Cuando des pasos, opciones, requisitos o listes las solicitudes del usuario, escribe SIEMPRE cada punto en una línea separada y numerada (1., 2., 3.) usando saltos de línea entre cada punto.
 - Cuando el colaborador exponga una situación (ej. "quiero salir temprano", "tengo un familiar en el hospital", "me siento mal/enfermé", "tengo una reunión religiosa", "tuve un incidente nocturno de guardia", "tengo un error en mi nómina"), dale soluciones concretas de PluriOne S.A. de C.V. enumeradas paso por paso (1., 2., 3.).
 - Nunca inventes cifras ni apruebes solicitudes por tu cuenta; responde siempre en español.
+
+### EJEMPLOS
+- "¿Cuántos días de vacaciones tengo?": Consulta tu herramienta y responde brevemente con el saldo disponible.
+- "¿Puedo salir temprano hoy?": En PluriOne S.A. de C.V., puedes acordar reposición de horas (<4h) con tu líder o solicitar permiso personal en 'Nueva solicitud'.
 
 ### FECHA ACTUAL
 Fecha actual: {fecha_actual}."""
@@ -295,14 +296,16 @@ Fecha actual: {fecha_actual}."""
             try:
                 resp = await self._create(
                     preferred_provider=preferred_provider,
-                    messages=convo, tools=self.TOOLS, temperature=0.1, max_tokens=400
+                    messages=convo, tools=self.TOOLS, temperature=0.1, max_tokens=250
                 )
-            except Exception:
+            except Exception as exc:
+                if "tool_use_failed" not in str(exc):
+                    raise
                 for p in self.providers:
                     p.down_until = 0.0
                 resp = await self._create(
                     preferred_provider=preferred_provider,
-                    messages=convo, temperature=0.1, max_tokens=400
+                    messages=convo, temperature=0.1, max_tokens=250
                 )
             msg = resp.choices[0].message
             if not msg.tool_calls:

@@ -262,57 +262,6 @@ export default function Login() {
               <span>Iniciar sesión con {config?.oidc?.provider_name || 'Keycloak'}</span>
             </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', margin: '4px 0', gap: 10 }}>
-              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.15)' }} />
-              <span style={{ fontSize: 11.5, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>o con cuenta local</span>
-              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.15)' }} />
-            </div>
-
-            {/* Formulario de acceso local directo con correo y contraseña */}
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div className="login-input-box" style={{ margin: 0 }}>
-                <svg className="login-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-                <input
-                  type="email"
-                  className="login-input"
-                  placeholder="Correo institucional (ej. admin@plurione.com)"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="login-input-box" style={{ margin: 0 }}>
-                <svg className="login-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                <input
-                  type="password"
-                  className="login-input"
-                  placeholder="Contraseña"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="login-btn-submit"
-                disabled={busy}
-                style={{
-                  background: '#2563eb',
-                  boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
-                }}
-              >
-                {busy ? 'Verificando...' : 'Entrar con correo y contraseña'}
-              </button>
-            </form>
-
             {/* Enlace de recuperación de contraseña */}
             <a
               href="#recuperar"
